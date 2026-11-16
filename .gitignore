@@ -1,0 +1,25 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+/build
+
+# tests
+/coverage
+/playwright-report/
+/test-results/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+# env files: never commit real values. The template is kept.
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
