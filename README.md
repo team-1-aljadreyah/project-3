@@ -29,7 +29,10 @@ no backend needed. The login page has a one-tap button for each job (demo only; 
 | `npm test` | Unit tests (Vitest) for the rules in `lib/` |
 | `npm run test:e2e` | Browser tests (Playwright) on phone and desktop sizes. Run `npm run build` first, with `NEXT_PUBLIC_USE_MOCK=true` |
 
-Jenkins runs `npm ci`, lint, typecheck, unit tests, build and browser tests on every push.
+| `npm run check:no-demo` | After a real build (`NEXT_PUBLIC_USE_MOCK=false`): fails if a demo account or password is in the files |
+
+Jenkins runs `npm ci`, lint, typecheck, unit tests, the real build with the no-demo check, the demo build and
+the browser tests on every push.
 
 ## Configuration
 

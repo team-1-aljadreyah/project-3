@@ -3,10 +3,15 @@ import { httpApi, type Api } from "./http";
 
 // Pages always use `api`. The .env switch decides if it is the fake or the real backend.
 //
-// The fake backend (the demo data and its rules) is loaded only the first time a page asks for something,
-// so it is never part of the real site's first load, and its demo accounts never reach the real site.
+// The fake backend (the demo data and its rules) is loaded only the first time a page asks for something.
+// The check is written out in full (not USE_MOCK) on purpose: Next.js replaces it with "false" === "true" when
+// building the real site, so the build drops the import and the demo data and accounts are not in its files at all.
 let mock: Promise<Api> | null = null;
-const loadMock = () => (mock ??= import("./mock").then((m) => m.mockApi));
+const loadMock = () =>
+  (mock ??=
+    process.env.NEXT_PUBLIC_USE_MOCK === "true"
+      ? import("./mock").then((m) => m.mockApi)
+      : Promise.reject(new Error("The demo backend is not in this build.")));
 const lazyMock = new Proxy({} as Api, {
   get: (_t, key: string) =>
     (...args: unknown[]) =>

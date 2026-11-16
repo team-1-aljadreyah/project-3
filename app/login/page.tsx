@@ -6,27 +6,35 @@ import { Logo } from "@/components/shell/logo";
 import { Avatar, Button, Field, Input, errorText } from "@/components/ui";
 import { ROLES } from "@/lib/access";
 import { api, ApiError } from "@/lib/api";
-import type { Role } from "@/lib/api/types";
+import type { User } from "@/lib/api/types";
 import { setSession, useSession } from "@/lib/auth";
-import { USE_MOCK } from "@/lib/config";
 import { setLang, useFmt } from "@/lib/i18n";
 import { safeNext } from "@/lib/safe-next";
 
-// One demo account per job, shown only in the demo build (USE_MOCK). The real site never has them.
-const DEMO: { id: number; name: string; email: string; role: Role }[] = [
-  { id: 1, name: "مريم العبيدي", email: "ceo@demo.test", role: "ceo" },
-  { id: 2, name: "أحمد كريم", email: "pm@demo.test", role: "pm" },
-  { id: 3, name: "هدى ناصر", email: "monitor@demo.test", role: "monitor" },
-  { id: 4, name: "مصطفى جواد", email: "lead@demo.test", role: "lead" },
-  { id: 5, name: "سارة علي", email: "employee@demo.test", role: "employee" },
-  { id: 8, name: "حسن رعد", email: "admin@demo.test", role: "admin" },
-];
+interface Demo {
+  accounts: User[];
+  password: string;
+}
+
+/**
+ * The demo build's one-tap accounts. They are loaded from the demo data, and only in a demo build: the check is
+ * written out in full so the real build drops it, and no demo email or password is in the real site's files.
+ */
+function useDemoAccounts() {
+  const [demo, setDemo] = useState<Demo | null>(null);
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_USE_MOCK !== "true") return;
+    import("@/lib/api/mock/seed").then((m) => setDemo({ accounts: m.demoAccounts(), password: m.DEMO_PASSWORD }));
+  }, []);
+  return demo;
+}
 
 function LoginForm() {
   const { tr, lang } = useFmt();
   const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
   const session = useSession();
+  const demo = useDemoAccounts();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,18 +121,18 @@ function LoginForm() {
         </form>
       </div>
 
-      {USE_MOCK && (
+      {demo && (
         <section aria-labelledby="demo-title" className="mt-6">
           <h2 id="demo-title" className="mb-3 text-sm font-medium text-muted">
             {tr("نسخة تجريبية: سجّل الدخول بأي وظيفة بضغطة واحدة", "Demo: sign in as any job with one tap")}
           </h2>
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {DEMO.map((d) => (
+            {demo.accounts.map((d) => (
               <li key={d.email}>
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => signIn(d.email, "123456")}
+                  onClick={() => signIn(d.email, demo.password)}
                   className="flex w-full items-center gap-3 rounded-xl border border-line bg-card px-3 py-2.5 text-start transition-colors hover:border-accent"
                 >
                   <Avatar user={d} />

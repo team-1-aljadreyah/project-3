@@ -47,8 +47,17 @@ pipeline {
             }
         }
 
+        stage('Real Build Has No Demo Data') {
+            steps {
+                // Build the site as the real one, and fail if a demo account or password is in its files.
+                sh 'NEXT_PUBLIC_USE_MOCK=false npm run build'
+                sh 'npm run check:no-demo'
+            }
+        }
+
         stage('Build') {
             steps {
+                // The demo build, for the browser tests below.
                 sh 'npm run build'
             }
         }

@@ -7,6 +7,13 @@ import type { Priority, Project, Sprint, Task, TaskStatus, User } from "../types
 /** The demo password of every demo account. Only the demo build has it. */
 export const DEMO_PASSWORD = "123456";
 
+/** One account per job for the login page's one-tap buttons (the demo build only). */
+export function demoAccounts() {
+  const users = seed().users;
+  const firstOf = (role: User["role"]) => users.find((u) => u.role === role)!;
+  return (["ceo", "pm", "monitor", "lead", "employee", "admin"] as const).map(firstOf);
+}
+
 export interface MockDb {
   users: User[];
   projects: Project[];
