@@ -48,6 +48,10 @@ function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses" | "
       return e.to ? tr(`نقلها إلى مرحلة ${phase(e.to)}`, `moved it to the ${phase(e.to)} phase`) : tr("أخرجها من المراحل", "took it out of its phase");
     case "comment":
       return tr("أضاف تعليقاً", "commented");
+    case "attachment_added":
+      return tr(`أرفق الملف «${e.to ?? "-"}»`, `attached "${e.to ?? "-"}"`);
+    case "attachment_removed":
+      return tr(`حذف الملف «${e.from ?? "-"}»`, `removed the file "${e.from ?? "-"}"`);
   }
 }
 

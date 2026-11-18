@@ -1,8 +1,9 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
+import { AttachmentsPanel } from "@/features/attachments";
 import { authApi } from "@/features/auth";
-import { lateDays, projectsApi, type Project, type Sprint } from "@/features/projects";
+import { canManageProject, lateDays, projectsApi, type Project, type Sprint } from "@/features/projects";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
@@ -132,6 +133,13 @@ function TaskView({ task, project, users, sprints, comments, history, reload }: 
             ) : (
               <p className="text-sm text-faint">{tr("لا يوجد وصف.", "No description.")}</p>
             )}
+          </section>
+
+          <section aria-labelledby="files-title" className="rounded-xl border border-line bg-card p-4">
+            <h2 id="files-title" className="mb-3 text-sm font-semibold text-muted">
+              {tr("المرفقات", "Attachments")}
+            </h2>
+            <AttachmentsPanel owner={{ type: "task", id: task.id }} canAdd={canComment(user, project)} canManage={canManageProject(user, project)} />
           </section>
 
           <section className="rounded-xl border border-line bg-card">

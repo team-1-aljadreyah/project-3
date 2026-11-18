@@ -1,4 +1,4 @@
-import { Plus, Settings } from "lucide-react";
+import { Paperclip, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { authApi } from "@/features/auth";
@@ -141,6 +141,11 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
             <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
             <AvatarStack users={members} />
           </div>
+          <ButtonLink to={`/projects/${project.id}/files`} variant="secondary" pill>
+            <Paperclip size={15} aria-hidden="true" />
+            {/* On a phone only the icon shows; screen readers still hear the name. */}
+            <span className="sr-only sm:not-sr-only">{tr("الملفات", "Files")}</span>
+          </ButtonLink>
           {canManageProject(user, project) && (
             <ButtonLink to={`/projects/${project.id}/settings`} variant="secondary" pill>
               <Settings size={15} aria-hidden="true" />
