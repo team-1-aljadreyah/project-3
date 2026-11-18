@@ -136,7 +136,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
             </Select>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 text-[13px] text-muted">
             <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
             <AvatarStack users={members} />
@@ -144,7 +144,8 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
           {canManageProject(user, project) && (
             <ButtonLink to={`/projects/${project.id}/settings`} variant="secondary" pill>
               <Settings size={15} aria-hidden="true" />
-              {tr("الإعدادات", "Settings")}
+              {/* On a phone only the icon shows; screen readers still hear the name. */}
+              <span className="sr-only sm:not-sr-only">{tr("الإعدادات", "Settings")}</span>
             </ButtonLink>
           )}
           {canManageTasks(user, project) && (
