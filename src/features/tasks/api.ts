@@ -6,6 +6,8 @@ import type { MoveResult, Task, TaskComment, TaskEvent, TaskInput, TaskMove, Tas
 export interface TasksApi {
   /** Every task of a project (the board). */
   tasks(projectId: number): Promise<Task[]>;
+  /** The tasks assigned to the signed-in person, in every project they can see. */
+  myTasks(): Promise<Task[]>;
   task(id: number): Promise<Task>;
   createTask(projectId: number, input: TaskInput): Promise<Task>;
   updateTask(id: number, patch: TaskPatch): Promise<Task>;
@@ -22,6 +24,7 @@ const data = <T>(p: Promise<{ data: T }>) => p.then((r) => r.data);
 
 export const tasksHttp: TasksApi = {
   tasks: (projectId) => data(http.get<Task[]>(`/projects/${projectId}/tasks`)),
+  myTasks: () => data(http.get<Task[]>("/me/tasks")),
   task: (id) => data(http.get<Task>(`/tasks/${id}`)),
   createTask: (projectId, input) => data(http.post<Task>(`/projects/${projectId}/tasks`, input)),
   updateTask: (id, patch) => data(http.patch<Task>(`/tasks/${id}`, patch)),

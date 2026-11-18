@@ -1,5 +1,6 @@
 // The demo data: invented people and projects (never real ones), with dates around today so "late",
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
+import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
 import type { Priority, TaskStatus, User } from "@/shared/api/types";
@@ -25,8 +26,13 @@ export interface MockDb {
   events: TaskEvent[];
   /** Each project's history (setup changes). */
   project_events: ProjectEvent[];
+  notifications: Notification[];
+  /** Each person's notification choices, by user id. */
+  notification_prefs: Record<number, NotificationPrefs>;
   /** The last id given to each kind of record. */
-  seq: { project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number };
+  seq: {
+    project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
+  };
 }
 
 export function seed(now = new Date()): MockDb {
@@ -163,9 +169,27 @@ export function seed(now = new Date()): MockDb {
     { id: ++projectEventId, project_id: 1, actor_id: 2, kind: "dates", from: `${d(-40)} → ${d(20)}`, to: `${d(-40)} → ${d(25)}`, note: "أُضيف ربط المهام بمستودعات GitHub إلى نطاق العمل", at: at(12) },
   );
 
+  // A few notifications that already happened (the due-date reminders are made when someone opens the list).
+  const about = (code: string) => {
+    const t = tasks.find((x) => x.code === code)!;
+    const p = projects.find((x) => x.id === t.project_id)!;
+    return { project_id: p.id, task_id: t.id, data: { task_code: t.code, task_title: t.title, project_name: p.name, project_name_en: p.name_en } };
+  };
+  let notificationId = 0;
+  const notifications: Notification[] = [
+    { id: ++notificationId, user_id: 5, kind: "task_assigned", actor_id: 2, ...about("TSK-118"), at: at(9), read: true },
+    { id: ++notificationId, user_id: 2, kind: "approval_requested", actor_id: 6, ...about("TSK-099"), at: at(0, 9), read: false },
+    { id: ++notificationId, user_id: 4, kind: "task_comment", actor_id: 2, ...about("TSK-097"), at: at(1, 9), read: false },
+    { id: ++notificationId, user_id: 2, kind: "task_comment", actor_id: 5, ...about("TSK-104"), at: at(1, 14), read: true },
+    { id: ++notificationId, user_id: 7, kind: "project_added", actor_id: 2, project_id: 1, data: { project_name: projects[0].name, project_name_en: projects[0].name_en }, at: at(30), read: true },
+  ];
+
   return {
-    users, projects, sprints, tasks, comments, events, project_events,
-    seq: { project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length, project_event: projectEventId },
+    users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {},
+    seq: {
+      project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
+      project_event: projectEventId, notification: notificationId,
+    },
   };
 }
 

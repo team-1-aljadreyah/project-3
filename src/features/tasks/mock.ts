@@ -4,6 +4,7 @@
 import type { Project } from "@/features/projects";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
+import { aboutTask, notify } from "@/mock/notify";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { TasksApi } from "./api";
@@ -51,10 +52,20 @@ const touch = (task: Task) => {
   task.updated_at = nowIso();
 };
 
+/** Who approves completions in this project (the PM and its team leaders): they get the approval requests. */
+const approversOf = (project: Project) => data().users.filter((u) => u.active && u.role !== "ceo" && canManageTasks(u, project)).map((u) => u.id);
+
 export const tasksMock: TasksApi = {
   async tasks(projectId) {
     projectFor(currentUser(), projectId);
     return wait(data().tasks.filter((t) => t.project_id === projectId));
+  },
+
+  async myTasks() {
+    const user = currentUser();
+    const db = data();
+    const visible = new Set(db.projects.filter((p) => canSeeProject(user, p)).map((p) => p.id));
+    return wait(db.tasks.filter((t) => t.assignee_id === user.id && visible.has(t.project_id)));
   },
 
   async task(id) {
@@ -94,6 +105,7 @@ export const tasksMock: TasksApi = {
     };
     db.tasks.push(task);
     log({ task_id: id, actor_id: user.id, kind: "created" });
+    notify([task.assignee_id], "task_assigned", { actor_id: user.id, project_id: project.id, task_id: id, data: aboutTask(task, project) });
     commit();
     return wait(task);
   },
@@ -129,6 +141,10 @@ export const tasksMock: TasksApi = {
         note: kind === "due" ? p.due_note?.trim() || undefined : undefined,
       });
       (task as unknown as Record<string, unknown>)[field] = after;
+      // The person the task is now on is told; so is the assignee when their due day changes.
+      const about = { actor_id: user.id, project_id: project.id, task_id: id };
+      if (kind === "assignee" && after !== undefined) notify([Number(after)], "task_assigned", { ...about, data: aboutTask(task, project) });
+      if (kind === "due") notify([task.assignee_id], "task_due_changed", { ...about, data: { ...aboutTask(task, project), due: after === undefined ? undefined : String(after), note: p.due_note?.trim() || undefined } });
     }
     if (p.start !== undefined) task.start = p.start || undefined;
     if (p.sprint_id !== undefined && project.uses_sprints) task.sprint_id = p.sprint_id;
@@ -151,6 +167,7 @@ export const tasksMock: TasksApi = {
     if (plan === "request_approval") {
       task.approval = { state: "pending", from: task.status, to: move.status, requested_by: user.id, requested_at: nowIso() };
       log({ task_id: id, actor_id: user.id, kind: "approval_requested", from: task.status, to: move.status });
+      notify(approversOf(project), "approval_requested", { actor_id: user.id, project_id: project.id, task_id: id, data: aboutTask(task, project) });
       touch(task);
       commit();
       return wait({ task, outcome: "approval_requested" as const });
@@ -183,6 +200,12 @@ export const tasksMock: TasksApi = {
       // Moved elsewhere while waiting: the request is no longer current.
       task.approval = undefined;
     }
+    const about = { actor_id: user.id, project_id: project.id, task_id: id };
+    notify([task.assignee_id, project.pm_id], "task_status", { ...about, data: { ...aboutTask(task, project), status: target.name, status_en: target.name_en, note: reason } });
+    // Done by someone who may approve, while a request was waiting: the person who asked hears it was approved.
+    if (target.tone === "done" && task.approval?.requested_by !== user.id) {
+      notify([task.approval?.requested_by], "approval_decided", { ...about, data: { ...aboutTask(task, project), decision: "approved" } });
+    }
     touch(task);
     commit();
     return wait({ task, outcome: "moved" as const });
@@ -211,6 +234,10 @@ export const tasksMock: TasksApi = {
       log({ task_id: id, actor_id: user.id, kind: "rejected", from: a.to, to: a.from, note });
       task.status = a.from;
     }
+    notify([a.requested_by], "approval_decided", {
+      actor_id: user.id, project_id: project.id, task_id: id,
+      data: { ...aboutTask(task, project), decision: decision.approve ? "approved" : "rejected", note: a.note },
+    });
     touch(task);
     commit();
     return wait(task);
@@ -230,8 +257,11 @@ export const tasksMock: TasksApi = {
     if (text.length > LIMITS.comment) return invalid("body", `التعليق أطول من ${LIMITS.comment} حرف.`, `The comment is longer than ${LIMITS.comment} letters.`);
     const db = data();
     const comment = { id: ++db.seq.comment, task_id: taskId, author_id: user.id, body: text, created_at: nowIso() };
+    // The assignee, the PM and everyone who already commented hear about a new comment.
+    const talking = db.comments.filter((c) => c.task_id === taskId).map((c) => c.author_id);
     db.comments.push(comment);
     log({ task_id: taskId, actor_id: user.id, kind: "comment" });
+    notify([task.assignee_id, project.pm_id, ...talking], "task_comment", { actor_id: user.id, project_id: project.id, task_id: taskId, data: aboutTask(task, project) });
     touch(task);
     commit();
     return wait(comment);

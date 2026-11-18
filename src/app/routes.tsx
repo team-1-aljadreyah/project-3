@@ -25,6 +25,8 @@ export const router = createBrowserRouter([
           { path: "/projects/:id", lazy: () => import("@/features/tasks").then((m) => ({ Component: m.BoardPage })) },
           { path: "/projects/:id/settings", lazy: () => import("@/features/projects").then((m) => ({ Component: m.ProjectSettingsPage })) },
           { path: "/tasks/:id", lazy: () => import("@/features/tasks").then((m) => ({ Component: m.TaskPage })) },
+          { path: "/my-tasks", lazy: () => import("@/features/tasks").then((m) => ({ Component: m.MyTasksPage })) },
+          { path: "/notifications", lazy: () => import("@/features/notifications").then((m) => ({ Component: m.NotificationsPage })) },
         ],
       },
       { path: "*", Component: NotFoundPage },
