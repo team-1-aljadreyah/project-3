@@ -59,8 +59,12 @@ test.describe("on a computer", () => {
     // "Picked up", then at once "over its own column" (the second message replaces the first).
     await expect(heard).toContainText(/بدأ سحب TSK-118|فوق عمود جديدة/);
     // Right to left: the next column ("قيد الانتظار") is on the left.
-    await page.keyboard.press("ArrowLeft");
-    await expect(heard).toContainText("فوق عمود قيد الانتظار");
+    // dnd-kit starts listening for the arrows a moment after the pick-up (a setTimeout in its KeyboardSensor), so a
+    // robot-fast press can be missed. Press again until it is heard, but never again once it was.
+    await expect(async () => {
+      if (!(await heard.textContent())?.includes("فوق عمود قيد الانتظار")) await page.keyboard.press("ArrowLeft");
+      await expect(heard).toContainText("فوق عمود قيد الانتظار", { timeout: 300 });
+    }).toPass({ timeout: 5000 });
     await page.keyboard.press("Space");
     await expect(heard).toContainText("أُفلتت TSK-118 في عمود قيد الانتظار");
     await expect(column(page, "قيد الانتظار").getByRole("link", { name: /TSK-118/ })).toBeVisible();
