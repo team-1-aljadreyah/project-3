@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { NotFoundPage } from "./not-found-page";
+import { PageLoading } from "./page-loading";
 import { RootLayout } from "./root-layout";
 import { RouteError } from "./route-error";
 import { SignedInLayout } from "./signed-in-layout";
@@ -12,6 +13,8 @@ export const router = createBrowserRouter([
   {
     Component: RootLayout,
     ErrorBoundary: RouteError,
+    // While the first page's code downloads (lazy, below), this shows instead. Without it the router warns.
+    HydrateFallback: PageLoading,
     children: [
       { path: "/login", lazy: () => import("@/features/auth").then((m) => ({ Component: m.LoginPage })) },
       {
