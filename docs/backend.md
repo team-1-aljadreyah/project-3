@@ -136,6 +136,12 @@ Every change updates the task's `updated_at`.
 | `GET /tasks/:id/attachments`, `GET /projects/:id/attachments` | can see the project | `Attachment[]` |
 | `POST /tasks/:id/attachments`, `POST /projects/:id/attachments` | takes part in the project (see section 8) | `Attachment` |
 | `DELETE /attachments/:id` | the uploader, the project's PM, `ceo` | nothing |
+| `GET /announcements` | signed in | `Announcement[]`, important first, then newest |
+| `GET /announcements/:id` | signed in | `Announcement` |
+| `POST /announcements` | `ceo`, `admin` | `Announcement` |
+| `DELETE /announcements/:id` | its author, `ceo`, `admin` | nothing |
+| `POST /announcements/:id/seen` | signed in | nothing |
+| `GET /announcements/:id/reads` | its author, `ceo`, `admin` | `{ seen: [{user_id, at}], not_seen: number[] }` |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
 (`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
@@ -215,13 +221,15 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `project_added` | a project is created with you in it, or you are added | the new member |
 | `project_pm` | the PM changes (data: `pm_id`, `note`) | every member, the new PM included |
 | `project_plan` | the project's dates change (data: `due` = the new end, `note`) | every member |
+| `announcement` | a new announcement is posted (`announcement_id`; data: `title`) | every active person except the author |
 
 **Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
 them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
 
 **Preferences** (`PUT /notifications/preferences`, `{ [kind]: boolean }`; a missing kind means on): **required kinds can't be
 turned off** (`false` → 422 on `prefs`), and unknown kinds → 422. *Assumption, to confirm with the client:* the required ones
-are `task_assigned`, `task_overdue`, `approval_requested`, `approval_decided`, `project_added`.
+are `task_assigned`, `task_overdue`, `approval_requested`, `approval_decided`, `project_added`, `announcement` (the brief says
+employees receive a notification for each new announcement).
 
 Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something; with the
 real server, a WebSocket message `notification` (planned, as in Project 2) will tell the site to load the list again.
@@ -250,7 +258,25 @@ downloads it from (a short-lived signed link is fine). The site shows a preview 
 **Removing** (`DELETE /attachments/:id`): the person who uploaded it, the project's PM, or the `ceo` (403 otherwise). Log
 `attachment_removed` (`from`: the name). The history keeps the name even after the file is gone.
 
-## 9. Coming next (not used by the site yet)
+## 9. Announcements
 
-Project templates and task dependencies, chat,
-announcements, bugs, reports, performance, GitHub. Chat @mentions and bug events will add their notification kinds. Each will add its section here in its own PR.
+Shapes: `src/features/announcements/types.ts`. Rules: `src/features/announcements/rules.ts`. The demo backend
+(`src/features/announcements/mock.ts`) is the reference.
+
+`Announcement`: `{id, title, body, important, author_id, created_at, seen, seen_count, audience_count}`. `seen` is for the
+person asking; `seen_count` / `audience_count` count active people only.
+
+- **Who posts** (`POST /announcements {title, body, important}`): `ceo` and `admin` ("the management"; 403 for others).
+  `title` required, trimmed, ≤ 160 (422 on `title`); `body` ≤ 5000. *(Assumption, to confirm with the client.)*
+- **Audience:** every active person in the company. The author counts as having seen it. Everyone else gets the
+  `announcement` notification (section 7), which can't be turned off.
+- **Seen:** `POST /announcements/:id/seen` when someone opens it. Only the first time counts (keep its time).
+- **Who has seen it** (`GET /announcements/:id/reads`): the author, `ceo`, `admin` (403 for others). `seen` in the order
+  people opened it, `not_seen` = active people who haven't.
+- **Order:** important ones first, then newest first.
+- **No editing** (*assumption*): what people saw stays what it was. To fix a mistake: `DELETE /announcements/:id` (author,
+  `ceo`, `admin`) and post again. The audit log (a later part) must record the removal.
+
+## 10. Coming next (not used by the site yet)
+
+Project templates and task dependencies, chat, bugs, reports, performance, GitHub. Chat @mentions and bug events will add their notification kinds. Each will add its section here in its own PR.
