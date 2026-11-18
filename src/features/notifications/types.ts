@@ -15,6 +15,7 @@ export interface Notification {
   actor_id?: number;
   project_id?: number;
   task_id?: number;
+  announcement_id?: number;
   data: NotificationData;
   at: string;
   read: boolean;
@@ -36,6 +37,8 @@ export interface NotificationData {
   note?: string;
   /** project_pm: the new manager's id. */
   pm_id?: string;
+  /** announcement: its title. */
+  title?: string;
 }
 
 /** Which notifications a person wants. A missing kind means "on". Required kinds are always on. */

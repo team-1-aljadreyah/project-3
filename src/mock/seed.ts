@@ -1,5 +1,6 @@
 // The demo data: invented people and projects (never real ones), with dates around today so "late",
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
+import type { Announcement } from "@/features/announcements";
 import type { Attachment } from "@/features/attachments";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, Sprint } from "@/features/projects";
@@ -30,12 +31,15 @@ export interface MockDb {
   notifications: Notification[];
   /** Files attached to tasks and projects (the demo keeps each file's bytes in `url`). */
   attachments: Attachment[];
+  announcements: Omit<Announcement, "seen" | "seen_count" | "audience_count">[];
+  /** Who has seen which announcement, and when. */
+  announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number;
+    attachment: number; announcement: number;
   };
 }
 
@@ -204,11 +208,36 @@ export function seed(now = new Date()): MockDb {
     },
   ];
 
+  // Two announcements: an important one from the CEO that some have seen, one from the admin that most have seen.
+  const announcements: MockDb["announcements"] = [
+    {
+      id: 1, title: "اجتماع عام يوم الخميس", important: true, author_id: 1, created_at: at(1, 9),
+      body: "يُعقد اجتماع عام لكل الموظفين يوم الخميس في العاشرة صباحاً، لعرض خطة الربع القادم. الحضور مطلوب.",
+    },
+    {
+      id: 2, title: "صيانة الخوادم ليلة السبت", important: false, author_id: 8, created_at: at(4, 11),
+      body: "تتوقف المنصة عن العمل ليلة السبت من الحادية عشرة حتى الواحدة صباحاً لأعمال صيانة.",
+    },
+  ];
+  const announcement_reads: MockDb["announcement_reads"] = [
+    { announcement_id: 1, user_id: 1, at: at(1, 9) },
+    { announcement_id: 1, user_id: 2, at: at(1, 10) },
+    { announcement_id: 1, user_id: 4, at: at(0, 9) },
+    ...[8, 1, 2, 3, 4, 5].map((user_id, i) => ({ announcement_id: 2, user_id, at: at(4, 11 + i) })),
+  ];
+  notifications.push(
+    ...[3, 4, 5, 6, 7, 8].map((user_id) => ({
+      id: ++notificationId, user_id, kind: "announcement" as const, actor_id: 1, announcement_id: 1,
+      data: { title: announcements[0].title }, at: at(1, 9), read: user_id === 4,
+    })),
+  );
+
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
+    announcements, announcement_reads,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
-      project_event: projectEventId, notification: notificationId, attachment: attachments.length,
+      project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
     },
   };
 }

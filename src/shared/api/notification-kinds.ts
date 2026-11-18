@@ -12,7 +12,8 @@ export type NotificationKind =
   | "approval_decided"
   | "project_added"
   | "project_pm"
-  | "project_plan";
+  | "project_plan"
+  | "announcement";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -26,6 +27,7 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "project_added",
   "project_pm",
   "project_plan",
+  "announcement",
 ];
 
 /**
@@ -38,4 +40,5 @@ export const REQUIRED_NOTIFICATIONS = new Set<NotificationKind>([
   "approval_requested",
   "approval_decided",
   "project_added",
+  "announcement",
 ]);

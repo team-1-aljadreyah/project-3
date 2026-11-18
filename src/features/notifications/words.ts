@@ -16,6 +16,7 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   approval_decided: { ar: "قرار الاعتماد", en: "Approval is decided", hint_ar: "عند اعتماد إكمال مهمة طلبتَه أو إرجاعها.", hint_en: "When a completion you asked for is approved or sent back." },
   project_added: { ar: "إضافتك إلى مشروع", en: "You're added to a project", hint_ar: "عند إضافتك إلى أعضاء مشروع.", hint_en: "When you become a project member." },
   project_pm: { ar: "تغيير مدير المشروع", en: "A project's manager changes", hint_ar: "لكل أعضاء المشروع.", hint_en: "For all the project's members." },
+  announcement: { ar: "إعلان جديد من الإدارة", en: "A new announcement", hint_ar: "عند نشر إعلان لكل الشركة.", hint_en: "When the management posts one for everyone." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
 };
 
@@ -55,6 +56,8 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أضافك إلى مشروع ${project}`, `${who} added you to ${project}`);
     case "project_pm":
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
+    case "announcement":
+      return tr(`${who} نشر إعلاناً: ${d.title ?? ""}`, `${who} posted an announcement: ${d.title ?? ""}`);
     case "project_plan":
       return tr(`${who} غيّر خطة ${project}: الإنجاز المتوقع ${d.due ? day(d.due) : "-"}`, `${who} changed ${project}'s plan: expected end ${d.due ? day(d.due) : "-"}`);
   }
@@ -65,9 +68,10 @@ export function notificationDetail(n: Notification) {
   return n.data.note || n.data.task_title || undefined;
 }
 
-/** Where a click on the notification goes: its task, else its project. */
+/** Where a click on the notification goes: its task, its announcement, else its project. */
 export function notificationLink(n: Notification) {
   if (n.task_id) return `/tasks/${n.task_id}`;
+  if (n.announcement_id) return `/announcements/${n.announcement_id}`;
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";
 }
