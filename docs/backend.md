@@ -40,6 +40,8 @@ The server must filter, not only the pages:
 - **Move a task:** the managers above, or the task's assignee if they are a member.
 - **Approve completion:** the managers above, and the `ceo`. *(Not confirmed by the client yet: BRIEF question 5.)*
 - **Comment:** everyone who can see the project, except `admin`.
+- **Create a project:** `ceo` and `pm`. A `pm` always becomes the new project's manager (`pm_id` = themselves, whatever was sent). *(Assumption, to confirm with the client.)*
+- **Change a project's setup** (details, members, statuses, phases, sprints): the project's PM and the `ceo`. **Change the PM:** `ceo` only. *(Assumptions, to confirm with the client.)*
 
 ## 3. Task statuses
 
@@ -48,6 +50,8 @@ The server must filter, not only the pages:
 - `tone` is the family: `new`, `todo`, `progress`, `review`, `testing`, `done`, `blocked`. The rules work by
   family, so a project's own status (for example «بانتظار موافقة الإدارة», tone `review`) follows them too.
 - A task's `status` is one of its project's keys.
+- The seven base statuses stay in every project (the brief), with their names and families. A project's own
+  statuses can be added, renamed, moved and removed (see section 6).
 
 ## 4. The task rules (the brief)
 
@@ -88,7 +92,10 @@ The server must filter, not only the pages:
 **History** (`GET /tasks/:id/history`): every event `{id, task_id, actor_id, kind, from?, to?, note?, at}`.
 **It can't be edited or deleted by anyone through the API**, and normal users can't hide it (the brief).
 `kind`: `created`, `status`, `blocked`, `unblocked`, `approval_requested`, `approved`, `rejected`,
-`assignee`, `due`, `priority`, `title`, `description`, `comment`.
+`assignee`, `due`, `priority`, `title`, `description`, `phase` (old and new phase ids), `comment`.
+
+**Phases on tasks:** `phase_id` (on create and PATCH) must be one of the project's phases (422 on `phase_id`).
+On PATCH, `null` takes the task out of its phase.
 
 Every change updates the task's `updated_at`.
 
@@ -111,11 +118,69 @@ Every change updates the task's `updated_at`.
 | `GET /tasks/:id/comments` | can see its project | `TaskComment[]` |
 | `POST /tasks/:id/comments` | see section 2 | `TaskComment` |
 | `GET /tasks/:id/history` | can see its project | `TaskEvent[]` |
+| `POST /projects` | `ceo`, `pm` | `Project` |
+| `PATCH /projects/:id` | its PM, `ceo` | `Project` |
+| `PUT /projects/:id/statuses` | its PM, `ceo` | `Project` |
+| `PUT /projects/:id/phases` | its PM, `ceo` | `Project` |
+| `POST /projects/:id/sprints` | its PM, `ceo` | `Sprint` |
+| `PATCH /sprints/:id` | its project's PM, `ceo` | `Sprint` |
+| `DELETE /sprints/:id` | its project's PM, `ceo` | nothing |
+| `GET /projects/:id/history` | can see it | `ProjectEvent[]` |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
 (`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
 
-## 6. Coming next (not used by the site yet)
+## 6. Project setup
 
-Notifications (from the history events above), file attachments, project setup (members, phases, templates,
-custom statuses), chat, announcements, bugs, reports, performance, GitHub. Each will add its section here in its own PR.
+`Project` now also has `phases: [{id, name}]`, in order (`[]` = the project doesn't use phases; the brief says
+they are optional). Shapes: `src/features/projects/types.ts`. Rules: `src/features/projects/rules.ts`.
+The demo backend (`src/features/projects/mock.ts`) is the exact reference.
+
+**Creating** (`POST /projects {name, name_en?, description, pm_id, member_ids, start, end, priority, uses_sprints}`):
+
+- `name` required, trimmed, ≤ 120 (422 on `name`). `description` ≤ 5000. `start` and `end` required days, `end` not
+  before `start` (422 on `end`).
+- `pm_id`: an active user with role `pm` (422 on `pm_id`). `member_ids`: active users, never an `admin`
+  (422 on `member_ids`). The PM is always added to `member_ids`.
+- The server makes `code` (`PRJ-…`), starts the project with the seven base statuses and `phases: []`, and sets
+  `state` to `planned` (start in the future) or `active`. Log `created`.
+
+**Changing** (`PATCH /projects/:id`, any of the fields above plus `state` and `note`):
+
+- Same checks as creating. `note` (≤ 300) is the reason; it goes into the history events below.
+- `pm_id` changed by someone who isn't the `ceo` → 403. The old PM **stays a member** (their tasks keep working).
+- **Members:** removing someone who still has open (not done) tasks in the project → **409 `BAD_STATE`**, with their
+  name in the message: the tasks must go to another member first. The PM can't be removed while they are the PM.
+- **History events** (the brief's edge cases: a changed team or PM, a plan changed after work started):
+  `member_added` (`to`: user id), `member_removed` (`from`), `pm` (`from`/`to`), `dates`
+  (`from`/`to` as `"start → end"`, with the `note`), `state` (`from`/`to`), `details` (`to`: the changed
+  field names, comma-separated).
+
+**Statuses** (`PUT /projects/:id/statuses {statuses: [{key?, name, name_en, tone}]}`, the whole list in board order):
+
+- Every base status the project has must still be there, with the same `tone` (422 on `statuses`). Base names
+  can't change.
+- A new status has no `key`: the server makes one that never changes (the site never sends its own).
+- Names: not empty, ≤ 40, unique in the project. `name_en` empty → the Arabic name. At most 15 statuses.
+  The first status can't be in the `blocked` or `done` family (new tasks start there). All: 422 on `statuses`.
+- Removing a status that tasks are in → **409**, with the count. Log `statuses` (`from`/`to`: the names).
+
+**Phases** (`PUT /projects/:id/phases {phases: [{id?, name}]}`, the whole list in order):
+
+- A new phase has no `id`. Names not empty, ≤ 80, unique; at most 20 (422 on `phases`).
+- Removing a phase that tasks are in → **409**, with the count. Log `phases`.
+
+**Sprints** (`POST /projects/:id/sprints`, `PATCH /sprints/:id`, both `{name, start, end}`; `DELETE /sprints/:id`):
+
+- Only for a project with `uses_sprints` (409 otherwise). `name` ≤ 60 (422 on `name`); days required, `end` not
+  before `start` (422 on `end`).
+- Sprints of one project **can't overlap** (422 on `start`, naming the other sprint).
+- Deleting a sprint that has tasks → **409**. Log `sprint_added` / `sprint_changed` / `sprint_removed`.
+
+**History** (`GET /projects/:id/history`): `[{id, project_id, actor_id, kind, from?, to?, note?, at}]`. Like the
+task history, nobody can edit or hide it through the API.
+
+## 7. Coming next (not used by the site yet)
+
+Notifications (from the history events above), file attachments, project templates and task dependencies, chat,
+announcements, bugs, reports, performance, GitHub. Each will add its section here in its own PR.

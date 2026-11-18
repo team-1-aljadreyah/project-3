@@ -1,15 +1,15 @@
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { authApi } from "@/features/auth";
-import { countTasks, PROJECT_STATE, projectsApi, type Project, type Sprint } from "@/features/projects";
+import { canManageProject, countTasks, PROJECT_STATE, projectsApi, type Project, type Sprint } from "@/features/projects";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { today as todayIso } from "@/shared/lib/utils";
-import { AvatarStack, Button, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
+import { AvatarStack, Button, ButtonLink, ErrorBox, LoadingBlock, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
 import { tasksApi } from "../api";
 import { Kanban } from "../components/kanban";
 import { TaskForm } from "../components/task-form";
@@ -49,6 +49,9 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
   const today = todayIso();
   const { move, dialog } = useMoveTask(user, project, reload);
   const [adding, setAdding] = useState(false);
+  // The board can show one phase at a time: "" = every task, "none" = tasks with no phase, or a phase id.
+  const [phase, setPhase] = useState("");
+  const shown = !phase ? tasks : tasks.filter((t) => (phase === "none" ? !t.phase_id : String(t.phase_id) === phase));
 
   const counts = countTasks(project, tasks, today);
   // The sprint running today, if the project works in sprints.
@@ -119,12 +122,32 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold">{tr("لوحة المهام", "Task board")}</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-base font-semibold">{tr("لوحة المهام", "Task board")}</h2>
+          {project.phases.length > 0 && (
+            <Select aria-label={tr("عرض مرحلة", "Show a phase")} value={phase} onChange={(e) => setPhase(e.target.value)} className="h-9 w-auto">
+              <option value="">{tr("كل المراحل", "All phases")}</option>
+              {project.phases.map((ph) => (
+                <option key={ph.id} value={ph.id}>
+                  {ph.name}
+                </option>
+              ))}
+              <option value="none">{tr("بلا مرحلة", "No phase")}</option>
+            </Select>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 text-[13px] text-muted">
             <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
             <AvatarStack users={members} />
           </div>
+          {canManageProject(user, project) && (
+            <ButtonLink to={`/projects/${project.id}/settings`} variant="secondary" pill>
+              <Settings size={15} aria-hidden="true" />
+              {/* On a phone only the icon shows; screen readers still hear the name. */}
+              <span className="sr-only sm:not-sr-only">{tr("الإعدادات", "Settings")}</span>
+            </ButtonLink>
+          )}
           {canManageTasks(user, project) && (
             <Button pill onClick={() => setAdding(true)}>
               <Plus size={16} aria-hidden="true" />
@@ -134,7 +157,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
         </div>
       </div>
 
-      <Kanban project={project} tasks={tasks} users={users} user={user} today={today} onMove={move} />
+      <Kanban project={project} tasks={shown} users={users} user={user} today={today} onMove={move} />
 
       {dialog}
       <TaskForm

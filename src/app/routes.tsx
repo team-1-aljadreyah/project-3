@@ -23,6 +23,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, lazy: () => import("@/features/projects").then((m) => ({ Component: m.ProjectsPage })) },
           { path: "/projects/:id", lazy: () => import("@/features/tasks").then((m) => ({ Component: m.BoardPage })) },
+          { path: "/projects/:id/settings", lazy: () => import("@/features/projects").then((m) => ({ Component: m.ProjectSettingsPage })) },
           { path: "/tasks/:id", lazy: () => import("@/features/tasks").then((m) => ({ Component: m.TaskPage })) },
         ],
       },

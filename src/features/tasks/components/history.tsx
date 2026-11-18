@@ -6,7 +6,7 @@ import { statusOf } from "../rules";
 import type { TaskEvent } from "../types";
 
 /** One history line in words: "نقلها من «قيد التنفيذ» إلى «قيد المراجعة»". */
-function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses">, people: Map<number, User>) {
+function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses" | "phases">, people: Map<number, User>) {
   const { tr, lang, day } = fmt;
   const status = (key?: string) => {
     const s = key ? statusOf(project, key) : undefined;
@@ -16,6 +16,7 @@ function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses">, p
     const u = id ? people.get(Number(id)) : undefined;
     return u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-";
   };
+  const phase = (id?: string) => `«${project.phases.find((ph) => String(ph.id) === id)?.name ?? "-"}»`;
   const priority = (p?: string) => (p && p in PRIORITY ? tr(PRIORITY[p as Priority].ar, PRIORITY[p as Priority].en) : "-");
 
   switch (e.kind) {
@@ -43,6 +44,8 @@ function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses">, p
       return tr("غيّر العنوان", "changed the title");
     case "description":
       return tr("عدّل الوصف", "edited the description");
+    case "phase":
+      return e.to ? tr(`نقلها إلى مرحلة ${phase(e.to)}`, `moved it to the ${phase(e.to)} phase`) : tr("أخرجها من المراحل", "took it out of its phase");
     case "comment":
       return tr("أضاف تعليقاً", "commented");
   }

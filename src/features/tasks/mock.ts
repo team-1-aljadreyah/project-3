@@ -42,6 +42,9 @@ function checkFields(project: Project, f: Partial<TaskPatch> & { title?: string 
   if (f.sprint_id !== undefined && f.sprint_id !== null && !data().sprints.some((s) => s.id === f.sprint_id && s.project_id === project.id)) {
     invalid("sprint_id", "الدورة ليست من هذا المشروع.", "The sprint is not in this project.");
   }
+  if (f.phase_id !== undefined && f.phase_id !== null && !project.phases.some((ph) => ph.id === f.phase_id)) {
+    invalid("phase_id", "المرحلة ليست من هذا المشروع.", "The phase is not in this project.");
+  }
 }
 
 const touch = (task: Task) => {
@@ -81,6 +84,7 @@ export const tasksMock: TasksApi = {
       due: fields.due || undefined,
       start: fields.start || undefined,
       sprint_id: project.uses_sprints ? fields.sprint_id : undefined,
+      phase_id: fields.phase_id || undefined,
       status,
       subtasks_done: 0,
       subtasks_total: 0,
@@ -106,6 +110,7 @@ export const tasksMock: TasksApi = {
       ["assignee_id", "assignee"],
       ["priority", "priority"],
       ["due", "due"],
+      ["phase_id", "phase"],
     ];
     for (const [field, kind] of changes) {
       if (p[field] === undefined) continue;

@@ -74,6 +74,7 @@ function TaskView({ task, project, users, sprints, comments, history, reload }: 
   const assignee = task.assignee_id ? people.get(task.assignee_id) : undefined;
   const creator = task.created_by ? people.get(task.created_by) : undefined;
   const sprint = sprints.find((s) => s.id === task.sprint_id);
+  const phase = project.phases.find((ph) => ph.id === task.phase_id);
   const today = todayIso();
   const late = lateDays(project, task, today);
   const nameOf = (u?: User) => (u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-");
@@ -199,6 +200,12 @@ function TaskView({ task, project, users, sprints, comments, history, reload }: 
                 {projectName}
               </Link>
             </dd>
+            {phase && (
+              <>
+                <dt className="text-muted">{tr("المرحلة", "Phase")}</dt>
+                <dd>{phase.name}</dd>
+              </>
+            )}
             {sprint && (
               <>
                 <dt className="text-muted">{tr("الدورة", "Sprint")}</dt>

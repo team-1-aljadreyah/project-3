@@ -18,6 +18,7 @@ interface Values {
   due: string;
   due_note: string;
   sprint_id: string;
+  phase_id: string;
   status: string;
 }
 
@@ -30,6 +31,7 @@ const fromTask = (t: Task | undefined, project: Project, sprint?: Sprint): Value
   due: t?.due ?? "",
   due_note: "",
   sprint_id: t ? (t.sprint_id ? String(t.sprint_id) : "") : sprint ? String(sprint.id) : "",
+  phase_id: t?.phase_id ? String(t.phase_id) : "",
   status: t?.status ?? project.statuses[0].key,
 });
 
@@ -98,6 +100,7 @@ export function TaskForm({
           due: v.due,
           due_note: dueChanged ? v.due_note : undefined,
           sprint_id: v.sprint_id ? Number(v.sprint_id) : undefined,
+          phase_id: project.phases.length ? (v.phase_id ? Number(v.phase_id) : null) : undefined,
         };
         saved = await tasksApi.updateTask(task.id, patch);
       } else {
@@ -109,6 +112,7 @@ export function TaskForm({
           start: v.start || undefined,
           due: v.due || undefined,
           sprint_id: v.sprint_id ? Number(v.sprint_id) : undefined,
+          phase_id: v.phase_id ? Number(v.phase_id) : undefined,
           status: v.status,
         });
       }
@@ -193,6 +197,19 @@ export function TaskForm({
           <Field label={tr("موعد التسليم", "Due")} htmlFor="task-due" error={errors.due}>
             <Input id="task-due" type="date" value={v.due} min={v.start || undefined} invalid={!!errors.due} onChange={(e) => set("due", e.target.value)} />
           </Field>
+
+          {project.phases.length > 0 && (
+            <Field label={tr("المرحلة", "Phase")} htmlFor="task-phase" error={errors.phase_id}>
+              <Select id="task-phase" value={v.phase_id} invalid={!!errors.phase_id} onChange={(e) => set("phase_id", e.target.value)}>
+                <option value="">{tr("بلا مرحلة", "No phase")}</option>
+                {project.phases.map((ph) => (
+                  <option key={ph.id} value={ph.id}>
+                    {ph.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
 
           {project.uses_sprints && sprints.length > 0 && (
             <Field label={tr("الدورة", "Sprint")} htmlFor="task-sprint" error={errors.sprint_id}>
