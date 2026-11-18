@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { cleanApiUrl } from "@/lib/config";
-import { arDays, makeFmt } from "@/lib/format";
-import { safeNext } from "@/lib/safe-next";
-import { daysBetween, matches, today } from "@/lib/utils";
+import { safeNext } from "@/features/auth/safe-next";
+import { LOCALE_KEY, THEME_KEY } from "@/shared/lib/boot";
+import { cleanApiUrl } from "@/shared/lib/config";
+import { arDays, makeFmt } from "@/shared/lib/format";
+import { daysBetween, matches, today } from "@/shared/lib/utils";
 
 describe("cleanApiUrl", () => {
   it("cuts a trailing slash and /api/v1 (axios adds /api/v1 itself)", () => {
@@ -77,5 +79,13 @@ describe("dates and search", () => {
     expect(matches("اعلان", "صفحة إعلانات الشركة")).toBe(true);
     expect(matches("مهمه", "مهمة جديدة")).toBe(true);
     expect(matches("تقرير", "صفحة إعلانات الشركة")).toBe(false);
+  });
+});
+
+describe("the start-up script in index.html", () => {
+  it("reads the same language and theme keys as the app (or the saved choice is lost on reload)", () => {
+    const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+    expect(html).toContain(`localStorage.getItem("${LOCALE_KEY}")`);
+    expect(html).toContain(`localStorage.getItem("${THEME_KEY}")`);
   });
 });

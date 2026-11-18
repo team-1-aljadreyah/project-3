@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* Dark mode follows the "dark" class on <html> (set by the theme switch), not only the system setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* The approved design (board D, 16 November 2026): warm paper background, ink text, ONE strong colour (indigo)
+   for actions, and a soft colour per task-status family. Every colour on the site comes from these tokens. */
+:root {
+  --bg: #f5f4f0;            /* page: warm paper */
+  --card: #ffffff;          /* cards, the top bar */
+  --card-2: #faf9f6;        /* inner boxes */
+  --chip: #ecebe6;          /* neutral chips, empty bars */
+  --text: #1b1e23;          /* ink */
+  --muted: #5d626a;         /* second lines (5.9:1 on the page) */
+  --faint: #686d75;         /* placeholders (4.6:1 on white) */
+  --line: #e1ded6;
+  --line-strong: #cfcbc1;
+
+  --accent: #3346d3;        /* indigo: buttons, links, the active tab */
+  --accent-hover: #2a3bb8;
+  --accent-soft: #e6e9fb;
+  --accent-ink: #2633a8;    /* indigo text on the soft indigo */
+  --on-accent: #ffffff;
+
+  --danger: #a3261b;
+  --danger-soft: #fbe7e5;
+  --success: #1b6b43;
+  --success-soft: #dcf2e6;
+
+  /* Task-status families: soft background + readable text (each pair ≥ 4.5:1). */
+  --st-new: #e9e8e3;      --st-new-ink: #45484f;
+  --st-todo: #ece6f8;     --st-todo-ink: #55399e;
+  --st-progress: #e6e9fb; --st-progress-ink: #2633a8;
+  --st-review: #fcefd9;   --st-review-ink: #7a4500;
+  --st-testing: #dcedf8;  --st-testing-ink: #165f86;
+  --st-done: #dcf2e6;     --st-done-ink: #1b6b43;
+  --st-blocked: #fbe7e5;  --st-blocked-ink: #a3261b;
+
+  /* Avatars: one pair per person (picked by their id). */
+  --av-1: #e6e9fb; --av-1-ink: #2633a8;
+  --av-2: #dcf2e6; --av-2-ink: #1b6b43;
+  --av-3: #fcefd9; --av-3-ink: #7a4500;
+  --av-4: #fbe3ec; --av-4-ink: #8e1f4c;
+  --av-5: #dcedf8; --av-5-ink: #165f86;
+
+  --shadow: 0 1px 3px rgb(20 22 30 / 0.05);
+}
+
+.dark {
+  --bg: #121418;
+  --card: #1b1e23;
+  --card-2: #16181c;
+  --chip: #262a31;
+  --text: #ecedef;
+  --muted: #a2a7af;
+  --faint: #8d929a;
+  --line: #2a2e35;
+  --line-strong: #3a3f47;
+
+  --accent: #8c9bff;
+  --accent-hover: #a3afff;
+  --accent-soft: #252a4d;
+  --accent-ink: #c3cbff;
+  --on-accent: #0d1033;
+
+  --danger: #ffaaa2;
+  --danger-soft: #3a1d1d;
+  --success: #86dcae;
+  --success-soft: #143a2a;
+
+  --st-new: #2a2e35;      --st-new-ink: #c4c8cf;
+  --st-todo: #2e2547;     --st-todo-ink: #cdb9ff;
+  --st-progress: #252a4d; --st-progress-ink: #c3cbff;
+  --st-review: #3a2a12;   --st-review-ink: #f6c681;
+  --st-testing: #14324a;  --st-testing-ink: #9fd3ff;
+  --st-done: #143a2a;     --st-done-ink: #86dcae;
+  --st-blocked: #3a1d1d;  --st-blocked-ink: #ffaaa2;
+
+  --av-1: #252a4d; --av-1-ink: #c3cbff;
+  --av-2: #143a2a; --av-2-ink: #86dcae;
+  --av-3: #3a2a12; --av-3-ink: #f6c681;
+  --av-4: #3a1d2a; --av-4-ink: #ffb3cf;
+  --av-5: #14324a; --av-5-ink: #9fd3ff;
+
+  --shadow: none;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-chip: var(--chip);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --font-sans: "Readex Pro Variable", system-ui, sans-serif; /* from @fontsource-variable/readex-pro (src/main.tsx) */
+  --shadow-card: var(--shadow);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Numbers line up in counts and dates. */
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@layer base {
+  /* Visible keyboard focus everywhere (in the base layer, so a field that draws its own focus can drop it). */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Thin scrollbars (in the base layer, so [scrollbar-width:none] can still hide one). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

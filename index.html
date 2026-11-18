@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- Arabic and right-to-left by default. The script below switches to the saved language and theme
+     before the first paint, so nothing flashes. -->
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="منصة الشركة لإدارة المشاريع والمهام والفرق ومتابعة الإنجاز" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f4f0" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121418" />
+    <title>منصة المشاريع</title>
+    <!-- The keys "p3.locale" and "p3.theme" must match LOCALE_KEY and THEME_KEY in src/shared/lib/boot.ts
+         (a unit test checks it). -->
+    <script>
+      (function () {
+        try {
+          var l = localStorage.getItem("p3.locale");
+          if (l !== "en") l = "ar";
+          var d = document.documentElement;
+          d.lang = l;
+          d.dir = l === "ar" ? "rtl" : "ltr";
+          var t = localStorage.getItem("p3.theme");
+          if (t === "dark" || (t === null && window.matchMedia("(prefers-color-scheme: dark)").matches)) d.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="min-h-dvh antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

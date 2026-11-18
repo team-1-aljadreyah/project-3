@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { seed } from "@/lib/api/mock/seed";
-import { canApprove, canComment, canManageTasks, canMoveTask, planMove } from "@/lib/task-rules";
+import { canApprove, canComment, canManageTasks, canMoveTask, planMove } from "@/features/tasks/rules";
+import { seed } from "@/mock/seed";
 
 const db = seed(new Date(2026, 10, 16));
 const user = (id: number) => db.users.find((u) => u.id === id)!;

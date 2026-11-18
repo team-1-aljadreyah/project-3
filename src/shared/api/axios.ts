@@ -1,0 +1,50 @@
+import axios, { AxiosError, type AxiosResponse } from "axios";
+import { API_URL } from "../lib/config";
+import { currentLocale } from "../lib/boot";
+import { clearSession, getToken } from "../lib/session";
+import { dataChanged } from "../lib/live";
+import { ApiError, NETWORK_ERROR, type ErrorCode } from "./errors";
+
+// Calls to these paths never get the login token.
+const PUBLIC_PATHS = ["/auth/login", "/auth/refresh", "/auth/reset-password"];
+
+interface Envelope {
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  code?: ErrorCode;
+  errors?: Record<string, string>;
+}
+
+export const http = axios.create({
+  baseURL: `${API_URL}/api/v1`,
+  timeout: 20_000,
+});
+
+// Before each request: add the token (except on public paths) and the language for the server's messages.
+http.interceptors.request.use((config) => {
+  const isPublic = PUBLIC_PATHS.some((p) => config.url?.startsWith(p));
+  const token = getToken();
+  if (!isPublic && token) config.headers.Authorization = `Bearer ${token}`;
+  config.headers["Accept-Language"] = currentLocale();
+  return config;
+});
+
+// After each response: unwrap { success, data }, and turn every failure into an ApiError.
+// A change that worked (not a read, not signing in) tells the open screens to show the new data.
+http.interceptors.response.use(
+  (res: AxiosResponse<Envelope>) => {
+    const body = res.data;
+    if (body && body.success === false) throw new ApiError(res.status, body.message ?? "", body.errors, body.code);
+    const method = (res.config.method ?? "get").toLowerCase();
+    if (method !== "get" && !res.config.url?.startsWith("/auth/")) dataChanged();
+    return { ...res, data: body?.success ? body.data : body };
+  },
+  (err: AxiosError<Envelope>) => {
+    if (!err.response) throw new ApiError(NETWORK_ERROR, "", undefined, "NETWORK");
+    const { status, data } = err.response;
+    // The token is wrong or expired: sign out (the app sends the person to the login page).
+    if (status === 401) clearSession();
+    throw new ApiError(status, data?.message ?? "", data?.errors, data?.code);
+  },
+);

@@ -1,0 +1,152 @@
+// The demo data: invented people and projects (never real ones), with dates around today so "late",
+// "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
+import type { Project, Sprint } from "@/features/projects";
+import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
+import type { Priority, TaskStatus, User } from "@/shared/api/types";
+import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
+import { today } from "@/shared/lib/utils";
+
+/** The demo password of every demo account. Only the demo build has it. */
+export const DEMO_PASSWORD = "123456";
+
+/** One account per job for the login page's one-tap buttons (the demo build only). */
+export function demoAccounts() {
+  const users = seed().users;
+  const firstOf = (role: User["role"]) => users.find((u) => u.role === role)!;
+  return (["ceo", "pm", "monitor", "lead", "employee", "admin"] as const).map(firstOf);
+}
+
+export interface MockDb {
+  users: User[];
+  projects: Project[];
+  sprints: Sprint[];
+  tasks: Task[];
+  comments: TaskComment[];
+  events: TaskEvent[];
+  /** The last id given to each kind of record. */
+  seq: { task: number; comment: number; event: number };
+}
+
+export function seed(now = new Date()): MockDb {
+  const d = (offset: number) => today(offset, now);
+
+  const users: User[] = [
+    { id: 1, name: "مريم العبيدي", name_en: "Maryam Al-Obaidi", email: "ceo@demo.test", role: "ceo", title: "المديرة التنفيذية", active: true },
+    { id: 2, name: "أحمد كريم", name_en: "Ahmed Kareem", email: "pm@demo.test", role: "pm", title: "مدير مشاريع", active: true },
+    { id: 3, name: "هدى ناصر", name_en: "Huda Nasser", email: "monitor@demo.test", role: "monitor", title: "مسؤولة المتابعة والتقييم", active: true },
+    { id: 4, name: "مصطفى جواد", name_en: "Mustafa Jawad", email: "lead@demo.test", role: "lead", title: "قائد فريق التطوير", team_id: 1, active: true },
+    { id: 5, name: "سارة علي", name_en: "Sara Ali", email: "employee@demo.test", role: "employee", title: "مطورة واجهات", team_id: 1, active: true },
+    { id: 6, name: "علي حسين", name_en: "Ali Hussein", email: "ali@demo.test", role: "employee", title: "مطور خوادم", team_id: 1, active: true },
+    { id: 7, name: "زينب فاضل", name_en: "Zainab Fadhil", email: "zainab@demo.test", role: "employee", title: "مختبِرة جودة", team_id: 1, active: true },
+    { id: 8, name: "حسن رعد", name_en: "Hassan Raad", email: "admin@demo.test", role: "admin", title: "مسؤول النظام", active: true },
+  ];
+
+  // A non-software project with its own status (the brief: projects may add statuses).
+  const campaignStatuses: TaskStatus[] = [
+    ...DEFAULT_STATUSES.filter((s) => s.key !== "testing" && s.key !== "completed" && s.key !== "blocked"),
+    { key: "approval", name: "بانتظار موافقة الإدارة", name_en: "Awaiting approval", tone: "review" },
+    ...DEFAULT_STATUSES.filter((s) => s.key === "completed" || s.key === "blocked"),
+  ];
+
+  const projects: Project[] = [
+    {
+      id: 1, code: "PRJ-1", name: "منصة الحجز الإلكتروني", name_en: "Online booking platform",
+      description: "منصة يحجز منها العملاء مواعيدهم ويتابعونها، مع لوحة للموظفين.",
+      pm_id: 2, member_ids: [2, 4, 5, 6, 7], start: d(-40), end: d(25), state: "active", priority: "high",
+      uses_sprints: true, statuses: DEFAULT_STATUSES,
+    },
+    {
+      id: 2, code: "PRJ-2", name: "تطبيق المبيعات", name_en: "Sales app",
+      description: "تطبيق لمندوبي المبيعات لتسجيل الطلبات والزيارات.",
+      pm_id: 2, member_ids: [2, 4, 6], start: d(-20), end: d(50), state: "active", priority: "medium",
+      uses_sprints: false, statuses: DEFAULT_STATUSES,
+    },
+    {
+      id: 3, code: "PRJ-3", name: "حملة التسويق الشتوية", name_en: "Winter marketing campaign",
+      description: "حملة إعلانية للموسم الشتوي، دون مراحل ولا دورات.",
+      pm_id: 2, member_ids: [2, 7], start: d(5), end: d(45), state: "planned", priority: "low",
+      uses_sprints: false, statuses: campaignStatuses,
+    },
+  ];
+
+  const sprints: Sprint[] = [{ id: 1, project_id: 1, name: "الدورة 4", start: d(-6), end: d(5), planned_ratio: 0 }];
+
+  // A moment `days` ago at `hour` o'clock, for history and comments.
+  const at = (days: number, hour = 10) => {
+    const x = new Date(now);
+    x.setDate(x.getDate() - days);
+    x.setHours(hour, 0, 0, 0);
+    return x.toISOString();
+  };
+
+  let id = 0;
+  const task = (
+    project_id: number, code: string, title: string, status: string, priority: Priority,
+    assignee_id: number, due: number, sub: [number, number], blocked_reason?: string,
+  ): Task => ({
+    id: ++id, code, project_id, title, status, priority, assignee_id,
+    description: DESCRIPTIONS[code] ?? "",
+    sprint_id: project_id === 1 ? 1 : undefined, start: d(due - 7), due: d(due),
+    subtasks_done: sub[0], subtasks_total: sub[1], blocked_reason,
+    created_by: projects.find((p) => p.id === project_id)!.pm_id, created_at: at(9),
+    updated_at: at(1),
+  });
+
+  const tasks: Task[] = [
+    task(1, "TSK-118", "تصميم شاشة تسجيل الدخول", "new", "high", 5, 4, [0, 4]),
+    task(1, "TSK-121", "كتابة متطلبات تقرير الأداء", "new", "medium", 6, 8, [1, 3]),
+    task(1, "TSK-115", "إعداد بيئة الاختبار الآلي", "todo", "medium", 7, 3, [0, 2]),
+    task(1, "TSK-104", "ربط لوحة كانبان بالخادم", "in_progress", "high", 4, 1, [3, 5]),
+    task(1, "TSK-109", "صفحة إعلانات الشركة", "in_progress", "low", 5, -2, [1, 3]),
+    task(1, "TSK-099", "تنبيه اقتراب موعد التسليم", "in_review", "medium", 6, 2, [4, 4]),
+    task(1, "TSK-092", "من شاهد الإعلان ومن لم يشاهده", "testing", "low", 7, 3, [2, 2]),
+    task(1, "TSK-085", "إعداد الأدوار والصلاحيات", "completed", "high", 6, -4, [6, 6]),
+    task(1, "TSK-088", "سجل العمليات", "completed", "medium", 6, -1, [3, 3]),
+    task(1, "TSK-097", "ربط المهام بمستودعات GitHub", "blocked", "medium", 4, -1, [1, 4], "بانتظار صلاحية الوصول إلى المستودع"),
+    task(2, "TSK-201", "شاشة تسجيل الطلب", "in_progress", "high", 6, 6, [2, 5]),
+    task(2, "TSK-202", "مزامنة الطلبات بلا إنترنت", "todo", "high", 6, 12, [0, 3]),
+    task(2, "TSK-203", "تقرير زيارات المندوبين", "new", "medium", 4, 20, [0, 2]),
+    task(2, "TSK-204", "اختيار مزوّد الخرائط", "completed", "low", 4, -6, [1, 1]),
+    task(3, "TSK-301", "اختيار الرسائل الرئيسية للحملة", "approval", "medium", 7, 9, [2, 3]),
+    task(3, "TSK-302", "حجز المساحات الإعلانية", "new", "high", 2, 14, [0, 4]),
+  ];
+
+  // TSK-099: Ali asked to mark it done; it waits for the PM's approval.
+  const asked = tasks.find((t) => t.code === "TSK-099")!;
+  asked.approval = { state: "pending", from: "in_review", to: "completed", requested_by: 6, requested_at: at(0, 9) };
+
+  // The history: every task was created by its PM; some moved since.
+  let eventId = 0;
+  const events: TaskEvent[] = tasks.map((t) => ({ id: ++eventId, task_id: t.id, actor_id: t.created_by!, kind: "created", at: t.created_at! }));
+  const ev = (code: string, e: Omit<TaskEvent, "id" | "task_id">) =>
+    events.push({ id: ++eventId, task_id: tasks.find((t) => t.code === code)!.id, ...e });
+  ev("TSK-104", { actor_id: 4, kind: "status", from: "todo", to: "in_progress", at: at(5) });
+  ev("TSK-097", { actor_id: 4, kind: "status", from: "todo", to: "in_progress", at: at(6) });
+  ev("TSK-097", { actor_id: 4, kind: "blocked", from: "in_progress", to: "blocked", note: "بانتظار صلاحية الوصول إلى المستودع", at: at(2, 11) });
+  ev("TSK-099", { actor_id: 6, kind: "status", from: "in_progress", to: "in_review", at: at(2, 15) });
+  ev("TSK-099", { actor_id: 6, kind: "approval_requested", from: "in_review", to: "completed", at: at(0, 9) });
+  ev("TSK-085", { actor_id: 6, kind: "approval_requested", from: "testing", to: "completed", at: at(5, 12) });
+  ev("TSK-085", { actor_id: 2, kind: "approved", from: "testing", to: "completed", at: at(4, 9) });
+  ev("TSK-109", { actor_id: 2, kind: "due", from: d(-5), to: d(-2), note: "أُضيف قسم الإعلانات المثبّتة", at: at(6) });
+
+  let commentId = 0;
+  const comment = (code: string, author_id: number, body: string, when: string): TaskComment => ({
+    id: ++commentId, task_id: tasks.find((t) => t.code === code)!.id, author_id, body, created_at: when,
+  });
+  const comments: TaskComment[] = [
+    comment("TSK-097", 4, "طلبت الصلاحية من مسؤول النظام، وننتظر الرد.", at(2, 11)),
+    comment("TSK-097", 2, "سأتابع الأمر معه اليوم.", at(1, 9)),
+    comment("TSK-099", 6, "أنهيت التنبيه قبل الموعد بيوم وبساعة، وجرّبته على ثلاث مهام.", at(0, 9)),
+    comment("TSK-104", 5, "الواجهة جاهزة، وأنتظر نقطة الاتصال من الخادم.", at(1, 14)),
+  ];
+
+  return { users, projects, sprints, tasks, comments, events, seq: { task: id, comment: commentId, event: eventId } };
+}
+
+/** Short descriptions for some demo tasks, so the task page has something to show. */
+const DESCRIPTIONS: Record<string, string> = {
+  "TSK-104": "نقل المهمة بين الأعمدة يحفظ حالتها في الخادم، ويظهر التغيير لكل من يفتح اللوحة.",
+  "TSK-097": "ربط كل مهمة بمستودع GitHub، وإظهار الالتزامات وطلبات الدمج المرتبطة بها في صفحة المهمة.",
+  "TSK-099": "إشعار المسؤول عن المهمة قبل موعد التسليم بيوم، ثم عند تجاوزه.",
+  "TSK-118": "شاشة الدخول بالبريد الإلكتروني وكلمة المرور، مع رسائل واضحة عند الخطأ.",
+};

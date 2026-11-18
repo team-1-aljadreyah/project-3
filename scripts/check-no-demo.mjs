@@ -1,10 +1,10 @@
-// Fails if the demo data reached a REAL build (NEXT_PUBLIC_USE_MOCK not "true").
+// Fails if the demo data reached a REAL build (VITE_USE_MOCK not "true").
 // Run after `npm run build` of the real site: `node scripts/check-no-demo.mjs`.
 // The demo accounts and password must never be in the files real visitors download.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const ROOT = ".next/static";
+const ROOT = "dist";
 const FORBIDDEN = ["@demo.test", "DEMO_PASSWORD", "demoAccounts"];
 
 function* files(dir) {
