@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
 import { ROLES } from "@/lib/access";
+import { resetDemoData } from "@/lib/api";
 import type { User } from "@/lib/api/types";
 import { clearSession } from "@/lib/auth";
+import { USE_MOCK } from "@/lib/config";
 import { setLang, useFmt } from "@/lib/i18n";
 import { setTheme, useTheme } from "@/lib/theme";
 
@@ -75,15 +77,14 @@ export function AccountMenu({ user }: { user: User }) {
               <Languages size={16} aria-hidden="true" />
               {lang === "ar" ? "English" : "العربية"}
             </button>
-            {process.env.NEXT_PUBLIC_USE_MOCK === "true" && (
+            {USE_MOCK && (
               <button
                 type="button"
                 role="menuitem"
                 className={itemClass}
                 onClick={() => {
                   setOpen(false);
-                  // Demo build only (the check is written out so the real build drops this button).
-                  import("@/lib/api/mock/db").then((m) => m.resetDb());
+                  resetDemoData();
                 }}
               >
                 <RotateCcw size={16} aria-hidden="true" />

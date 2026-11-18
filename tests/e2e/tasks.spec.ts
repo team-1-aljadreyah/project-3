@@ -7,6 +7,7 @@ const card = (page: Page, code: string) => page.getByRole("link", { name: new Re
 /** Drags a card to a column with the mouse, in small steps (a real drag, not a jump). */
 async function drag(page: Page, code: string, to: string) {
   await column(page, to).scrollIntoViewIfNeeded();
+  await expect(card(page, code)).toBeInViewport();
   const from = await card(page, code).boundingBox();
   const target = await column(page, to).boundingBox();
   if (!from || !target) throw new Error("not on screen");
@@ -36,8 +37,9 @@ test.describe("on a computer", () => {
   test("dropping on 'blocked' asks why, and the card shows the reason", async ({ page }) => {
     await signInAs(page, /أحمد كريم/);
     await page.goto("/projects/1");
-    await drag(page, "TSK-104", "متوقفة");
-    const dialog = page.getByRole("dialog", { name: /إيقاف TSK-104/ });
+    // TSK-092 ("testing") is two columns from "blocked", so both are on screen together on any computer width.
+    await drag(page, "TSK-092", "متوقفة");
+    const dialog = page.getByRole("dialog", { name: /إيقاف TSK-092/ });
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "أوقف المهمة" }).click();
     await expect(dialog.getByText("اكتب السبب أولاً.")).toBeVisible();

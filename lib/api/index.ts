@@ -20,6 +20,14 @@ const lazyMock = new Proxy({} as Api, {
 
 export const api: Api = USE_MOCK ? lazyMock : httpApi;
 
+/**
+ * Starts the demo data again (the account menu, demo build only). Same written-out check as above: in a JSX
+ * condition the build tool still kept the import and shipped the demo data in the real build (the no-demo check
+ * caught it), so the import lives here.
+ */
+export const resetDemoData = () =>
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? import("./mock/db").then((m) => m.resetDb()) : Promise.resolve();
+
 export { ApiError } from "./errors";
 export type { Api } from "./http";
 export type * from "./types";
