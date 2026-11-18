@@ -1,12 +1,14 @@
 "use client";
 
-import { Languages, LogOut, Moon, Sun } from "lucide-react";
+import { Languages, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
 import { ROLES } from "@/lib/access";
+import { resetDemoData } from "@/lib/api";
 import type { User } from "@/lib/api/types";
 import { clearSession } from "@/lib/auth";
+import { USE_MOCK } from "@/lib/config";
 import { setLang, useFmt } from "@/lib/i18n";
 import { setTheme, useTheme } from "@/lib/theme";
 
@@ -75,6 +77,20 @@ export function AccountMenu({ user }: { user: User }) {
               <Languages size={16} aria-hidden="true" />
               {lang === "ar" ? "English" : "العربية"}
             </button>
+            {USE_MOCK && (
+              <button
+                type="button"
+                role="menuitem"
+                className={itemClass}
+                onClick={() => {
+                  setOpen(false);
+                  resetDemoData();
+                }}
+              >
+                <RotateCcw size={16} aria-hidden="true" />
+                {tr("إعادة البيانات التجريبية", "Reset demo data")}
+              </button>
+            )}
             <button type="button" role="menuitem" className={`${itemClass} text-danger`} onClick={signOut}>
               <LogOut size={16} aria-hidden="true" className="rtl:-scale-x-100" />
               {tr("تسجيل الخروج", "Sign out")}

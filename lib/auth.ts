@@ -66,3 +66,10 @@ export function clearSession() {
 export function useSession(): Session | null | undefined {
   return useSyncExternalStore(subscribe, read, () => undefined);
 }
+
+/** The signed-in person, inside the signed-in pages (the frame shows them only with a session). */
+export function useUser() {
+  const session = useSession();
+  if (!session) throw new Error("useUser is for signed-in pages only (inside AppFrame).");
+  return session.user;
+}

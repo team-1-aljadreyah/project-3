@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Readex_Pro } from "next/font/google";
+import { ToastProvider } from "@/components/ui/toast";
 import { BRAND } from "@/lib/brand";
 import { bootScript } from "@/lib/boot";
 import { LangSync } from "@/lib/i18n";
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-dvh antialiased">
         <LangSync />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

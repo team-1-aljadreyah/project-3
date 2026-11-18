@@ -1,22 +1,27 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { Kanban } from "@/components/board/kanban";
 import { PROJECT_STATE } from "@/components/projects/project-card";
-import { AvatarStack, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/components/ui";
+import { TaskForm } from "@/components/tasks/task-form";
+import { useMoveTask } from "@/components/tasks/use-move-task";
+import { AvatarStack, Button, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/components/ui";
 import { api } from "@/lib/api";
+import type { Project, Sprint, Task, User } from "@/lib/api/types";
+import { useUser } from "@/lib/auth";
 import { useFmt } from "@/lib/i18n";
+import { canManageTasks } from "@/lib/task-rules";
 import { countTasks } from "@/lib/tasks";
 import { today as todayIso } from "@/lib/utils";
 import { useLoad } from "@/lib/use-load";
 
 /** One project: its header, the sprint against the plan, what needs attention, the numbers, and the board. */
 export default function ProjectBoardPage() {
-  const { tr, lang, pct, num, day } = useFmt();
   const id = Number(useParams<{ id: string }>().id);
   const load = useLoad(() => Promise.all([api.project(id), api.tasks(id), api.users(), api.sprints(id)]), [id]);
-  const today = todayIso();
 
   if (load.state.status === "loading") {
     return (
@@ -32,8 +37,17 @@ export default function ProjectBoardPage() {
     );
   }
   if (load.state.status === "error") return <ErrorBox error={load.state.error} onRetry={load.reload} />;
-
   const [project, tasks, users, sprints] = load.state.data;
+  return <Board project={project} tasks={tasks} users={users} sprints={sprints} reload={load.reload} />;
+}
+
+function Board({ project, tasks, users, sprints, reload }: { project: Project; tasks: Task[]; users: User[]; sprints: Sprint[]; reload: () => void }) {
+  const { tr, lang, pct, num, day } = useFmt();
+  const user = useUser();
+  const today = todayIso();
+  const { move, dialog } = useMoveTask(user, project, reload);
+  const [adding, setAdding] = useState(false);
+
   const counts = countTasks(project, tasks, today);
   // The sprint running today, if the project works in sprints.
   const sprint = project.uses_sprints ? sprints.find((s) => s.start <= today && today <= s.end) : undefined;
@@ -101,15 +115,36 @@ export default function ProjectBoardPage() {
         <Stat label={tr("بانتظار المراجعة", "In review")} value={num(counts.inReview)} note={tr(`المنجز ${pct(counts.ratio)}`, `${pct(counts.ratio)} done`)} />
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-semibold">{tr("لوحة المهام", "Task board")}</h2>
-        <div className="flex items-center gap-2 text-[13px] text-muted">
-          <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
-          <AvatarStack users={members} />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-[13px] text-muted">
+            <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
+            <AvatarStack users={members} />
+          </div>
+          {canManageTasks(user, project) && (
+            <Button pill onClick={() => setAdding(true)}>
+              <Plus size={16} aria-hidden="true" />
+              {tr("مهمة جديدة", "New task")}
+            </Button>
+          )}
         </div>
       </div>
 
-      <Kanban project={project} tasks={tasks} users={users} today={today} />
+      <Kanban project={project} tasks={tasks} users={users} user={user} today={today} onMove={move} />
+
+      {dialog}
+      <TaskForm
+        open={adding}
+        onClose={() => setAdding(false)}
+        onSaved={() => {
+          setAdding(false);
+          reload();
+        }}
+        project={project}
+        members={members}
+        sprints={sprints}
+      />
     </div>
   );
 }

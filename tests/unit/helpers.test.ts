@@ -45,6 +45,17 @@ describe("format", () => {
     expect(en.due(3)).toBe("in 3 days");
   });
 
+  it("says how long ago, counting days by the calendar", () => {
+    const ar = makeFmt("ar");
+    const now = new Date(2026, 10, 18, 9, 0);
+    expect(ar.ago(new Date(2026, 10, 18, 8, 59, 30).toISOString(), now)).toBe("الآن");
+    expect(ar.ago(new Date(2026, 10, 18, 8, 55).toISOString(), now)).toBe("قبل 5 دقائق");
+    expect(ar.ago(new Date(2026, 10, 18, 7, 0).toISOString(), now)).toBe("قبل ساعتين");
+    expect(ar.ago(new Date(2026, 10, 17, 8, 0).toISOString(), now)).toBe("أمس");
+    // 45 hours ago, but two calendar days: not "yesterday".
+    expect(ar.ago(new Date(2026, 10, 16, 12, 0).toISOString(), now)).toBe("قبل يومين");
+  });
+
   it("shows percentages and Latin digits", () => {
     const ar = makeFmt("ar");
     expect(ar.pct(0.6449)).toBe("64%");
