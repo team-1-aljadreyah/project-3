@@ -17,6 +17,8 @@ export interface Notification {
   task_id?: number;
   announcement_id?: number;
   bug_id?: number;
+  /** A chat's key ("p-3"), for chat mentions. */
+  chat_key?: string;
   data: NotificationData;
   at: string;
   read: boolean;

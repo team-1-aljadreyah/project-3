@@ -3,10 +3,11 @@
 import type { Announcement } from "@/features/announcements";
 import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
+import type { Message } from "@/features/chat";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
-import type { Priority, TaskStatus, User } from "@/shared/api/types";
+import type { Priority, TaskStatus, Team, User } from "@/shared/api/types";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
 import { daysBetween, today } from "@/shared/lib/utils";
 
@@ -35,6 +36,12 @@ export interface MockDb {
   announcements: Omit<Announcement, "seen" | "seen_count" | "audience_count">[];
   bugs: Bug[];
   bug_events: BugEvent[];
+  teams: Team[];
+  /** Private chats between two people. Project and team chats come from the projects and teams. */
+  directs: { id: number; member_ids: number[] }[];
+  messages: Omit<Message, "files">[];
+  /** The last message each person has read in each chat. */
+  chat_reads: { chat: string; user_id: number; last_id: number }[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
@@ -42,7 +49,7 @@ export interface MockDb {
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number; announcement: number; bug: number; bug_event: number;
+    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number;
   };
 }
 
@@ -262,13 +269,40 @@ export function seed(now = new Date()): MockDb {
     { id: ++bugEventId, bug_id: 5, actor_id: 2, kind: "status", from: "testing", to: "closed", at: at(2) },
   );
 
+  // One team (BRIEF question 6 is open), and a few messages: in project 1's chat (with a reply and a mention of Sara),
+  // in the team's chat, and a private chat between Ahmed and Sara. Sara hasn't read the newest ones.
+  const teams: Team[] = [{ id: 1, name: "فريق التطوير", name_en: "Development team", lead_id: 4 }];
+  const directs = [{ id: 1, member_ids: [2, 5] }];
+  let messageId = 0;
+  const msg = (chat: string, author_id: number, body: string, when: string, extra: Partial<Message> = {}) => ({
+    id: ++messageId, chat, author_id, body, mentions: [], created_at: when, ...extra,
+  });
+  const messages: MockDb["messages"] = [
+    msg("p-1", 2, "صباح الخير. نبدأ اليوم الدورة 4، الأولوية لربط اللوحة بالخادم.", at(2, 9)),
+    msg("p-1", 4, "تمام. سأراجع نقاط الاتصال مع علي قبل الظهر.", at(2, 10)),
+    msg("t-1", 4, "تذكير: مراجعة الشيفرة كل خميس الساعة الثانية.", at(1, 11)),
+    msg("d-1", 2, "سارة، هل تحتاجين مساعدة في صفحة الإعلانات؟", at(1, 15)),
+    msg("p-1", 6, "نقطة الاتصال جاهزة على بيئة التجربة.", at(0, 9), { reply_to: 2 }),
+    msg("p-1", 2, "ممتاز. @سارة علي هل يمكنك تجربتها على اللوحة اليوم؟", at(0, 10), { mentions: [5] }),
+  ];
+  const chat_reads = [
+    { chat: "p-1", user_id: 5, last_id: 2 },
+    { chat: "t-1", user_id: 5, last_id: 3 },
+    { chat: "p-1", user_id: 2, last_id: 6 },
+    { chat: "d-1", user_id: 2, last_id: 4 },
+  ];
+  notifications.push({
+    id: ++notificationId, user_id: 5, kind: "chat_mention", actor_id: 2, chat_key: "p-1",
+    data: { note: messages[5].body }, at: at(0, 10), read: false,
+  });
+
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads, bugs, bug_events,
+    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
-      bug: bugs.length, bug_event: bugEventId,
+      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId,
     },
   };
 }

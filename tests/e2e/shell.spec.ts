@@ -5,8 +5,8 @@ test("pages that are not built yet are greyed out, never broken links", async ({
   await signInAs(page, /أحمد كريم/);
   const nav = page.getByRole("navigation", { name: "القائمة الرئيسية" });
   await expect(nav.getByRole("link", { name: "المشاريع" })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByRole("link", { name: "المحادثات" })).toHaveCount(0);
-  await expect(nav.getByText("المحادثات")).toBeVisible();
+  await expect(nav.getByRole("link", { name: "التقارير" })).toHaveCount(0);
+  await expect(nav.getByText("التقارير")).toBeVisible();
 });
 
 test("dark mode stays after a reload", async ({ page }) => {
