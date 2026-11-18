@@ -31,6 +31,8 @@ export const router = createBrowserRouter([
           { path: "/announcements/:id", lazy: () => import("@/features/announcements").then((m) => ({ Component: m.AnnouncementPage })) },
           { path: "/bugs", lazy: () => import("@/features/bugs").then((m) => ({ Component: m.BugsPage })) },
           { path: "/bugs/:id", lazy: () => import("@/features/bugs").then((m) => ({ Component: m.BugPage })) },
+          { path: "/chat", lazy: () => import("@/features/chat").then((m) => ({ Component: m.ChatPage })) },
+          { path: "/chat/:key", lazy: () => import("@/features/chat").then((m) => ({ Component: m.ChatPage })) },
           { path: "/notifications", lazy: () => import("@/features/notifications").then((m) => ({ Component: m.NotificationsPage })) },
         ],
       },

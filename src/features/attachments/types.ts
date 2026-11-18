@@ -1,7 +1,7 @@
 // The data shapes of file attachments, shared by the real API, the demo backend and the pages.
 
 /** What a file is attached to. Bugs and chat messages will be added here later (the brief). */
-export type OwnerType = "task" | "project" | "bug";
+export type OwnerType = "task" | "project" | "bug" | "message";
 
 export interface AttachmentOwner {
   type: OwnerType;

@@ -149,6 +149,12 @@ Every change updates the task's `updated_at`.
 | `POST /bugs/:id/status` | see section 10 | `Bug` |
 | `GET /bugs/:id/history` | can see its project | `BugEvent[]` |
 | `GET /bugs/:id/attachments`, `POST /bugs/:id/attachments` | as for tasks (section 8) | |
+| `GET /chats` | signed in | `Conversation[]`, my chats only, the newest message first |
+| `GET /chats/:key/messages` | the chat's members | `Message[]`, oldest first |
+| `POST /chats/:key/messages` | the chat's members | `Message` (section 11) |
+| `POST /chats/:key/read` | the chat's members | nothing |
+| `POST /chats/direct` `{user_id}` | signed in | `Conversation`: the existing private chat with that person, or a new one |
+| `GET /messages/:id/attachments`, `POST /messages/:id/attachments` | members see; only its writer adds (section 11) | |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
 (`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
@@ -208,7 +214,7 @@ task history, nobody can edit or hide it through the API.
 Shapes: `src/features/notifications/types.ts`; the kinds and which are required: `src/shared/api/notification-kinds.ts`.
 The demo server makes them in `src/mock/notify.ts`: that file is the exact reference for **who gets what**.
 
-`Notification`: `{id, user_id, kind, actor_id?, project_id?, task_id?, data, at, read}`. `data` is a **copy taken when it was
+`Notification`: `{id, user_id, kind, actor_id?, project_id?, task_id?, announcement_id?, bug_id?, chat_key?, data, at, read}`. `data` is a **copy taken when it was
 made** (`task_code`, `task_title`, `project_name`, `project_name_en`, `status`, `status_en`, `due`, `decision`, `note`, `pm_id`),
 so the text stays right after the task changes. The site writes the sentence from `kind` + `data` in the reader's language.
 
@@ -233,6 +239,7 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `bug_assigned` | a bug is given to a developer | the developer |
 | `bug_status` | a bug moves (data: `bug_status`, the send-back reason as `note`) | its reporter, its developer, the project's PM |
 | `bug_late` | the expected fix day has passed and the bug isn't closed (a daily reminder, like `task_overdue`) | the developer and the PM, once per bug and day |
+| `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
 
 **Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
 them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
@@ -248,10 +255,10 @@ real server, a WebSocket message `notification` (planned, as in Project 2) will 
 ## 8. File attachments
 
 Shapes: `src/features/attachments/types.ts`. Rules (types and sizes): `src/features/attachments/rules.ts`. The demo backend
-(`src/features/attachments/mock.ts`) is the reference. Today files belong to a **task** or a **project**; bugs and chat
-messages will use the same calls later (the brief).
+(`src/features/attachments/mock.ts`) is the reference. Files belong to a **task**, a **project**, a **bug** (section 10) or a
+chat **message** (section 11, its own rules for who may add and remove).
 
-`Attachment`: `{id, owner_type: "task" | "project", owner_id, name, size, mime, url, uploaded_by, at}`. `url` is where the site
+`Attachment`: `{id, owner_type: "task" | "project" | "bug" | "message", owner_id, name, size, mime, url, uploaded_by, at}`. `url` is where the site
 downloads it from (a short-lived signed link is fine). The site shows a preview for `image/png|jpeg|gif|webp` only.
 
 **Uploading** (`POST /tasks/:id/attachments` or `POST /projects/:id/attachments`, `multipart/form-data` with one field `file`):
@@ -326,6 +333,54 @@ Any other move → 422 on `status`; a move this person may not make → 403. `re
 **Reports** (the brief: open, closed, late; by project and team): the site builds them from `GET /bugs`. **By team** waits for
 the client's answer on what a team is (BRIEF question 6); today the site shows **by project** and **by developer**.
 
-## 11. Coming next (not used by the site yet)
+## 11. Chat
 
-Project templates and task dependencies, chat, reports, performance, GitHub. Chat @mentions will add its notification kind. Each will add its section here in its own PR.
+Shapes: `src/features/chat/types.ts`. Rules (keys, limits, mentions): `src/features/chat/rules.ts`. The demo backend
+(`src/features/chat/mock.ts`, and who belongs to which chat in `src/mock/chat.ts`) is the reference.
+
+**The chats** (the brief: project, team and private chats). A chat's key is safe in a web address: `p-3` (project 3),
+`t-1` (team 1), `d-7` (private chat 7).
+
+| Kind | Members | Exists |
+|---|---|---|
+| project | the project's PM and members, **read each time** (someone removed from the project stops seeing its chat) | always, one per project |
+| team | the active people with that `team_id` | always, one per team |
+| private | the two people | made by `POST /chats/direct` the first time; **one per pair** |
+
+`Team`: `{id, name, name_en?, lead_id?}` (`src/shared/api/types.ts`). *Assumption, BRIEF question 6 is open:* a team is
+fixed, not made per project. `GET /teams` will come with the admin part.
+
+**Who:** only a chat's members read it, write in it, see its files and are counted in it. **Not a member, or no such chat
+→ 404** (the same answer, so nobody learns which chats exist). No role sees other people's chats, not the CEO either
+(*assumption*: the audit log of a later part decides if the admin may).
+
+`Conversation`: `{key, kind, title, title_en?, member_ids, last_message?, unread}`. `title` is the project's or team's name
+(empty for a private chat: the site names it after the other person). `unread` = messages from others after the last one
+this person read.
+
+`Message`: `{id, chat, author_id, body, reply_to?, mentions, created_at, files}`. `files` are its attachments (section 8,
+owner type `message`).
+
+**Sending** (`POST /chats/:key/messages {body, reply_to?, mentions?}`):
+
+- `body` trimmed, ≤ **4000** (422 on `body`). An empty `body` is allowed only because the site uploads the files right
+  after (`POST /messages/:id/attachments`); the real server may prefer one `multipart` call with the files.
+- `reply_to` must be a message **of the same chat** (422 on `reply_to`).
+- `mentions`: user ids. The server keeps only **members of the chat**, never the writer (nobody outside learns what was
+  said). Each one gets `chat_mention` (section 7) with `chat_key` and `data.note` = the first 120 letters.
+- The writer has read their own message (move their read mark).
+
+**Read marks** (`POST /chats/:key/read`): saves the newest message's id for this person. Send it when a chat is opened and
+when a new message arrives in the open chat. Keep one mark per person per chat (`chat_reads: {chat, user_id, last_id}`).
+
+**Files in a chat:** `POST /messages/:id/attachments` only by **the message's writer**; members see them; only the writer
+removes them (no PM override). The same types and sizes as section 8; **no history entry** (a chat isn't a task).
+
+**Live:** the site reloads the open chat when data changes in this browser. With the real server, a WebSocket message
+`chat_message {chat}` (planned, like `notification`) will tell the site to load that chat and the list again.
+
+**Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats.
+
+## 12. Coming next (not used by the site yet)
+
+Project templates and task dependencies, reports, performance, GitHub. Each will add its section here in its own PR.

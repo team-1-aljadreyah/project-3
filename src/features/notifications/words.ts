@@ -26,6 +26,7 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   approval_decided: { ar: "قرار الاعتماد", en: "Approval is decided", hint_ar: "عند اعتماد إكمال مهمة طلبتَه أو إرجاعها.", hint_en: "When a completion you asked for is approved or sent back." },
   project_added: { ar: "إضافتك إلى مشروع", en: "You're added to a project", hint_ar: "عند إضافتك إلى أعضاء مشروع.", hint_en: "When you become a project member." },
   project_pm: { ar: "تغيير مدير المشروع", en: "A project's manager changes", hint_ar: "لكل أعضاء المشروع.", hint_en: "For all the project's members." },
+  chat_mention: { ar: "ذكر اسمك في محادثة", en: "You're mentioned in a chat", hint_ar: "عند ذكرك بـ @ في محادثة.", hint_en: "When someone writes @ and your name." },
   bug_reported: { ar: "تسجيل مشكلة برمجية", en: "A bug is reported", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
   bug_assigned: { ar: "إسناد مشكلة إليك", en: "A bug is given to you", hint_ar: "عند تحويل مشكلة إليك لإصلاحها.", hint_en: "When a bug is given to you to fix." },
   bug_status: { ar: "تغيير حالة مشكلة", en: "A bug's status changes", hint_ar: "لمن سجّلها والمطور ومدير المشروع.", hint_en: "For its reporter, developer and project manager." },
@@ -70,6 +71,8 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أضافك إلى مشروع ${project}`, `${who} added you to ${project}`);
     case "project_pm":
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
+    case "chat_mention":
+      return tr(`${who} ذكرك في محادثة`, `${who} mentioned you in a chat`);
     case "bug_reported":
       return tr(`${who} سجّل مشكلة: ${d.bug_code ?? ""}`, `${who} reported a bug: ${d.bug_code ?? ""}`);
     case "bug_assigned":
@@ -95,6 +98,7 @@ export function notificationLink(n: Notification) {
   if (n.task_id) return `/tasks/${n.task_id}`;
   if (n.announcement_id) return `/announcements/${n.announcement_id}`;
   if (n.bug_id) return `/bugs/${n.bug_id}`;
+  if (n.chat_key) return `/chat/${n.chat_key}`;
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";
 }

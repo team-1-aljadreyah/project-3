@@ -18,6 +18,17 @@ export interface User {
   active: boolean;
 }
 
+/**
+ * A team of people (the brief: team chats, team reports). Its members are the people with this `team_id`.
+ * Not decided by the client yet (BRIEF question 6): for now a team is fixed, not made per project.
+ */
+export interface Team {
+  id: number;
+  name: string;
+  name_en?: string;
+  lead_id?: number;
+}
+
 export interface Session {
   token: string;
   user: User;

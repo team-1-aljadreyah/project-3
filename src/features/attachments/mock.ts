@@ -2,6 +2,7 @@
 // Only the demo build loads it. The demo keeps each file inside the browser's storage, which is small (about 5 MB for
 // everything), so it allows smaller files than the real server: 1 MB each and 3 MB in all.
 import { canManageProject } from "@/features/projects";
+import { chatMembers } from "@/mock/chat";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import type { User } from "@/shared/api/types";
@@ -29,10 +30,26 @@ function projectOf(user: User, owner: AttachmentOwner) {
   return project;
 }
 
-/** Writes the add / remove into the task's or the project's history (nobody can hide it, the brief). */
+/**
+ * What this person may do with an owner's files: see them (else 404), add, and remove anyone's. A chat message's files
+ * follow the chat (its members see them; only the message's writer adds them); the rest follow the project.
+ */
+function access(user: User, owner: AttachmentOwner) {
+  if (owner.type === "message") {
+    const message = getDb().messages.find((m) => m.id === owner.id);
+    const members = message && chatMembers(message.chat);
+    if (!message || !members?.includes(user.id)) return fail(404, "NOT_FOUND", "لم يُعثر على المطلوب.", "Not found.");
+    return { canAdd: message.author_id === user.id, canRemoveAny: false };
+  }
+  const project = projectOf(user, owner);
+  return { canAdd: canTakePart(user, project), canRemoveAny: canManageProject(user, project) };
+}
+
+/** Writes the add / remove into the task's, bug's or project's history (nobody can hide it, the brief). Not for chat. */
 function log(owner: AttachmentOwner, actorId: number, kind: "attachment_added" | "attachment_removed", name: string) {
   const db = getDb();
   const side = kind === "attachment_added" ? { to: name } : { from: name };
+  if (owner.type === "message") return;
   if (owner.type === "task") db.events.push({ id: ++db.seq.event, task_id: owner.id, actor_id: actorId, kind, ...side, at: nowIso() });
   else if (owner.type === "bug") db.bug_events.push({ id: ++db.seq.bug_event, bug_id: owner.id, actor_id: actorId, kind, ...side, at: nowIso() });
   else db.project_events.push({ id: ++db.seq.project_event, project_id: owner.id, actor_id: actorId, kind, ...side, at: nowIso() });
@@ -48,14 +65,13 @@ async function toDataUrl(file: File, mime: string) {
 
 export const attachmentsMock: AttachmentsApi = {
   async list(owner) {
-    projectOf(currentUser(), owner);
+    access(currentUser(), owner);
     return wait(getDb().attachments.filter((a) => a.owner_type === owner.type && a.owner_id === owner.id));
   },
 
   async upload(owner, file) {
     const user = currentUser();
-    const project = projectOf(user, owner);
-    if (!canTakePart(user, project)) return fail(403, "FORBIDDEN", "لا يحق لك إرفاق ملفات هنا.", "You can't attach files here.");
+    if (!access(user, owner).canAdd) return fail(403, "FORBIDDEN", "لا يحق لك إرفاق ملفات هنا.", "You can't attach files here.");
     const db = getDb();
     const problem = fileProblem(file, DEMO_MAX_FILE);
     if (problem === "type") invalid("file", "هذا النوع من الملفات غير مسموح.", "This type of file isn't allowed.");
@@ -91,9 +107,8 @@ export const attachmentsMock: AttachmentsApi = {
     const a = db.attachments.find((x) => x.id === id);
     if (!a) return fail(404, "NOT_FOUND", "لم يُعثر على الملف.", "File not found.");
     const owner = { type: a.owner_type, id: a.owner_id };
-    const project = projectOf(user, owner);
-    // The person who added it, or the project's PM or the CEO.
-    if (a.uploaded_by !== user.id && !canManageProject(user, project)) {
+    // The person who added it, or the project's PM or the CEO (a chat file: only the person who sent it).
+    if (a.uploaded_by !== user.id && !access(user, owner).canRemoveAny) {
       return fail(403, "FORBIDDEN", "يحذف الملفَ من أضافه، أو مدير المشروع.", "Only the person who added it or the project manager can remove it.");
     }
     db.attachments = db.attachments.filter((x) => x.id !== id);

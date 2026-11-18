@@ -17,7 +17,8 @@ export type NotificationKind =
   | "bug_reported"
   | "bug_assigned"
   | "bug_status"
-  | "bug_late";
+  | "bug_late"
+  | "chat_mention";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -36,6 +37,7 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "bug_assigned",
   "bug_status",
   "bug_late",
+  "chat_mention",
 ];
 
 /**
