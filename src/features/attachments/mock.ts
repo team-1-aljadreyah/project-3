@@ -21,7 +21,8 @@ const MIME: Record<string, string> = {
 /** The project behind an owner (a task's project, or the project itself), if this person may see it. */
 function projectOf(user: User, owner: AttachmentOwner) {
   const db = getDb();
-  const projectId = owner.type === "project" ? owner.id : db.tasks.find((t) => t.id === owner.id)?.project_id;
+  const projectId =
+    owner.type === "project" ? owner.id : owner.type === "task" ? db.tasks.find((t) => t.id === owner.id)?.project_id : db.bugs.find((b) => b.id === owner.id)?.project_id;
   const project = db.projects.find((p) => p.id === projectId);
   // Not found and not allowed answer the same, so nobody learns what exists.
   if (!project || !canSeeProject(user, project)) return fail(404, "NOT_FOUND", "لم يُعثر على المطلوب.", "Not found.");
@@ -33,6 +34,7 @@ function log(owner: AttachmentOwner, actorId: number, kind: "attachment_added" |
   const db = getDb();
   const side = kind === "attachment_added" ? { to: name } : { from: name };
   if (owner.type === "task") db.events.push({ id: ++db.seq.event, task_id: owner.id, actor_id: actorId, kind, ...side, at: nowIso() });
+  else if (owner.type === "bug") db.bug_events.push({ id: ++db.seq.bug_event, bug_id: owner.id, actor_id: actorId, kind, ...side, at: nowIso() });
   else db.project_events.push({ id: ++db.seq.project_event, project_id: owner.id, actor_id: actorId, kind, ...side, at: nowIso() });
 }
 

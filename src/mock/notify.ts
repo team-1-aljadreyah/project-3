@@ -20,7 +20,7 @@ export function wants(userId: number, kind: NotificationKind) {
 export function notify(
   to: (number | undefined)[],
   kind: NotificationKind,
-  about: { actor_id?: number; project_id?: number; task_id?: number; announcement_id?: number; data: NotificationData },
+  about: { actor_id?: number; project_id?: number; task_id?: number; announcement_id?: number; bug_id?: number; data: NotificationData },
 ) {
   const db = getDb();
   for (const userId of new Set(to)) {
@@ -57,5 +57,21 @@ export function remindDueTasks(userId: number) {
     if (!kind) continue;
     const sent = db.notifications.some((n: Notification) => n.user_id === userId && n.kind === kind && n.task_id === task.id && n.data.due === task.due);
     if (!sent) notify([userId], kind, { project_id: project.id, task_id: task.id, data: { ...aboutTask(task, project), due: task.due } });
+  }
+}
+
+/**
+ * Late bugs (the expected fix day has passed and the bug isn't closed) remind their developer and the project's PM,
+ * once per bug and fix day. Like the task reminders, a real server runs this once a day.
+ */
+export function remindLateBugs(userId: number) {
+  const db = getDb();
+  const day = today();
+  for (const bug of db.bugs) {
+    if (bug.status === "closed" || !bug.due || bug.due >= day) continue;
+    const project = db.projects.find((p) => p.id === bug.project_id);
+    if (!project || (bug.assignee_id !== userId && project.pm_id !== userId)) continue;
+    const sent = db.notifications.some((n) => n.user_id === userId && n.kind === "bug_late" && n.bug_id === bug.id && n.data.due === bug.due);
+    if (!sent) notify([userId], "bug_late", { project_id: project.id, bug_id: bug.id, data: { bug_code: bug.code, bug_title: bug.title, due: bug.due } });
   }
 }

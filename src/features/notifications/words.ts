@@ -4,6 +4,16 @@ import type { Fmt } from "@/shared/lib/i18n";
 import { daysBetween, today } from "@/shared/lib/utils";
 import type { Notification, NotificationKind } from "./types";
 
+/** Bug statuses in Arabic, for the notification sentences (the bugs feature has its own full labels). */
+const bugStatusAr: Record<string, string> = {
+  reported: "مُسجّلة",
+  assigned: "مُسندة",
+  fixing: "قيد الإصلاح",
+  testing: "قيد الاختبار",
+  reopened: "أُعيدت للمطور",
+  closed: "مغلقة",
+};
+
 /** The kinds as people see them in the preferences, with a short explanation. */
 export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint_ar: string; hint_en: string }> = {
   task_assigned: { ar: "إسناد مهمة إليك", en: "A task is given to you", hint_ar: "عند إسناد مهمة جديدة إليك.", hint_en: "When a task is assigned to you." },
@@ -16,6 +26,10 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   approval_decided: { ar: "قرار الاعتماد", en: "Approval is decided", hint_ar: "عند اعتماد إكمال مهمة طلبتَه أو إرجاعها.", hint_en: "When a completion you asked for is approved or sent back." },
   project_added: { ar: "إضافتك إلى مشروع", en: "You're added to a project", hint_ar: "عند إضافتك إلى أعضاء مشروع.", hint_en: "When you become a project member." },
   project_pm: { ar: "تغيير مدير المشروع", en: "A project's manager changes", hint_ar: "لكل أعضاء المشروع.", hint_en: "For all the project's members." },
+  bug_reported: { ar: "تسجيل مشكلة برمجية", en: "A bug is reported", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
+  bug_assigned: { ar: "إسناد مشكلة إليك", en: "A bug is given to you", hint_ar: "عند تحويل مشكلة إليك لإصلاحها.", hint_en: "When a bug is given to you to fix." },
+  bug_status: { ar: "تغيير حالة مشكلة", en: "A bug's status changes", hint_ar: "لمن سجّلها والمطور ومدير المشروع.", hint_en: "For its reporter, developer and project manager." },
+  bug_late: { ar: "تأخر إصلاح مشكلة", en: "A bug fix is late", hint_ar: "للمطور ومدير المشروع بعد الموعد المتوقع.", hint_en: "For the developer and the PM, after the expected day." },
   announcement: { ar: "إعلان جديد من الإدارة", en: "A new announcement", hint_ar: "عند نشر إعلان لكل الشركة.", hint_en: "When the management posts one for everyone." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
 };
@@ -56,6 +70,14 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أضافك إلى مشروع ${project}`, `${who} added you to ${project}`);
     case "project_pm":
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
+    case "bug_reported":
+      return tr(`${who} سجّل مشكلة: ${d.bug_code ?? ""}`, `${who} reported a bug: ${d.bug_code ?? ""}`);
+    case "bug_assigned":
+      return tr(`${who} حوّل إليك المشكلة ${d.bug_code ?? ""}`, `${who} gave you ${d.bug_code ?? ""}`);
+    case "bug_status":
+      return tr(`${who} نقل ${d.bug_code ?? ""} إلى «${bugStatusAr[d.bug_status ?? ""] ?? d.bug_status ?? "-"}»`, `${who} moved ${d.bug_code ?? ""} to "${d.bug_status ?? "-"}"`);
+    case "bug_late":
+      return tr(`تأخر إصلاح ${d.bug_code ?? ""} عن موعده`, `${d.bug_code ?? ""} is past its expected fix day`);
     case "announcement":
       return tr(`${who} نشر إعلاناً: ${d.title ?? ""}`, `${who} posted an announcement: ${d.title ?? ""}`);
     case "project_plan":
@@ -63,15 +85,16 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
   }
 }
 
-/** A second, smaller line: the task's title or a reason, when there is one. */
+/** A second, smaller line: the task's or bug's title, or a reason, when there is one. */
 export function notificationDetail(n: Notification) {
-  return n.data.note || n.data.task_title || undefined;
+  return n.data.note || n.data.task_title || n.data.bug_title || undefined;
 }
 
 /** Where a click on the notification goes: its task, its announcement, else its project. */
 export function notificationLink(n: Notification) {
   if (n.task_id) return `/tasks/${n.task_id}`;
   if (n.announcement_id) return `/announcements/${n.announcement_id}`;
+  if (n.bug_id) return `/bugs/${n.bug_id}`;
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";
 }
