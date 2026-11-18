@@ -2,6 +2,7 @@
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
 import type { Announcement } from "@/features/announcements";
 import type { Attachment } from "@/features/attachments";
+import type { Bug, BugEvent } from "@/features/bugs";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
@@ -32,6 +33,8 @@ export interface MockDb {
   /** Files attached to tasks and projects (the demo keeps each file's bytes in `url`). */
   attachments: Attachment[];
   announcements: Omit<Announcement, "seen" | "seen_count" | "audience_count">[];
+  bugs: Bug[];
+  bug_events: BugEvent[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
@@ -39,7 +42,7 @@ export interface MockDb {
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number; announcement: number;
+    attachment: number; announcement: number; bug: number; bug_event: number;
   };
 }
 
@@ -232,12 +235,40 @@ export function seed(now = new Date()): MockDb {
     })),
   );
 
+  // Bugs in projects 1 and 2, in every status: one late, one sent back after testing, one closed.
+  const taskId = (code: string) => tasks.find((t) => t.code === code)!.id;
+  const bug = (
+    id: number, project_id: number, title: string, severity: Bug["severity"], priority: Bug["priority"], status: Bug["status"],
+    reported_by: number, assignee_id: number | undefined, due: number | undefined, extra: Partial<Bug> = {},
+  ): Bug => ({
+    id, code: `BUG-${id}`, project_id, title, description: "", severity, priority, status, reported_by, assignee_id,
+    due: due === undefined ? undefined : d(due), created_at: at(6 - id % 4), updated_at: at(1), ...extra,
+  });
+  const bugs: Bug[] = [
+    bug(1, 1, "زر الدخول لا يعمل على الهاتف", "critical", "high", "fixing", 7, 5, -1, {
+      phase_id: 2, task_id: taskId("TSK-118"), description: "على شاشة صغيرة يختفي زر الدخول خلف لوحة المفاتيح.",
+    }),
+    bug(2, 1, "تاريخ التسليم يظهر بتوقيت خاطئ", "high", "medium", "testing", 2, 6, 2, { task_id: taskId("TSK-099") }),
+    bug(3, 1, "نص الإعلان يُقطع في الوضع الليلي", "medium", "low", "reopened", 7, 5, 4, { task_id: taskId("TSK-109") }),
+    bug(4, 1, "رسالة خطأ بالإنجليزية في واجهة عربية", "low", "low", "reported", 4, undefined, undefined),
+    bug(5, 1, "سجل العمليات لا يعرض اسم المستخدم", "high", "high", "closed", 2, 6, -3, { closed_at: at(2) }),
+    bug(6, 2, "الطلبات تتكرر عند ضعف الاتصال", "critical", "high", "assigned", 4, 6, 3),
+  ];
+  let bugEventId = 0;
+  const bug_events: BugEvent[] = bugs.map((b) => ({ id: ++bugEventId, bug_id: b.id, actor_id: b.reported_by, kind: "created" as const, at: b.created_at }));
+  bug_events.push(
+    { id: ++bugEventId, bug_id: 3, actor_id: 5, kind: "status", from: "fixing", to: "testing", at: at(2) },
+    { id: ++bugEventId, bug_id: 3, actor_id: 7, kind: "status", from: "testing", to: "reopened", note: "ما زال النص يُقطع على شاشة الهاتف", at: at(1) },
+    { id: ++bugEventId, bug_id: 5, actor_id: 2, kind: "status", from: "testing", to: "closed", at: at(2) },
+  );
+
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads,
+    announcements, announcement_reads, bugs, bug_events,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
+      bug: bugs.length, bug_event: bugEventId,
     },
   };
 }

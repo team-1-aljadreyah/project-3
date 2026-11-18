@@ -142,6 +142,13 @@ Every change updates the task's `updated_at`.
 | `DELETE /announcements/:id` | its author, `ceo`, `admin` | nothing |
 | `POST /announcements/:id/seen` | signed in | nothing |
 | `GET /announcements/:id/reads` | its author, `ceo`, `admin` | `{ seen: [{user_id, at}], not_seen: number[] }` |
+| `GET /bugs` | signed in (filtered by project) | `Bug[]` |
+| `GET /bugs/:id` | can see its project | `Bug` |
+| `POST /projects/:id/bugs` | takes part in the project | `Bug` |
+| `PATCH /bugs/:id` | the project's PM and team leaders | `Bug` |
+| `POST /bugs/:id/status` | see section 10 | `Bug` |
+| `GET /bugs/:id/history` | can see its project | `BugEvent[]` |
+| `GET /bugs/:id/attachments`, `POST /bugs/:id/attachments` | as for tasks (section 8) | |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
 (`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
@@ -222,6 +229,10 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `project_pm` | the PM changes (data: `pm_id`, `note`) | every member, the new PM included |
 | `project_plan` | the project's dates change (data: `due` = the new end, `note`) | every member |
 | `announcement` | a new announcement is posted (`announcement_id`; data: `title`) | every active person except the author |
+| `bug_reported` | a bug is reported (`bug_id`; data: `bug_code`, `bug_title`) | the project's PM and team leaders |
+| `bug_assigned` | a bug is given to a developer | the developer |
+| `bug_status` | a bug moves (data: `bug_status`, the send-back reason as `note`) | its reporter, its developer, the project's PM |
+| `bug_late` | the expected fix day has passed and the bug isn't closed (a daily reminder, like `task_overdue`) | the developer and the PM, once per bug and day |
 
 **Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
 them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
@@ -229,7 +240,7 @@ them **once a day** (a scheduled job). The demo makes them when someone opens th
 **Preferences** (`PUT /notifications/preferences`, `{ [kind]: boolean }`; a missing kind means on): **required kinds can't be
 turned off** (`false` → 422 on `prefs`), and unknown kinds → 422. *Assumption, to confirm with the client:* the required ones
 are `task_assigned`, `task_overdue`, `approval_requested`, `approval_decided`, `project_added`, `announcement` (the brief says
-employees receive a notification for each new announcement).
+employees receive a notification for each new announcement), `bug_assigned`.
 
 Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something; with the
 real server, a WebSocket message `notification` (planned, as in Project 2) will tell the site to load the list again.
@@ -277,6 +288,44 @@ person asking; `seen_count` / `audience_count` count active people only.
 - **No editing** (*assumption*): what people saw stays what it was. To fix a mistake: `DELETE /announcements/:id` (author,
   `ceo`, `admin`) and post again. The audit log (a later part) must record the removal.
 
-## 10. Coming next (not used by the site yet)
+## 10. Bug tracker
 
-Project templates and task dependencies, chat, bugs, reports, performance, GitHub. Chat @mentions and bug events will add their notification kinds. Each will add its section here in its own PR.
+Shapes: `src/features/bugs/types.ts`. Rules (who may do what, which status follows which): `src/features/bugs/rules.ts`.
+The demo backend (`src/features/bugs/mock.ts`) is the reference.
+
+`Bug`: `{id, code, project_id, phase_id?, task_id?, title, description, severity, priority, status, reported_by, assignee_id?,
+due?, created_at, updated_at, closed_at?}`. `code` is made by the server (`BUG-…`). `severity`: `critical`, `high`, `medium`,
+`low` (how bad); `priority`: `high`, `medium`, `low` (how soon). `due` is the expected fix day.
+
+**Reporting** (`POST /projects/:id/bugs {title, description, severity, priority, phase_id?, task_id?, assignee_id?, due?}`):
+everyone who takes part in the project (403 for `admin`). `title` required ≤ 160; `severity` required; the phase and the task
+must be of this project, the developer a member (422 on the field). `assignee_id` and `due` are kept **only when a manager
+reports** (the PM or a team leader in the project); from anyone else they are ignored. Starts `assigned` when it has a
+developer, else `reported`. Notify `bug_reported` and, with a developer, `bug_assigned`.
+
+**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders only. Log `severity`, `priority`, `due`, `assignee`, and
+`edited` for the title or description. Giving a `reported` bug a developer also moves it to `assigned` (logged).
+
+**The flow** (`POST /bugs/:id/status {status, note?}`), from the brief:
+
+| From | To | Who |
+|---|---|---|
+| `reported` | `assigned` (needs a developer, 422 on `assignee_id`) | managers |
+| `assigned` | `fixing` | the developer, managers |
+| `fixing` | `testing` | the developer, managers |
+| `testing` | `closed`, or `reopened` | the reporter, managers |
+| `reopened` | `fixing` | the developer, managers |
+| `closed` | `reopened` | the reporter, managers |
+
+Any other move → 422 on `status`; a move this person may not make → 403. `reopened` **needs `note`** (why it isn't fixed,
+≤ 300; 422 on `note`). `closed` sets `closed_at`; leaving `closed` clears it. Log `status` (`from`, `to`, `note`); notify
+`bug_status`. *(Who may do what is an assumption, to confirm with the client.)*
+
+**Late:** `due` before today and not `closed`. The site counts and filters these; the server sends `bug_late` once a day.
+
+**Reports** (the brief: open, closed, late; by project and team): the site builds them from `GET /bugs`. **By team** waits for
+the client's answer on what a team is (BRIEF question 6); today the site shows **by project** and **by developer**.
+
+## 11. Coming next (not used by the site yet)
+
+Project templates and task dependencies, chat, reports, performance, GitHub. Chat @mentions will add its notification kind. Each will add its section here in its own PR.

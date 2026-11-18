@@ -16,6 +16,7 @@ export interface Notification {
   project_id?: number;
   task_id?: number;
   announcement_id?: number;
+  bug_id?: number;
   data: NotificationData;
   at: string;
   read: boolean;
@@ -39,6 +40,10 @@ export interface NotificationData {
   pm_id?: string;
   /** announcement: its title. */
   title?: string;
+  /** bugs: the code and title, and the new status. */
+  bug_code?: string;
+  bug_title?: string;
+  bug_status?: string;
 }
 
 /** Which notifications a person wants. A missing kind means "on". Required kinds are always on. */
