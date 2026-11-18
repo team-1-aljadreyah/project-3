@@ -61,6 +61,7 @@ src/
 ├── main.tsx          the start: draws the app into index.html
 ├── app/              routing only: every address and its page (routes.tsx), the layouts, 404, styles.css
 ├── features/
+│   ├── attachments/  file attachments (tasks, projects) and the project files page
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
 │   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), counts
 │   ├── notifications/ the bell, the notifications page and preferences
@@ -83,7 +84,8 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `tasks` uses `projects` and `auth`, `projects` and `notifications` use `auth`, never the other way, so there is no loop.
+Between features: `tasks` uses `attachments`, `projects` and `auth`; `attachments` uses `projects` and `auth`; `projects` and
+`notifications` use `auth`. Never the other way, so there is no loop.
 
 **How data flows:**
 

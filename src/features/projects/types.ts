@@ -97,7 +97,9 @@ export type ProjectEventKind =
   | "phases"
   | "sprint_added"
   | "sprint_changed"
-  | "sprint_removed";
+  | "sprint_removed"
+  | "attachment_added"
+  | "attachment_removed";
 
 export interface ProjectEvent {
   id: number;

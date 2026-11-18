@@ -6,7 +6,7 @@
 // leader in the project, and the CEO. Kept in `canApprove` only, so changing it later is one line.
 import type { Project } from "@/features/projects";
 import type { TaskStatus, User } from "@/shared/api/types";
-import { isMember } from "@/shared/lib/access";
+import { canTakePart, isMember } from "@/shared/lib/access";
 import type { Task } from "./types";
 
 type P = Pick<Project, "pm_id" | "member_ids" | "statuses">;
@@ -28,8 +28,7 @@ export function canMoveTask(user: User, project: P, task: Pick<Task, "assignee_i
 
 /** Comment: everyone who can see the project, except the system admin (accounts, not project work). */
 export function canComment(user: User, project: P) {
-  if (user.role === "admin") return false;
-  return user.role === "ceo" || user.role === "monitor" || isMember(user, project);
+  return canTakePart(user, project);
 }
 
 export function statusOf(project: Pick<Project, "statuses">, key: string): TaskStatus | undefined {

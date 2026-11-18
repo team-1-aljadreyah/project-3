@@ -15,6 +15,15 @@ export function canSeeProject(user: Pick<User, "id" | "role">, project: Members)
   return isMember(user, project);
 }
 
+/**
+ * Takes part in a project's work: comments, adds files. Everyone who can see the project, except the system admin
+ * (accounts, not project work). Used by the task rules and the file attachments, so both follow the same rule.
+ */
+export function canTakePart(user: Pick<User, "id" | "role">, project: Members) {
+  if (user.role === "admin") return false;
+  return user.role === "ceo" || user.role === "monitor" || isMember(user, project);
+}
+
 export const ROLES: Record<Role, { ar: string; en: string }> = {
   ceo: { ar: "المدير التنفيذي", en: "CEO" },
   pm: { ar: "مدير المشروع", en: "Project manager" },

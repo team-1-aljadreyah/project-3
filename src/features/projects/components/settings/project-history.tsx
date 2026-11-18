@@ -50,6 +50,10 @@ function eventText(e: ProjectEvent, fmt: Fmt, people: Map<number, User>) {
       return tr(`عدّل دورة: ${days(e.to)}`, `changed a sprint: ${days(e.to)}`);
     case "sprint_removed":
       return tr(`حذف دورة: ${days(e.from)}`, `removed a sprint: ${days(e.from)}`);
+    case "attachment_added":
+      return tr(`أرفق الملف «${e.to ?? "-"}»`, `attached "${e.to ?? "-"}"`);
+    case "attachment_removed":
+      return tr(`حذف الملف «${e.from ?? "-"}»`, `removed the file "${e.from ?? "-"}"`);
   }
 }
 

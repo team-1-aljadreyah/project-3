@@ -92,7 +92,8 @@ The server must filter, not only the pages:
 **History** (`GET /tasks/:id/history`): every event `{id, task_id, actor_id, kind, from?, to?, note?, at}`.
 **It can't be edited or deleted by anyone through the API**, and normal users can't hide it (the brief).
 `kind`: `created`, `status`, `blocked`, `unblocked`, `approval_requested`, `approved`, `rejected`,
-`assignee`, `due`, `priority`, `title`, `description`, `phase` (old and new phase ids), `comment`.
+`assignee`, `due`, `priority`, `title`, `description`, `phase` (old and new phase ids), `comment`, `attachment_added` (`to`: the file name),
+`attachment_removed` (`from`: the file name).
 
 **Phases on tasks:** `phase_id` (on create and PATCH) must be one of the project's phases (422 on `phase_id`).
 On PATCH, `null` takes the task out of its phase.
@@ -132,6 +133,9 @@ Every change updates the task's `updated_at`.
 | `POST /notifications/read-all` | signed in | nothing |
 | `GET /notifications/preferences` | signed in | `{ [kind]: boolean }` |
 | `PUT /notifications/preferences` | signed in | the saved preferences |
+| `GET /tasks/:id/attachments`, `GET /projects/:id/attachments` | can see the project | `Attachment[]` |
+| `POST /tasks/:id/attachments`, `POST /projects/:id/attachments` | takes part in the project (see section 8) | `Attachment` |
+| `DELETE /attachments/:id` | the uploader, the project's PM, `ceo` | nothing |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
 (`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
@@ -222,7 +226,31 @@ are `task_assigned`, `task_overdue`, `approval_requested`, `approval_decided`, `
 Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something; with the
 real server, a WebSocket message `notification` (planned, as in Project 2) will tell the site to load the list again.
 
-## 8. Coming next (not used by the site yet)
+## 8. File attachments
 
-File attachments, project templates and task dependencies, chat,
+Shapes: `src/features/attachments/types.ts`. Rules (types and sizes): `src/features/attachments/rules.ts`. The demo backend
+(`src/features/attachments/mock.ts`) is the reference. Today files belong to a **task** or a **project**; bugs and chat
+messages will use the same calls later (the brief).
+
+`Attachment`: `{id, owner_type: "task" | "project", owner_id, name, size, mime, url, uploaded_by, at}`. `url` is where the site
+downloads it from (a short-lived signed link is fine). The site shows a preview for `image/png|jpeg|gif|webp` only.
+
+**Uploading** (`POST /tasks/:id/attachments` or `POST /projects/:id/attachments`, `multipart/form-data` with one field `file`):
+
+- Who: everyone who **takes part** in the project: its members, `ceo`, `monitor`; **not** `admin` (403). A task's project
+  is the one checked. A project or task you can't see → 404.
+- **Types** (by extension, and the server must also check the real content): `png jpg jpeg gif webp pdf doc docx xls xlsx ppt
+  pptx txt csv zip`. **Never SVG or HTML** (they can run code in a browser). Other types → 422 on `file`.
+- **Size:** up to **10 MB** per file; an empty file → 422 on `file`. At most **30 files** per task or project (422).
+  *(Assumptions, BRIEF question 13: the client hasn't said sizes, types or where files are stored.)*
+- Keep the original `name` (≤ 200 letters) for showing it; store the file under a server-made name. Serve downloads with
+  `Content-Disposition: attachment` so the browser downloads instead of opening them.
+- Log `attachment_added` in the task's or project's history (`to`: the name).
+
+**Removing** (`DELETE /attachments/:id`): the person who uploaded it, the project's PM, or the `ceo` (403 otherwise). Log
+`attachment_removed` (`from`: the name). The history keeps the name even after the file is gone.
+
+## 9. Coming next (not used by the site yet)
+
+Project templates and task dependencies, chat,
 announcements, bugs, reports, performance, GitHub. Chat @mentions and bug events will add their notification kinds. Each will add its section here in its own PR.

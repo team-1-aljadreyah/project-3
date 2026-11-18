@@ -1,5 +1,6 @@
 // The demo data: invented people and projects (never real ones), with dates around today so "late",
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
+import type { Attachment } from "@/features/attachments";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
@@ -27,11 +28,14 @@ export interface MockDb {
   /** Each project's history (setup changes). */
   project_events: ProjectEvent[];
   notifications: Notification[];
+  /** Files attached to tasks and projects (the demo keeps each file's bytes in `url`). */
+  attachments: Attachment[];
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
+    attachment: number;
   };
 }
 
@@ -184,11 +188,27 @@ export function seed(now = new Date()): MockDb {
     { id: ++notificationId, user_id: 7, kind: "project_added", actor_id: 2, project_id: 1, data: { project_name: projects[0].name, project_name_en: projects[0].name_en }, at: at(30), read: true },
   ];
 
+  // Two small example files: a task's requirements and a project's plan (invented text).
+  const textFile = (text: string) => {
+    const bytes = new TextEncoder().encode(text);
+    return { size: bytes.length, url: `data:text/plain;charset=utf-8;base64,${btoa(String.fromCharCode(...bytes))}` };
+  };
+  const attachments: Attachment[] = [
+    {
+      id: 1, owner_type: "task", owner_id: tasks.find((t) => t.code === "TSK-118")!.id, name: "متطلبات-شاشة-الدخول.txt", mime: "text/plain",
+      ...textFile("شاشة الدخول: البريد الإلكتروني وكلمة المرور، ورسالة واضحة عند الخطأ، ودعم الوضع الليلي."), uploaded_by: 2, at: at(8),
+    },
+    {
+      id: 2, owner_type: "project", owner_id: 1, name: "خطة-المشروع.txt", mime: "text/plain",
+      ...textFile("المراحل: التحليل والتصميم، ثم التطوير، ثم الإطلاق. الدورة الحالية: الدورة 4."), uploaded_by: 2, at: at(35),
+    },
+  ];
+
   return {
-    users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {},
+    users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
-      project_event: projectEventId, notification: notificationId,
+      project_event: projectEventId, notification: notificationId, attachment: attachments.length,
     },
   };
 }

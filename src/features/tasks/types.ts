@@ -68,7 +68,9 @@ export type TaskEventKind =
   | "title"
   | "description"
   | "phase"
-  | "comment";
+  | "comment"
+  | "attachment_added"
+  | "attachment_removed";
 
 export interface TaskEvent {
   id: number;
