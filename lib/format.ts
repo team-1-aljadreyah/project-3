@@ -1,4 +1,5 @@
 // Numbers and dates in Arabic or English. Pure functions (no React), so they are easy to test.
+import { daysBetween, today } from "./utils";
 // Digits are always Latin (1 2 3) for now; the client has not decided yet (see the private DESIGN notes).
 
 export type Lang = "ar" | "en";
@@ -14,6 +15,18 @@ export interface Fmt {
   day: (iso: string | undefined) => string;
   /** How far a due day is from today: "متأخرة يومين", "اليوم", "بعد 3 أيام". */
   due: (days: number) => string;
+  /** "20 تشرين الثاني، 10:30" */
+  dateTime: (iso: string | undefined) => string;
+  /** How long ago: "الآن", "قبل 5 دقائق", "قبل ساعتين", "أمس", then the date. */
+  ago: (iso: string | undefined, now?: Date) => string;
+}
+
+/** Arabic counts for minutes and hours, like arDays. */
+function arCount(n: number, one: string, two: string, few: string, many: string) {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  if (n >= 3 && n <= 10) return `${n} ${few}`;
+  return `${n} ${many}`;
 }
 
 /** Arabic count words: 1 يوم، 2 يومان، 3–10 أيام، 11+ يوماً. */
@@ -27,7 +40,9 @@ export function arDays(n: number) {
 export function makeFmt(lang: Lang): Fmt {
   const tr: Tr = (ar, en) => (lang === "ar" ? ar : en);
   const nf = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-  const dayF = new Intl.DateTimeFormat(lang === "ar" ? "ar-IQ-u-nu-latn" : "en-GB", { day: "numeric", month: "long" });
+  const locale = lang === "ar" ? "ar-IQ-u-nu-latn" : "en-GB";
+  const dayF = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" });
+  const dtF = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
   return {
     lang,
     tr,
@@ -39,6 +54,21 @@ export function makeFmt(lang: Lang): Fmt {
       if (days === 1) return tr("غداً", "tomorrow");
       if (days < 0) return tr(`متأخرة ${arDays(-days)}`, `${-days} day${days === -1 ? "" : "s"} late`);
       return tr(`بعد ${arDays(days)}`, `in ${days} days`);
+    },
+    dateTime: (iso) => (iso ? dtF.format(new Date(iso)) : "-"),
+    ago: (iso, now = new Date()) => {
+      if (!iso) return "-";
+      const s = Math.round((now.getTime() - new Date(iso).getTime()) / 1000);
+      if (s < 60) return tr("الآن", "just now");
+      const m = Math.floor(s / 60);
+      if (m < 60) return tr(`قبل ${arCount(m, "دقيقة", "دقيقتين", "دقائق", "دقيقة")}`, `${m} min ago`);
+      const h = Math.floor(m / 60);
+      if (h < 24) return tr(`قبل ${arCount(h, "ساعة", "ساعتين", "ساعات", "ساعة")}`, `${h} h ago`);
+      // Whole days by the calendar, not by hours: 11:00 two days ago is "2 days ago", not "yesterday".
+      const d = daysBetween(today(0, new Date(iso)), today(0, now));
+      if (d <= 1) return tr("أمس", "yesterday");
+      if (d < 7) return tr(`قبل ${arDays(d)}`, `${d} days ago`);
+      return dayF.format(new Date(iso));
     },
   };
 }

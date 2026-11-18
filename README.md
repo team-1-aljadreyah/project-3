@@ -61,15 +61,21 @@ app/
 components/
 ├── ui/               the design system (tokens in app/globals.css)
 ├── shell/            top bar, account menu, the signed-in frame
-├── board/, projects/ feature parts
+├── board/, projects/, tasks/   feature parts
 lib/
 ├── api/              api switch, HTTP client, types, demo backend (mock/)
-├── tasks.ts          task rules (grouping, lateness, counts)
+├── tasks.ts          task counts (grouping, lateness, progress)
+├── task-rules.ts     who may do what with tasks, and what a status change means
 ├── format.ts, i18n   Arabic / English text, numbers and dates
 tests/
 ├── unit/             Vitest
 └── e2e/              Playwright
 ```
+
+## Documentation
+
+- [docs/backend.md](docs/backend.md): the backend contract: every call, who may do what, and the task rules
+  the server must enforce. It changes in the same pull request as any API change.
 
 ## Working on it
 

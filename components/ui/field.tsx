@@ -33,17 +33,45 @@ export function Field({
   );
 }
 
+const control = (invalid?: boolean) =>
+  cn(
+    "w-full rounded-lg border border-line bg-card px-3 text-sm text-text placeholder:text-faint",
+    "outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-60",
+    invalid && "border-danger focus:border-danger focus:ring-danger-soft",
+  );
+
+/** The error under a field is linked to it, so a screen reader reads it with the field. */
+const describedBy = (invalid?: boolean, id?: string) => (invalid && id ? `${id}-error` : undefined);
+
 export function Input({ className, invalid, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
   return (
     <input
       aria-invalid={invalid || undefined}
-      aria-describedby={invalid && props.id ? `${props.id}-error` : undefined}
-      className={cn(
-        "h-11 w-full rounded-lg border border-line bg-card px-3 text-sm text-text placeholder:text-faint",
-        "outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft",
-        invalid && "border-danger focus:border-danger focus:ring-danger-soft",
-        className,
-      )}
+      aria-describedby={describedBy(invalid, props.id)}
+      className={cn(control(invalid), "h-11", className)}
+      {...props}
+    />
+  );
+}
+
+export function Textarea({ className, invalid, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
+  return (
+    <textarea
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy(invalid, props.id)}
+      className={cn(control(invalid), "min-h-24 py-2.5 leading-relaxed", className)}
+      {...props}
+    />
+  );
+}
+
+/** The browser's own select (works with the keyboard and phones' pickers), in our style. */
+export function Select({ className, invalid, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
+  return (
+    <select
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy(invalid, props.id)}
+      className={cn(control(invalid), "h-11 pe-8", className)}
       {...props}
     />
   );

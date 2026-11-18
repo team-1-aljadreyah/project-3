@@ -1,6 +1,6 @@
 "use client";
 
-import { Languages, LogOut, Moon, Sun } from "lucide-react";
+import { Languages, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
@@ -75,6 +75,21 @@ export function AccountMenu({ user }: { user: User }) {
               <Languages size={16} aria-hidden="true" />
               {lang === "ar" ? "English" : "العربية"}
             </button>
+            {process.env.NEXT_PUBLIC_USE_MOCK === "true" && (
+              <button
+                type="button"
+                role="menuitem"
+                className={itemClass}
+                onClick={() => {
+                  setOpen(false);
+                  // Demo build only (the check is written out so the real build drops this button).
+                  import("@/lib/api/mock/db").then((m) => m.resetDb());
+                }}
+              >
+                <RotateCcw size={16} aria-hidden="true" />
+                {tr("إعادة البيانات التجريبية", "Reset demo data")}
+              </button>
+            )}
             <button type="button" role="menuitem" className={`${itemClass} text-danger`} onClick={signOut}>
               <LogOut size={16} aria-hidden="true" className="rtl:-scale-x-100" />
               {tr("تسجيل الخروج", "Sign out")}

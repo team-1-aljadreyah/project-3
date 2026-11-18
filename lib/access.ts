@@ -42,6 +42,6 @@ export function navFor(role: Role) {
 
 /** Which menu item a page belongs to: "/projects/3" → "projects". */
 export function activeNavKey(path: string) {
-  if (path === "/" || path.startsWith("/projects")) return "projects";
+  if (path === "/" || path.startsWith("/projects") || path.startsWith("/tasks")) return "projects";
   return NAV.find((n) => n.href !== "/" && path.startsWith(n.href))?.key;
 }

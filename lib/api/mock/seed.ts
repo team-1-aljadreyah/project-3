@@ -2,7 +2,7 @@
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
 import { DEFAULT_STATUSES } from "../../tasks";
 import { today } from "../../utils";
-import type { Priority, Project, Sprint, Task, TaskStatus, User } from "../types";
+import type { Priority, Project, Sprint, Task, TaskComment, TaskEvent, TaskStatus, User } from "../types";
 
 /** The demo password of every demo account. Only the demo build has it. */
 export const DEMO_PASSWORD = "123456";
@@ -19,6 +19,10 @@ export interface MockDb {
   projects: Project[];
   sprints: Sprint[];
   tasks: Task[];
+  comments: TaskComment[];
+  events: TaskEvent[];
+  /** The last id given to each kind of record. */
+  seq: { task: number; comment: number; event: number };
 }
 
 export function seed(now = new Date()): MockDb {
@@ -65,14 +69,25 @@ export function seed(now = new Date()): MockDb {
 
   const sprints: Sprint[] = [{ id: 1, project_id: 1, name: "الدورة 4", start: d(-6), end: d(5), planned_ratio: 0 }];
 
+  // A moment `days` ago at `hour` o'clock, for history and comments.
+  const at = (days: number, hour = 10) => {
+    const x = new Date(now);
+    x.setDate(x.getDate() - days);
+    x.setHours(hour, 0, 0, 0);
+    return x.toISOString();
+  };
+
   let id = 0;
   const task = (
     project_id: number, code: string, title: string, status: string, priority: Priority,
     assignee_id: number, due: number, sub: [number, number], blocked_reason?: string,
   ): Task => ({
-    id: ++id, code, project_id, title, description: "", status, priority, assignee_id,
+    id: ++id, code, project_id, title, status, priority, assignee_id,
+    description: DESCRIPTIONS[code] ?? "",
     sprint_id: project_id === 1 ? 1 : undefined, start: d(due - 7), due: d(due),
-    subtasks_done: sub[0], subtasks_total: sub[1], blocked_reason, updated_at: new Date(now).toISOString(),
+    subtasks_done: sub[0], subtasks_total: sub[1], blocked_reason,
+    created_by: projects.find((p) => p.id === project_id)!.pm_id, created_at: at(9),
+    updated_at: at(1),
   });
 
   const tasks: Task[] = [
@@ -94,5 +109,42 @@ export function seed(now = new Date()): MockDb {
     task(3, "TSK-302", "حجز المساحات الإعلانية", "new", "high", 2, 14, [0, 4]),
   ];
 
-  return { users, projects, sprints, tasks };
+  // TSK-099: Ali asked to mark it done; it waits for the PM's approval.
+  const asked = tasks.find((t) => t.code === "TSK-099")!;
+  asked.approval = { state: "pending", from: "in_review", to: "completed", requested_by: 6, requested_at: at(0, 9) };
+
+  // The history: every task was created by its PM; some moved since.
+  let eventId = 0;
+  const events: TaskEvent[] = tasks.map((t) => ({ id: ++eventId, task_id: t.id, actor_id: t.created_by!, kind: "created", at: t.created_at! }));
+  const ev = (code: string, e: Omit<TaskEvent, "id" | "task_id">) =>
+    events.push({ id: ++eventId, task_id: tasks.find((t) => t.code === code)!.id, ...e });
+  ev("TSK-104", { actor_id: 4, kind: "status", from: "todo", to: "in_progress", at: at(5) });
+  ev("TSK-097", { actor_id: 4, kind: "status", from: "todo", to: "in_progress", at: at(6) });
+  ev("TSK-097", { actor_id: 4, kind: "blocked", from: "in_progress", to: "blocked", note: "بانتظار صلاحية الوصول إلى المستودع", at: at(2, 11) });
+  ev("TSK-099", { actor_id: 6, kind: "status", from: "in_progress", to: "in_review", at: at(2, 15) });
+  ev("TSK-099", { actor_id: 6, kind: "approval_requested", from: "in_review", to: "completed", at: at(0, 9) });
+  ev("TSK-085", { actor_id: 6, kind: "approval_requested", from: "testing", to: "completed", at: at(5, 12) });
+  ev("TSK-085", { actor_id: 2, kind: "approved", from: "testing", to: "completed", at: at(4, 9) });
+  ev("TSK-109", { actor_id: 2, kind: "due", from: d(-5), to: d(-2), note: "أُضيف قسم الإعلانات المثبّتة", at: at(6) });
+
+  let commentId = 0;
+  const comment = (code: string, author_id: number, body: string, when: string): TaskComment => ({
+    id: ++commentId, task_id: tasks.find((t) => t.code === code)!.id, author_id, body, created_at: when,
+  });
+  const comments: TaskComment[] = [
+    comment("TSK-097", 4, "طلبت الصلاحية من مسؤول النظام، وننتظر الرد.", at(2, 11)),
+    comment("TSK-097", 2, "سأتابع الأمر معه اليوم.", at(1, 9)),
+    comment("TSK-099", 6, "أنهيت التنبيه قبل الموعد بيوم وبساعة، وجرّبته على ثلاث مهام.", at(0, 9)),
+    comment("TSK-104", 5, "الواجهة جاهزة، وأنتظر نقطة الاتصال من الخادم.", at(1, 14)),
+  ];
+
+  return { users, projects, sprints, tasks, comments, events, seq: { task: id, comment: commentId, event: eventId } };
 }
+
+/** Short descriptions for some demo tasks, so the task page has something to show. */
+const DESCRIPTIONS: Record<string, string> = {
+  "TSK-104": "نقل المهمة بين الأعمدة يحفظ حالتها في الخادم، ويظهر التغيير لكل من يفتح اللوحة.",
+  "TSK-097": "ربط كل مهمة بمستودع GitHub، وإظهار الالتزامات وطلبات الدمج المرتبطة بها في صفحة المهمة.",
+  "TSK-099": "إشعار المسؤول عن المهمة قبل موعد التسليم بيوم، ثم عند تجاوزه.",
+  "TSK-118": "شاشة الدخول بالبريد الإلكتروني وكلمة المرور، مع رسائل واضحة عند الخطأ.",
+};
