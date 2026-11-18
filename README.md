@@ -63,7 +63,8 @@ src/
 ├── features/
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
 │   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), counts
-│   └── tasks/        the project board, the task page, task rules, and their parts
+│   ├── notifications/ the bell, the notifications page and preferences
+│   └── tasks/        the project board, the task page, my tasks, task rules, and their parts
 ├── shared/
 │   ├── ui/           the design system (tokens in app/styles.css)
 │   ├── shell/        the top bar, the account menu, the signed-in frame
@@ -82,7 +83,7 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `tasks` uses `projects` and `auth`, `projects` uses `auth`, never the other way, so there is no loop.
+Between features: `tasks` uses `projects` and `auth`, `projects` and `notifications` use `auth`, never the other way, so there is no loop.
 
 **How data flows:**
 

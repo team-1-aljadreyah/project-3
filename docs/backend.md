@@ -126,6 +126,12 @@ Every change updates the task's `updated_at`.
 | `PATCH /sprints/:id` | its project's PM, `ceo` | `Sprint` |
 | `DELETE /sprints/:id` | its project's PM, `ceo` | nothing |
 | `GET /projects/:id/history` | can see it | `ProjectEvent[]` |
+| `GET /me/tasks` | signed in | `Task[]`: the tasks assigned to me, in projects I can see |
+| `GET /notifications` | signed in | `Notification[]`, mine only, newest first (the latest 100) |
+| `POST /notifications/:id/read` | its owner | nothing (someone else's → 404) |
+| `POST /notifications/read-all` | signed in | nothing |
+| `GET /notifications/preferences` | signed in | `{ [kind]: boolean }` |
+| `PUT /notifications/preferences` | signed in | the saved preferences |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
 (`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
@@ -180,7 +186,43 @@ The demo backend (`src/features/projects/mock.ts`) is the exact reference.
 **History** (`GET /projects/:id/history`): `[{id, project_id, actor_id, kind, from?, to?, note?, at}]`. Like the
 task history, nobody can edit or hide it through the API.
 
-## 7. Coming next (not used by the site yet)
+## 7. Notifications
 
-Notifications (from the history events above), file attachments, project templates and task dependencies, chat,
-announcements, bugs, reports, performance, GitHub. Each will add its section here in its own PR.
+Shapes: `src/features/notifications/types.ts`; the kinds and which are required: `src/shared/api/notification-kinds.ts`.
+The demo server makes them in `src/mock/notify.ts`: that file is the exact reference for **who gets what**.
+
+`Notification`: `{id, user_id, kind, actor_id?, project_id?, task_id?, data, at, read}`. `data` is a **copy taken when it was
+made** (`task_code`, `task_title`, `project_name`, `project_name_en`, `status`, `status_en`, `due`, `decision`, `note`, `pm_id`),
+so the text stays right after the task changes. The site writes the sentence from `kind` + `data` in the reader's language.
+
+**General rules:** nobody is told about their own action (`actor_id` never gets it); one notification per person per event;
+a kind the person turned off isn't sent (unless it is required). Each person reads only their own.
+
+| `kind` | When | Who gets it |
+|---|---|---|
+| `task_assigned` | a task is created with an assignee, or its assignee changes | the new assignee |
+| `task_status` | a task moves (data: `status`, `status_en`, and the blocked reason as `note`) | the assignee and the project's PM |
+| `task_comment` | a comment is added | the assignee, the PM, and everyone who commented on that task before |
+| `task_due_changed` | the due day changes (data: `due`, the reason as `note`) | the assignee |
+| `task_due_soon` | the due day is tomorrow or today, and the task isn't done | the assignee, **once per task and due day** |
+| `task_overdue` | the due day has passed, and the task isn't done | the assignee, once per task and due day |
+| `approval_requested` | someone asks to mark a task done | the project's PM and its team leaders (`lead` members). *Assumption: not the CEO.* |
+| `approval_decided` | the request is approved (also by moving the task to done) or sent back (data: `decision`, `note`) | the person who asked |
+| `project_added` | a project is created with you in it, or you are added | the new member |
+| `project_pm` | the PM changes (data: `pm_id`, `note`) | every member, the new PM included |
+| `project_plan` | the project's dates change (data: `due` = the new end, `note`) | every member |
+
+**Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
+them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
+
+**Preferences** (`PUT /notifications/preferences`, `{ [kind]: boolean }`; a missing kind means on): **required kinds can't be
+turned off** (`false` → 422 on `prefs`), and unknown kinds → 422. *Assumption, to confirm with the client:* the required ones
+are `task_assigned`, `task_overdue`, `approval_requested`, `approval_decided`, `project_added`.
+
+Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something; with the
+real server, a WebSocket message `notification` (planned, as in Project 2) will tell the site to load the list again.
+
+## 8. Coming next (not used by the site yet)
+
+File attachments, project templates and task dependencies, chat,
+announcements, bugs, reports, performance, GitHub. Chat @mentions and bug events will add their notification kinds. Each will add its section here in its own PR.

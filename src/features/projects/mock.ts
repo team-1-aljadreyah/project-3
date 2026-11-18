@@ -2,6 +2,7 @@
 // must keep (docs/backend.md). Only the demo build loads it (see ./api.ts).
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
+import { aboutProject, notify } from "@/mock/notify";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
@@ -111,6 +112,7 @@ export const projectsMock: ProjectsApi = {
     };
     db.projects.push(project);
     log({ project_id: id, actor_id: user.id, kind: "created" });
+    notify(project.member_ids, "project_added", { actor_id: user.id, project_id: id, data: aboutProject(project) });
     commit();
     return wait(project);
   },
@@ -138,7 +140,10 @@ export const projectsMock: ProjectsApi = {
         const name = getDb().users.find((u) => u.id === busy)?.name ?? "";
         return fail(409, "BAD_STATE", `لدى ${name} مهام مفتوحة في هذا المشروع. أسندها إلى عضو آخر أولاً.`, `${name} still has open tasks here. Give them to another member first.`);
       }
-      for (const m of next.filter((x) => !project.member_ids.includes(x))) log({ project_id: id, actor_id: user.id, kind: "member_added", to: String(m) });
+      for (const m of next.filter((x) => !project.member_ids.includes(x))) {
+        log({ project_id: id, actor_id: user.id, kind: "member_added", to: String(m) });
+        notify([m], "project_added", { actor_id: user.id, project_id: id, data: aboutProject(project) });
+      }
       for (const m of leaving) log({ project_id: id, actor_id: user.id, kind: "member_removed", from: String(m) });
       project.member_ids = next;
     }
@@ -146,6 +151,8 @@ export const projectsMock: ProjectsApi = {
     if (p.pm_id !== undefined && p.pm_id !== project.pm_id) {
       // The old manager stays a member, so their tasks and access stay until the CEO changes the members.
       log({ project_id: id, actor_id: user.id, kind: "pm", from: String(project.pm_id), to: String(p.pm_id), note });
+      // A new manager is an edge case in the brief: the whole team hears it.
+      notify(withPm(project.member_ids, p.pm_id), "project_pm", { actor_id: user.id, project_id: id, data: { ...aboutProject(project), pm_id: String(p.pm_id), note } });
       project.member_ids = withPm(project.member_ids, p.pm_id);
       project.pm_id = p.pm_id;
     }
@@ -155,6 +162,8 @@ export const projectsMock: ProjectsApi = {
     if (newStart !== project.start || newEnd !== project.end) {
       // A plan changed after work started is an edge case in the brief: it is logged with its reason.
       log({ project_id: id, actor_id: user.id, kind: "dates", from: `${project.start} → ${project.end}`, to: `${newStart} → ${newEnd}`, note });
+      // So is a changed plan (another edge case), with the new end day and the reason.
+      notify(project.member_ids, "project_plan", { actor_id: user.id, project_id: id, data: { ...aboutProject(project), due: newEnd, note } });
       project.start = newStart;
       project.end = newEnd;
     }
