@@ -13,7 +13,7 @@ pipeline {
     environment {
         CI = 'true'
         // CI builds and tests the demo (fake data in the browser). The real site is built with its own values.
-        NEXT_PUBLIC_USE_MOCK = 'true'
+        VITE_USE_MOCK = 'true'
     }
 
     stages {
@@ -50,7 +50,7 @@ pipeline {
         stage('Real Build Has No Demo Data') {
             steps {
                 // Build the site as the real one, and fail if a demo account or password is in its files.
-                sh 'NEXT_PUBLIC_USE_MOCK=false npm run build'
+                sh 'VITE_USE_MOCK=false npm run build'
                 sh 'npm run check:no-demo'
             }
         }

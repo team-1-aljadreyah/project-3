@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Browser tests: they start the built site (`npm run build` first, with NEXT_PUBLIC_USE_MOCK=true) on port 3100.
+// Browser tests: they serve the built site (`npm run build` first, with VITE_USE_MOCK=true) on port 3100.
 // On a developer's Windows machine they use the installed Chrome; on Jenkins, Playwright's own Chromium.
 const PORT = 3100;
 
@@ -18,7 +18,7 @@ export default defineConfig({
     { name: "phone", use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" } },
   ],
   webServer: {
-    command: `npm start -- -p ${PORT}`,
+    command: `npm run preview -- --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
   },

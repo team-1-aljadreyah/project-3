@@ -2,13 +2,14 @@
 
 Everything the real backend has to do for the site to work as it works on the demo data.
 
-**The reference already runs.** The site works today on a fake backend in the browser (`lib/api/mock.ts`,
-rules in `lib/task-rules.ts` and `lib/tasks.ts`, data in `lib/api/mock/seed.ts`). It has the same calls as the
-real one (`lib/api/http.ts`: paths, bodies, answers; shapes in `lib/api/types.ts`). When something here is not
+**The reference already runs.** The site works today on a fake backend in the browser (`src/features/*/mock.ts`,
+rules in `src/features/tasks/rules.ts` and `src/features/projects/counts.ts`, data in `src/mock/seed.ts`). It has the
+same calls as the real one (`src/features/*/api.ts`: paths, bodies, answers; shapes in each feature's `types.ts` and
+`src/shared/api/types.ts`). When something here is not
 clear, the matching function there is the exact behaviour the pages expect. The unit tests
 (`tests/unit/task-flow.test.ts`) list the rules one by one.
 
-Switching the site to the backend: `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC_API_URL=https://api…`, then rebuild.
+Switching the site to the backend: `VITE_USE_MOCK=false` and `VITE_API_URL=https://api…`, then rebuild.
 
 ---
 
@@ -16,7 +17,7 @@ Switching the site to the backend: `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC
 
 | Topic | What the site expects |
 |---|---|
-| Base URL | `{NEXT_PUBLIC_API_URL}/api/v1` + the paths below. JSON in, JSON out. |
+| Base URL | `{VITE_API_URL}/api/v1` + the paths below. JSON in, JSON out. |
 | Success | `{ "success": true, "data": … }` (the site reads `data`). |
 | Failure | `{ "success": false, "message": "نص للمستخدم", "code": "VALIDATION", "errors": { "field": "نص" } }` with the right HTTP status. `errors` keys are the form's field names (`title`, `blocked_reason`, `note`…): each shows under its field. |
 | Codes | `VALIDATION` 422 · `UNAUTHENTICATED` 401 · `FORBIDDEN` 403 · `NOT_FOUND` 404 · `BAD_STATE` 409 (not allowed in this state) · `RATE_LIMITED` 429. |
@@ -43,7 +44,7 @@ The server must filter, not only the pages:
 ## 3. Task statuses
 
 - Each project has its own `statuses: [{key, name, name_en, tone}]`, in board order. New projects start with
-  the seven defaults (`lib/tasks.ts` `DEFAULT_STATUSES`): `new`, `todo`, `in_progress`, `in_review`, `testing`, `completed`, `blocked`.
+  the seven defaults (`src/shared/lib/statuses.ts` `DEFAULT_STATUSES`): `new`, `todo`, `in_progress`, `in_review`, `testing`, `completed`, `blocked`.
 - `tone` is the family: `new`, `todo`, `progress`, `review`, `testing`, `done`, `blocked`. The rules work by
   family, so a project's own status (for example «بانتظار موافقة الإدارة», tone `review`) follows them too.
 - A task's `status` is one of its project's keys.
@@ -112,7 +113,7 @@ Every change updates the task's `updated_at`.
 | `GET /tasks/:id/history` | can see its project | `TaskEvent[]` |
 
 **Counts:** a task is *late* when it has a `due` day before today and is not in a `done` status
-(`lib/tasks.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
+(`src/features/projects/counts.ts` `lateDays`). `planned_ratio` = days gone / sprint length, between 0 and 1 (`plannedRatio`).
 
 ## 6. Coming next (not used by the site yet)
 

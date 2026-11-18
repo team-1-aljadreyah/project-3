@@ -1,6 +1,6 @@
 // The whole task flow on the demo backend, as different people: the same rules the real backend must keep.
 import { beforeEach, describe, expect, it } from "vitest";
-import { ApiError } from "@/lib/api/errors";
+import { ApiError } from "@/shared/api/errors";
 
 // The demo backend reads the session from localStorage: a small in-memory one for Node.
 const store = new Map<string, string>();
@@ -13,9 +13,9 @@ globalThis.localStorage = {
   length: 0,
 } as Storage;
 
-const { mockApi: api } = await import("@/lib/api/mock");
-const { setDbForTests, getDb } = await import("@/lib/api/mock/db");
-const { seed } = await import("@/lib/api/mock/seed");
+const { tasksMock: api } = await import("@/features/tasks/mock");
+const { setDbForTests, getDb } = await import("@/mock/db");
+const { seed } = await import("@/mock/seed");
 
 const as = (id: number) => {
   const user = getDb().users.find((u) => u.id === id)!;

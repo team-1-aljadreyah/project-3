@@ -1,0 +1,3 @@
+# Every text file uses LF line endings, on every computer (Windows too), so Git never shows
+# whole files as changed only because of line endings.
+* text=auto eol=lf

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Project, Task } from "@/lib/api/types";
-import { countTasks, DEFAULT_STATUSES, groupByStatus, isDone, lateDays, plannedRatio } from "@/lib/tasks";
+import { countTasks, groupByStatus, isDone, lateDays, plannedRatio } from "@/features/projects/counts";
+import type { Project } from "@/features/projects/types";
+import type { Task } from "@/features/tasks/types";
+import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
 
 const project: Pick<Project, "statuses"> = { statuses: DEFAULT_STATUSES };
 

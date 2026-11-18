@@ -20,7 +20,7 @@ test("empty fields and a wrong password show clear messages", async ({ page }) =
   await page.getByLabel("البريد الإلكتروني").fill("pm@demo.test");
   await page.getByLabel("كلمة المرور").fill("wrong");
   await page.getByRole("button", { name: "دخول", exact: true }).click();
-  // (Next.js keeps an empty role="alert" of its own for page changes, so the message is found by its text.)
+  // (The message is found by its text, so an empty role="alert" elsewhere on the page never matches.)
   await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toHaveText("البريد أو كلمة المرور غير صحيحة.");
 });
 

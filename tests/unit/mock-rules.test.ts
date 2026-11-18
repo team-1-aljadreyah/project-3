@@ -1,8 +1,9 @@
 // The fake backend's rules are the reference for the real backend, so they are tested too.
 import { describe, expect, it } from "vitest";
-import { ApiError } from "@/lib/api/errors";
-import { canSeeProject, mockApi } from "@/lib/api/mock";
-import { DEMO_PASSWORD, seed } from "@/lib/api/mock/seed";
+import { ApiError } from "@/shared/api/errors";
+import { authMock } from "@/features/auth/mock";
+import { DEMO_PASSWORD, seed } from "@/mock/seed";
+import { canSeeProject } from "@/shared/lib/access";
 
 const db = seed(new Date(2026, 10, 16));
 const user = (id: number) => db.users.find((u) => u.id === id)!;
@@ -23,14 +24,14 @@ describe("who sees which project (the brief)", () => {
 
 describe("signing in", () => {
   it("works with the right email and password", async () => {
-    const s = await mockApi.login("PM@demo.test ", DEMO_PASSWORD);
+    const s = await authMock.login("PM@demo.test ", DEMO_PASSWORD);
     expect(s.user.role).toBe("pm");
     expect(s.token).toBe("demo-2");
   });
 
   it("refuses a wrong password without saying whether the email exists", async () => {
-    const wrongPassword = await mockApi.login("pm@demo.test", "nope").catch((e) => e);
-    const noSuchEmail = await mockApi.login("nobody@demo.test", "nope").catch((e) => e);
+    const wrongPassword = await authMock.login("pm@demo.test", "nope").catch((e) => e);
+    const noSuchEmail = await authMock.login("nobody@demo.test", "nope").catch((e) => e);
     expect(wrongPassword).toBeInstanceOf(ApiError);
     expect(wrongPassword.status).toBe(422);
     expect(noSuchEmail.message).toBe(wrongPassword.message);
