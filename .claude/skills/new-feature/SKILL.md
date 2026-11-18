@@ -29,8 +29,9 @@ shared piece down (into the lower feature, or into `shared/` if it is truly gene
 
 ## Before you write code
 
-- **Check the brief.** The client's brief comes first. If the feature or a detail is not in the brief, ask the
-  person before building it.
+- **Check the brief.** The client's brief comes first. It is a document the team leader keeps (it is not in the
+  repo); open questions are listed in `docs/backend.md`. If a rule is not clear from the brief (who may see or do
+  what, required fields, limits), ask the person before deciding, and write the decision in `docs/backend.md`.
 - **Name it** in English, lowercase, plural where natural: `announcements`, `bugs`, `chat`, `notifications`.
 - **No new library** without asking first, saying what it saves and what it costs.
 - **Find what is already in `shared/`** (`shared/ui` has Button, Field, Dialog, Toast, Pill, Avatar, Skeleton,
@@ -38,10 +39,15 @@ shared piece down (into the lower feature, or into `shared/` if it is truly gene
 
 ## Steps
 
-Copy each file's template from `references/templates.md` and fill it in.
+Copy each file's template from `references/templates.md` and fill it in. Work in this order: the type check
+only passes once the feature's `index.ts` exists (other files import from it), so run `npm run typecheck` after
+step 7, not before.
 
 1. **`types.ts`**: the data shapes, exactly as the server will send them (snake_case fields, ISO dates).
-   People, jobs, priorities and status colours are already in `@/shared/api/types`; import those.
+   People (`User`), jobs (`Role`), `Priority` and the colour families (`StatusTone`) are already in
+   `@/shared/api/types`; import those. The colours themselves come from `@/shared/ui` (`Pill`, `TONE_CLASS`).
+   If the feature has its own states or kinds with names and colours, put that map in `labels.ts`, like
+   `projects/project-state.ts` does.
 2. **`api.ts`**: the `XxxApi` interface (every call), `xxxHttp` (the real calls, through `http` from
    `@/shared/api`), and the switch:
    `import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.xxxMock)) : xxxHttp`.
@@ -50,10 +56,12 @@ Copy each file's template from `references/templates.md` and fill it in.
 3. **`mock.ts`**: the demo backend, with the **same rules the real server must keep** (who may see and change
    what, required fields, limits). It is the living reference for the backend developer, so refuse what the
    server would refuse, with the same status codes (`fail(403, "FORBIDDEN", ar, en)`, `invalid(field, ar, en)`)
-   and Arabic in فصحى. Use `currentUser()`, `wait()`, `getDb()` and `commit()` from `src/mock`.
-4. **Demo data** in `src/mock/seed.ts`: add the new lists to `MockDb` and to `seed()`, with invented people and
-   text only (never real customer data), and **bump `DB_VERSION`** in `src/mock/db.ts` so browsers drop their
-   old saved demo data.
+   and Arabic in فصحى. `getDb()` and `commit()` come from `@/mock/db`; `currentUser()`, `wait()`, `fail()`,
+   `invalid()`, `nowIso()` and `projectFor()` come from `@/mock/helpers`.
+4. **Demo data** in `src/mock/seed.ts`: add the new lists to `MockDb`, build their rows inside `seed()` (use its
+   date helpers `d(days)` and `at(days, hour)` so dates stay around today), add a counter to `seq`, and return
+   them. Invented people and text only, never real customer data. Cover every state the page shows. Then
+   **bump `DB_VERSION`** in `src/mock/db.ts` so browsers drop their old saved demo data.
 5. **Rules** (who may do what, counts, status changes) go in `rules.ts` as pure functions, used by both the pages
    (to hide what someone can't do) and `mock.ts` (to refuse it). Hiding a button is not security; the server
    must refuse too.
@@ -62,20 +70,25 @@ Copy each file's template from `references/templates.md` and fill it in.
    - loads with `useLoad(() => xxxApi.something(), [deps])` and shows **all four states**: loading
      (`LoadingBlock` + `Skeleton`), error (`ErrorBox` with retry), empty (`Empty`), and the data;
    - writes every text as `tr("عربي فصيح", "English")`;
-   - makes a whole row or card one link (click anywhere), not only the underlined name;
+   - when a row or card has its own page, makes the whole row or card one link (click anywhere), not only the
+     underlined name (until the detail page exists, plain rows are fine);
    - works on a phone, in dark mode and in English (left to right).
 7. **`index.ts`**: export only what others need (the API, the pages, a few types or rules).
 8. **Route** in `src/app/routes.tsx`, inside the signed-in layout, loaded lazily:
    `{ path: "/announcements", lazy: () => import("@/features/announcements").then((m) => ({ Component: m.AnnouncementsPage })) }`.
 9. **Menu**: in `src/shared/lib/access.ts` set the item's `ready: true` (or add it) with the jobs that see it.
-10. **Backend contract**: add every new call to `docs/backend.md` (path, body, answer, who may call it, errors)
-    **in the same pull request**. If a call changes later, the contract changes in the same PR too.
+10. **Docs, in the same pull request:**
+    - `docs/backend.md`: every new call (path, body, answer, who may call it, errors) and the rules the server
+      must keep. If the feature was listed under "Coming next", move it out of there (and renumber the sections).
+      If a call changes later, the contract changes in the same PR too.
+    - `README.md`: add the feature to the folder tree, and to the line that says which feature uses which.
 11. **Tests**: every feature comes with tests.
     - `tests/unit/<name>.test.ts` (Vitest): the rules and the demo backend's refusals, called as different people.
     - `tests/e2e/<name>.spec.ts` (Playwright): sign in with `signInAs(page, /name/)`, open the page, do the main
-      flow, check what each job sees and doesn't.
-12. **Check** with the `clean-copy-check` skill before pushing, then explain the change with the
-    `pr-explanation` skill.
+      flow, check what each job sees and doesn't. The browser tests run on the **demo build**, so run
+      `VITE_USE_MOCK=true npm run build` before `npm run test:e2e`.
+12. **When it is ready to push:** commit, run the `clean-copy-check` skill, then explain the change with the
+    `pr-explanation` skill. (While still working, run the checks one by one instead.)
 
 ## Done means
 

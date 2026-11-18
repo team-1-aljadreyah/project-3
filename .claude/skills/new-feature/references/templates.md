@@ -127,6 +127,22 @@ export interface MockDb {
 }
 ```
 
+Inside `seed()`, build the rows with its date helpers (`d(days)` gives a day, `at(days, hour)` a moment, both
+counted from today), then add them and the counter to the object `seed()` returns:
+
+```ts
+  const announcements: MockDb["announcements"] = [
+    { id: 1, title: "اجتماع عام يوم الخميس", body: "يبدأ الاجتماع في العاشرة صباحاً.", author_id: 1, created_at: at(1, 9) },
+    { id: 2, title: "تحديث سياسة الإجازات", body: "", author_id: 8, created_at: at(4, 11) },
+  ];
+  const announcement_reads: MockDb["announcement_reads"] = [{ announcement_id: 2, user_id: 5, at: at(3, 10) }];
+
+  return {
+    users, projects, sprints, tasks, comments, events, announcements, announcement_reads,
+    seq: { task: id, comment: commentId, event: eventId, announcement: announcements.length },
+  };
+```
+
 Use invented names and text only. Then in `src/mock/db.ts` raise `DB_VERSION` by one, so every browser
 replaces its old saved demo data with the new seed.
 
