@@ -102,6 +102,20 @@ Between features: `tasks` uses `projects` and `auth`, `projects` uses `auth`, ne
 - [docs/backend.md](docs/backend.md): the backend contract: every call, who may do what, and the task rules
   the server must enforce. It changes in the same pull request as any API change.
 
+## Claude skills
+
+`.claude/skills/` teaches Claude (Claude Code, opened in this repo) three jobs the team repeats, so they are done
+the same way every time, by anyone:
+
+| Skill | What it does |
+|---|---|
+| `clean-copy-check` | The Jenkins-style check before every push, on a fresh clone with no `.env` (script in `scripts/clean-copy.sh`) |
+| `new-feature` | A new feature folder in `src/features/`, following the four rules, with its route, demo data, contract and tests |
+| `pr-explanation` | The six-part explanation of a pull request, in simple English |
+
+Claude uses a skill by itself when the task matches; you can also ask for one by name (`/clean-copy-check`).
+Skills change through pull requests, like code.
+
 ## Working on it
 
 - One branch per change (`feature/…`, `fix/…`, `docs/…`, `chore/…`), merged through a pull request.
