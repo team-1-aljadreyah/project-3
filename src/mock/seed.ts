@@ -1,10 +1,10 @@
 // The demo data: invented people and projects (never real ones), with dates around today so "late",
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
-import type { Project, Sprint } from "@/features/projects";
+import type { Project, ProjectEvent, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
 import type { Priority, TaskStatus, User } from "@/shared/api/types";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
-import { today } from "@/shared/lib/utils";
+import { daysBetween, today } from "@/shared/lib/utils";
 
 /** The demo password of every demo account. Only the demo build has it. */
 export const DEMO_PASSWORD = "123456";
@@ -23,12 +23,16 @@ export interface MockDb {
   tasks: Task[];
   comments: TaskComment[];
   events: TaskEvent[];
+  /** Each project's history (setup changes). */
+  project_events: ProjectEvent[];
   /** The last id given to each kind of record. */
-  seq: { task: number; comment: number; event: number };
+  seq: { project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number };
 }
 
 export function seed(now = new Date()): MockDb {
   const d = (offset: number) => today(offset, now);
+  /** Whole days from today to `day` (negative = in the past). */
+  const daysFrom = (day: string) => daysBetween(today(0, now), day);
 
   const users: User[] = [
     { id: 1, name: "مريم العبيدي", name_en: "Maryam Al-Obaidi", email: "ceo@demo.test", role: "ceo", title: "المديرة التنفيذية", active: true },
@@ -54,18 +58,19 @@ export function seed(now = new Date()): MockDb {
       description: "منصة يحجز منها العملاء مواعيدهم ويتابعونها، مع لوحة للموظفين.",
       pm_id: 2, member_ids: [2, 4, 5, 6, 7], start: d(-40), end: d(25), state: "active", priority: "high",
       uses_sprints: true, statuses: DEFAULT_STATUSES,
+      phases: [{ id: 1, name: "التحليل والتصميم" }, { id: 2, name: "التطوير" }, { id: 3, name: "الإطلاق" }],
     },
     {
       id: 2, code: "PRJ-2", name: "تطبيق المبيعات", name_en: "Sales app",
       description: "تطبيق لمندوبي المبيعات لتسجيل الطلبات والزيارات.",
       pm_id: 2, member_ids: [2, 4, 6], start: d(-20), end: d(50), state: "active", priority: "medium",
-      uses_sprints: false, statuses: DEFAULT_STATUSES,
+      uses_sprints: false, statuses: DEFAULT_STATUSES, phases: [],
     },
     {
       id: 3, code: "PRJ-3", name: "حملة التسويق الشتوية", name_en: "Winter marketing campaign",
       description: "حملة إعلانية للموسم الشتوي، دون مراحل ولا دورات.",
       pm_id: 2, member_ids: [2, 7], start: d(5), end: d(45), state: "planned", priority: "low",
-      uses_sprints: false, statuses: campaignStatuses,
+      uses_sprints: false, statuses: campaignStatuses, phases: [],
     },
   ];
 
@@ -111,6 +116,14 @@ export function seed(now = new Date()): MockDb {
     task(3, "TSK-302", "حجز المساحات الإعلانية", "new", "high", 2, 14, [0, 4]),
   ];
 
+  // Project 1 works in phases: each of its tasks belongs to one.
+  const PHASE_OF: Record<string, number> = {
+    "TSK-118": 1, "TSK-121": 1, "TSK-085": 1,
+    "TSK-115": 2, "TSK-104": 2, "TSK-109": 2, "TSK-099": 2, "TSK-088": 2, "TSK-097": 2,
+    "TSK-092": 3,
+  };
+  for (const t of tasks) if (PHASE_OF[t.code]) t.phase_id = PHASE_OF[t.code];
+
   // TSK-099: Ali asked to mark it done; it waits for the PM's approval.
   const asked = tasks.find((t) => t.code === "TSK-099")!;
   asked.approval = { state: "pending", from: "in_review", to: "completed", requested_by: 6, requested_at: at(0, 9) };
@@ -140,7 +153,20 @@ export function seed(now = new Date()): MockDb {
     comment("TSK-104", 5, "الواجهة جاهزة، وأنتظر نقطة الاتصال من الخادم.", at(1, 14)),
   ];
 
-  return { users, projects, sprints, tasks, comments, events, seq: { task: id, comment: commentId, event: eventId } };
+  // Each project's history: created by its PM; project 1's plan changed after work started (an edge case in the brief).
+  let projectEventId = 0;
+  const project_events: ProjectEvent[] = projects.map((p) => ({
+    id: ++projectEventId, project_id: p.id, actor_id: p.pm_id, kind: "created", at: at(Math.max(0, -daysFrom(p.start)) + 2, 9),
+  }));
+  project_events.push(
+    { id: ++projectEventId, project_id: 1, actor_id: 2, kind: "member_added", to: "7", at: at(30) },
+    { id: ++projectEventId, project_id: 1, actor_id: 2, kind: "dates", from: `${d(-40)} → ${d(20)}`, to: `${d(-40)} → ${d(25)}`, note: "أُضيف ربط المهام بمستودعات GitHub إلى نطاق العمل", at: at(12) },
+  );
+
+  return {
+    users, projects, sprints, tasks, comments, events, project_events,
+    seq: { project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length, project_event: projectEventId },
+  };
 }
 
 /** Short descriptions for some demo tasks, so the task page has something to show. */

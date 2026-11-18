@@ -67,6 +67,7 @@ export type TaskEventKind =
   | "priority"
   | "title"
   | "description"
+  | "phase"
   | "comment";
 
 export interface TaskEvent {
@@ -91,6 +92,8 @@ export interface TaskInput {
   due?: string;
   start?: string;
   sprint_id?: number;
+  /** One of the project's phases, when the project uses phases. */
+  phase_id?: number;
   /** The first status of the project when left out. */
   status?: string;
 }
@@ -99,6 +102,8 @@ export interface TaskInput {
 export type TaskPatch = Partial<Pick<Task, "title" | "description" | "priority" | "due" | "start" | "sprint_id">> & {
   /** `null` takes the task off the person (unassigned). */
   assignee_id?: number | null;
+  /** `null` takes the task out of its phase. */
+  phase_id?: number | null;
   due_note?: string;
 };
 

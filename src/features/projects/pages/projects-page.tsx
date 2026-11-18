@@ -1,23 +1,38 @@
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
+import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
-import { Empty, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
+import { Button, Empty, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { projectsApi } from "../api";
+import { NewProjectDialog } from "../components/new-project-dialog";
 import { ProjectCard } from "../components/project-card";
+import { canCreateProject } from "../rules";
 
 /** The projects this person may see (the server decides which), as cards. */
 export function ProjectsPage() {
   const { tr } = useFmt();
   usePageTitle(tr("المشاريع", "Projects"));
+  const user = useUser();
   const projects = useLoad(() => Promise.all([projectsApi.projects(), authApi.users()]));
+  const [creating, setCreating] = useState(false);
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{tr("المشاريع", "Projects")}</h1>
-        {projects.data && (
-          <p className="text-sm text-muted">{tr(`عدد المشاريع: ${projects.data[0].length}`, `Projects: ${projects.data[0].length}`)}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold">{tr("المشاريع", "Projects")}</h1>
+          {projects.data && (
+            <p className="text-sm text-muted">{tr(`عدد المشاريع: ${projects.data[0].length}`, `Projects: ${projects.data[0].length}`)}</p>
+          )}
+        </div>
+        {canCreateProject(user) && projects.data && (
+          <Button pill onClick={() => setCreating(true)}>
+            <Plus size={16} aria-hidden="true" />
+            {tr("مشروع جديد", "New project")}
+          </Button>
         )}
       </div>
 
@@ -46,6 +61,7 @@ export function ProjectsPage() {
             ))}
           </ul>
         ))}
+      {projects.data && <NewProjectDialog open={creating} onClose={() => setCreating(false)} user={user} people={projects.data[1]} />}
     </div>
   );
 }

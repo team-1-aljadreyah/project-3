@@ -62,7 +62,7 @@ src/
 ├── app/              routing only: every address and its page (routes.tsx), the layouts, 404, styles.css
 ├── features/
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
-│   ├── projects/     the projects list, project types and counts (done, late, blocked)
+│   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), counts
 │   └── tasks/        the project board, the task page, task rules, and their parts
 ├── shared/
 │   ├── ui/           the design system (tokens in app/styles.css)
