@@ -4,10 +4,12 @@ import "@fontsource-variable/readex-pro"; // the font (board D), served from our
 import "./styles.css";
 import type { Metadata, Viewport } from "next";
 import { BOOT_SCRIPT } from "@/shared/lib/boot";
+import { BRAND } from "@/shared/lib/brand";
 import { Providers } from "./providers";
 
+// No `title` here on purpose: Next.js would write it into the page a moment after the page sets its own title
+// (usePageTitle), and the tab would show only the platform's name. The <title> below is in the first HTML instead.
 export const metadata: Metadata = {
-  title: "منصة المشاريع",
   description: "منصة الشركة لإدارة المشاريع والمهام والفرق ومتابعة الإنجاز",
 };
 
@@ -24,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // so it changes <html> before React starts: suppressHydrationWarning tells React that is expected.
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <title>{BRAND.ar}</title>
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
       </head>
       <body className="min-h-dvh antialiased">

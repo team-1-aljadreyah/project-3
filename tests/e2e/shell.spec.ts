@@ -52,3 +52,12 @@ test("a fresh page load prints no warnings or errors in the console", async ({ p
   await expect(page.getByRole("region", { name: "عمود جديدة" })).toBeVisible();
   expect(problems).toEqual([]);
 });
+
+test("each page keeps its own tab title after a full load", async ({ page }) => {
+  // Next.js used to write its default title a moment after the page set its own (see src/app/layout.tsx).
+  await signInAs(page, /أحمد كريم/);
+  await page.goto("/bugs");
+  await expect(page.getByRole("heading", { level: 1, name: "الأخطاء البرمجية" })).toBeVisible();
+  await page.waitForTimeout(1000); // the late default title came after the page had drawn
+  await expect(page).toHaveTitle("الأخطاء البرمجية · منصة المشاريع");
+});
