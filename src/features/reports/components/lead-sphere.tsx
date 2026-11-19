@@ -52,7 +52,7 @@ export function LeadSphere({ shares, team, date }: { shares: TeamShares; team: s
             <h1 id="dashboard-title" className="hero-in text-xs font-medium text-[#e6d3da]">
               {tr("لوحة القيادة", "Dashboard")} · {date}
             </h1>
-            <p className="hero-in mt-3 text-4xl leading-tight font-light sm:text-5xl sm:leading-tight">
+            <p className="hero-in mt-3 text-4xl leading-tight font-light sm:text-[2.6rem] sm:leading-tight">
               {tr("أين يقف", "Where the team")}
               <br />
               {tr("فريقك اليوم", "stands today")}
