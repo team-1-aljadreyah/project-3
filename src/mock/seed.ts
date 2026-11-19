@@ -6,6 +6,7 @@ import type { Bug, BugEvent } from "@/features/bugs";
 import type { Message } from "@/features/chat";
 import type { Criteria, Review } from "@/features/performance";
 import type { AuditEntry, Settings } from "@/features/admin";
+import type { GithubItem, GithubSettings } from "@/features/github";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
@@ -52,6 +53,9 @@ export interface MockDb {
   audit: AuditEntry[];
   settings: Settings;
   logins: { user_id: number; failed: number; locked_until?: string; last_login_at?: string }[];
+  /** The GitHub link: each project's setting, and the pull requests and commits the server got from GitHub. */
+  github: GithubSettings[];
+  github_items: GithubItem[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
@@ -359,6 +363,22 @@ export function seed(now = new Date()): MockDb {
   ];
   audit.sort((a, b) => a.at.localeCompare(b.at)).forEach((e, i) => (e.id = i + 1));
 
+  // GitHub is on for project 1 (two repositories). Made-up pull requests and commits that mention task and bug codes.
+  const github: GithubSettings[] = [{ project_id: 1, enabled: true, repos: ["aljadreyah/booking-web", "aljadreyah/booking-api"] }];
+  const gh = (id: string, kind: "pr" | "commit", repo: string, ref: string, title: string, author: string, when: string, state?: GithubItem["state"]): GithubItem => ({
+    id, kind, repo, ref, title, author, at: when, state,
+    url: kind === "pr" ? `https://github.com/${repo}/pull/${ref.replace("#", "")}` : `https://github.com/${repo}/commit/${ref}`,
+  });
+  const github_items: GithubItem[] = [
+    gh("pr-41", "pr", "aljadreyah/booking-web", "#41", "TSK-104: ربط لوحة كانبان بواجهة المهام", "mustafa-j", at(1, 14), "open"),
+    gh("c-9f2a1c3", "commit", "aljadreyah/booking-web", "9f2a1c3", "TSK-104 board loads tasks from /projects/:id/tasks", "mustafa-j", at(1, 12)),
+    gh("c-1b7e004", "commit", "aljadreyah/booking-api", "1b7e004", "TSK-104 tasks endpoint with statuses", "ali-h", at(2, 16)),
+    gh("pr-38", "pr", "aljadreyah/booking-api", "#38", "TSK-085 roles and permissions", "ali-h", at(5, 10), "merged"),
+    gh("pr-40", "pr", "aljadreyah/booking-web", "#40", "Fix BUG-1: login button on phones", "sara-a", at(0, 11), "open"),
+    gh("c-77d0e1a", "commit", "aljadreyah/booking-web", "77d0e1a", "BUG-1 bigger tap area for the login button", "sara-a", at(0, 10)),
+    gh("pr-12", "pr", "someone/elsewhere", "#12", "TSK-104 in another company's repo (not linked)", "x", at(1, 9), "open"),
+  ];
+
   // One project template, made by the PM: a mobile app in three phases, worked in sprints.
   const templates: ProjectTemplate[] = [{
     id: 1, name: "تطبيق جوال", description: "تحليل، ثم تطوير، ثم إطلاق في المتاجر.", from_project: "تطبيق المبيعات",
@@ -376,6 +396,7 @@ export function seed(now = new Date()): MockDb {
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
     announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
+    github, github_items,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,

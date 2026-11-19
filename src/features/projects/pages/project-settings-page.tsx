@@ -2,6 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
+import { GithubSettingsTab } from "@/features/github";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -28,6 +29,7 @@ const TABS = [
   { key: "statuses", ar: "الحالات", en: "Statuses" },
   { key: "phases", ar: "المراحل", en: "Phases" },
   { key: "sprints", ar: "الدورات", en: "Sprints" },
+  { key: "github", ar: "GitHub", en: "GitHub" },
   { key: "history", ar: "سجل المشروع", en: "History" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
@@ -140,6 +142,7 @@ function Settings({ project, people, sprints, history }: Loaded) {
         {tab === "statuses" && <StatusesTab key={keyOf(project.statuses)} project={project} />}
         {tab === "phases" && <PhasesTab key={keyOf(project.phases)} project={project} />}
         {tab === "sprints" && <SprintsTab project={project} sprints={sprints} />}
+        {tab === "github" && <GithubSettingsTab projectId={project.id} canEdit={canManageProject(user, project)} />}
         {tab === "history" && <ProjectHistory events={history} people={peopleById} />}
       </div>
     </div>

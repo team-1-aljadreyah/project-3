@@ -5,17 +5,15 @@
 // - the CEO and project managers create projects; a PM who creates one manages it;
 // - a project's setup is changed by its PM or the CEO; only the CEO hands a project to another PM.
 import type { User } from "@/shared/api/types";
+import { canManageProjectSetup } from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
-import type { Project } from "./types";
 
 export function canCreateProject(user: Pick<User, "role">) {
   return user.role === "ceo" || user.role === "pm";
 }
 
-/** Change a project's details, members, statuses, phases and sprints. */
-export function canManageProject(user: Pick<User, "id" | "role">, project: Pick<Project, "pm_id">) {
-  return user.role === "ceo" || project.pm_id === user.id;
-}
+/** Change a project's details, members, statuses, phases, sprints and GitHub (the rule lives in shared/lib/access.ts). */
+export const canManageProject = canManageProjectSetup;
 
 /** Give the project to another project manager. */
 export function canChangePm(user: Pick<User, "role">) {
