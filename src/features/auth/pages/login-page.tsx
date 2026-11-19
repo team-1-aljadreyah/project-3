@@ -84,7 +84,7 @@ export function LoginPage() {
     // The front door (19 November 2026): the ring counts the page in and folds into the logo, a wide river of light snakes
     // across the page behind the content (it moves with the page as you scroll), a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
     // sections settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
-    <main className="front-door relative min-h-dvh overflow-x-clip">
+    <main className="front-door relative min-h-dvh overflow-clip">
       <IntroRing target={logoRef} onLand={land} />
       <LightRiver colors={RIVER_COLORS} />
       <div className="relative z-10">
@@ -107,7 +107,7 @@ export function LoginPage() {
             </h1>
             <p className="text-muted">{tr("المهام والدورات والمحادثات والتقارير وتقييم الأداء، لكل فريق في الشركة.", "Tasks, sprints, chat, reports and reviews, for every team in the company.")}</p>
           </div>
-            <div className="rounded-2xl border border-line bg-card/80 p-6 shadow-card backdrop-blur sm:p-8">
+            <div className="rounded-2xl border border-line bg-card/95 p-6 shadow-card sm:p-8">
               <h2 className="text-2xl font-semibold">{tr("تسجيل الدخول", "Sign in")}</h2>
               <p className="mt-1 text-sm text-muted">{tr("استخدم حسابك في الشركة.", "Use your company account.")}</p>
 

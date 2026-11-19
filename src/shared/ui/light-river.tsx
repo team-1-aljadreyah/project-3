@@ -154,48 +154,55 @@ function evenly(line: P[]): P[] {
 }
 
 /**
- * A wide river of light that snakes across the page along a set path (see `plannedPath`), behind the content. It is
- * drawn on the page itself, so it moves with the page as you scroll, like a background. The motion is calm: the strands
- * sway slowly and the light runs along them at a gentle, steady pace, whatever the scroll does. `colors`: core → middle →
- * edge → end (the brand palette). Pointer events pass through; it pauses in a hidden tab, and with "reduce motion" it
- * stays still.
+ * A wide river of light that snakes across the page along a set path (see `plannedPath`), behind the content, moving
+ * with the page like a background. Light runs gently along its strands, and specks of light drift with it.
+ *
+ * Built to stay smooth on any computer:
+ * - The river itself (its glow and strands) is drawn ONCE onto a canvas as tall as the page, placed in the page. When
+ *   you scroll, the browser simply moves it with the content: nothing is drawn again (only when the layout changes).
+ * - Only the moving light (a short streak on some strands, and the specks) is drawn each frame, on a second, small canvas
+ *   the size of the screen.
+ * The parent element must be `relative` (the river is placed at its top-left) and should clip its overflow.
+ * `colors`: core → middle → edge → end (the brand palette). Pointer events pass through; it pauses in a hidden tab, and
+ * with "reduce motion" the light stays still.
  */
 export function LightRiver({ colors, className }: { colors: [string, string, string, string]; className?: string }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const bodyRef = useRef<HTMLCanvasElement>(null);
+  const lightRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = ref.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    const body = bodyRef.current;
+    const light = lightRef.current;
+    const bctx = body?.getContext("2d");
+    const lctx = light?.getContext("2d");
+    const host = body?.parentElement;
+    if (!body || !light || !bctx || !lctx || !host) return;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let w = 0;
     let h = 0;
-    const resize = () => {
+    const half = () => (w < 640 ? 16 : Math.min(58, Math.max(30, w * 0.028)));
+    const soft = () => (w < 1024 ? 0.7 : 1);
+    const sizeLight = () => {
       const dpr = Math.min(1.5, window.devicePixelRatio || 1);
       w = window.innerWidth;
       h = window.innerHeight;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      light.width = Math.round(w * dpr);
+      light.height = Math.round(h * dpr);
+      lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-    resize();
+    sizeLight();
 
-    const narrow = () => w < 1024;
-    // Half the river's width: wide on a computer, narrower on a phone.
-    const half = () => (w < 640 ? 16 : Math.min(58, Math.max(30, w * 0.028)));
     const count = w < 640 ? 12 : 30;
     const strands = Array.from({ length: count }, (_, i) => ({
       k: i / (count - 1) - 0.5,
-      phase: Math.random() * Math.PI * 2,
-      speed: 0.3 + Math.random() * 0.35,
       width: 0.6 + Math.random() * 1,
       shine: 0.3 + Math.random() * 0.4,
-      // The light running along this strand: where it is along the river (px) and how fast (px per frame, gentle).
-      pulse: Math.random() * 4000,
+      // Every other strand carries a streak of light: where it is along the river (px) and how fast (px per frame, gentle).
+      pulse: i % 2 === 0 ? Math.random() * 4000 : -1,
       pace: 0.7 + Math.random() * 0.6,
     }));
-    const dust = Array.from({ length: w < 640 ? 14 : 40 }, () => ({
+    const dust = Array.from({ length: w < 640 ? 12 : 30 }, () => ({
       at: Math.random() * 4000,
       off: (Math.random() - 0.5) * 3.2,
       r: 0.6 + Math.random() * 1.8,
@@ -206,8 +213,28 @@ export function LightRiver({ colors, className }: { colors: [string, string, str
     // The river: points every STEP px along it (page coordinates), and the direction across it at each point.
     let pts: P[] = [];
     let across: P[] = [];
+    const strandAt = (k: number, i: number, dy = 0): P => {
+      const off = k * 2 * half();
+      return [pts[i][0] + across[i][0] * off, pts[i][1] + across[i][1] * off - dy];
+    };
+    const stroke = (ctx: CanvasRenderingContext2D, k: number, from: number, to: number, dy = 0) => {
+      if (to - from < 1) return;
+      ctx.beginPath();
+      let p = strandAt(k, from, dy);
+      ctx.moveTo(p[0], p[1]);
+      for (let i = from + 1; i < to; i++) {
+        const q = strandAt(k, i + 1, dy);
+        p = strandAt(k, i, dy);
+        ctx.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+      }
+      p = strandAt(k, to, dy);
+      ctx.lineTo(p[0], p[1]);
+      ctx.stroke();
+    };
+
+    /** Places the path from the page's blocks and draws the river once, on the page-tall canvas. */
     function plan() {
-      const pageH = document.documentElement.scrollHeight;
+      const pageH = host!.offsetHeight;
       pts = evenly(smoothCurve(plannedPath(w, pageH)));
       across = pts.map((_, i) => {
         const a = pts[Math.max(0, i - 1)];
@@ -215,141 +242,130 @@ export function LightRiver({ colors, className }: { colors: [string, string, str
         const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
         return [-(b[1] - a[1]) / len, (b[0] - a[0]) / len];
       });
-    }
-
-    let lastTime = 0;
-    function draw(time: number) {
-      const dt = Math.min(50, lastTime ? time - lastTime : 16) / 16; // 1 = one frame at 60 fps
-      lastTime = time;
-      const t = time * 0.001;
-      const sy = window.scrollY;
-      const hw = half();
-      const soft = narrow() ? 0.7 : 1;
-      ctx!.clearRect(0, 0, w, h);
+      // A page-tall canvas: sharp enough for a soft glow, but never more than about 9 million pixels.
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25, Math.sqrt(9e6 / Math.max(1, w * pageH)));
+      body!.width = Math.round(w * dpr);
+      body!.height = Math.round(pageH * dpr);
+      body!.style.height = `${pageH}px`;
+      bctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      bctx!.clearRect(0, 0, w, pageH);
       if (pts.length < 2) return;
-
-      // Only the part of the river on the screen (and a little around it).
-      const margin = hw * 4 + 60;
-      let i0 = pts.findIndex((p) => p[1] >= sy - margin);
-      if (i0 < 0) return;
-      let i1 = i0;
-      for (let i = i0; i < pts.length && pts[i][1] <= sy + h + margin; i++) i1 = i;
-      i0 = Math.max(0, i0 - 2);
-      i1 = Math.min(pts.length - 1, i1 + 2);
-      if (i1 - i0 < 2) return;
-
-      const strandAt = (s: (typeof strands)[number] | null, i: number): P => {
-        const off = s ? s.k * 2 * hw + (still ? 0 : Math.sin(i * STEP * 0.004 + t * s.speed + s.phase * 0.35) * hw * 0.16) : 0;
-        return [pts[i][0] + across[i][0] * off, pts[i][1] + across[i][1] * off - sy];
-      };
-      const stroke = (s: (typeof strands)[number] | null, from: number, to: number) => {
-        if (to - from < 1) return;
-        ctx!.beginPath();
-        let p = strandAt(s, from);
-        ctx!.moveTo(p[0], p[1]);
-        for (let i = from + 1; i < to; i++) {
-          const q = strandAt(s, i + 1);
-          p = strandAt(s, i);
-          ctx!.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
-        }
-        p = strandAt(s, to);
-        ctx!.lineTo(p[0], p[1]);
-        ctx!.stroke();
-      };
-
-      ctx!.globalCompositeOperation = "lighter";
-      ctx!.lineCap = "round";
-      // The colour: blush in the middle of the screen, deeper toward the top and the bottom.
-      const body = ctx!.createLinearGradient(0, 0, 0, h);
-      body.addColorStop(0, colors[2]);
-      body.addColorStop(0.4, colors[0]);
-      body.addColorStop(0.7, colors[1]);
-      body.addColorStop(1, colors[2]);
-
-      // A wide, soft glow under the strands: the river feels like part of the background.
-      ctx!.strokeStyle = body;
+      const last = pts.length - 1;
+      const hw = half();
+      bctx!.globalCompositeOperation = "lighter";
+      bctx!.lineCap = "round";
+      // The colour along the page: deeper at the very top and bottom, blush and dusty rose in between.
+      const tone = bctx!.createLinearGradient(0, 0, 0, pageH);
+      tone.addColorStop(0, colors[2]);
+      tone.addColorStop(0.15, colors[0]);
+      tone.addColorStop(0.5, colors[1]);
+      tone.addColorStop(0.75, colors[0]);
+      tone.addColorStop(1, colors[2]);
+      bctx!.strokeStyle = tone;
+      // A wide, soft glow under the strands.
       for (const [width, alpha] of [
         [hw * 5, 0.035],
         [hw * 2.4, 0.05],
       ]) {
-        ctx!.globalAlpha = alpha * soft;
-        ctx!.lineWidth = width;
-        stroke(null, i0, i1);
+        bctx!.globalAlpha = alpha * soft();
+        bctx!.lineWidth = width;
+        stroke(bctx!, 0, 0, last);
       }
-
       for (const s of strands) {
         const center = 1 - Math.abs(s.k) * 1.1;
-        ctx!.strokeStyle = body;
         for (const [width, alpha] of [
           [s.width * 6, 0.05],
           [s.width, s.shine],
         ]) {
-          ctx!.globalAlpha = Math.max(0.05, alpha * center) * soft;
-          ctx!.lineWidth = width;
-          stroke(s, i0, i1);
-        }
-
-        // The light running gently along the strand: a short streak that fades behind it.
-        if (!still) s.pulse = (s.pulse + s.pace * dt) % (pts.length * STEP);
-        const head = Math.floor(s.pulse / STEP);
-        const tail = Math.round(150 / STEP);
-        if (head >= i0 && head - tail <= i1) {
-          ctx!.strokeStyle = "#fff4ef";
-          ctx!.lineWidth = s.width * 1.8;
-          const parts = 6;
-          for (let c = 0; c < parts; c++) {
-            const from = Math.max(i0, head - tail + Math.floor((tail * c) / parts));
-            const to = Math.min(i1, head - tail + Math.floor((tail * (c + 1)) / parts));
-            ctx!.globalAlpha = ((c + 1) / parts) * 0.75 * Math.max(0.4, center) * soft;
-            stroke(s, from, to);
-          }
+          bctx!.globalAlpha = Math.max(0.05, alpha * center) * soft();
+          bctx!.lineWidth = width;
+          stroke(bctx!, s.k, 0, last);
         }
       }
+      bctx!.globalAlpha = 1;
+      bctx!.globalCompositeOperation = "source-over";
+    }
 
-      // Specks of light along the river, drifting slowly with it.
-      ctx!.fillStyle = colors[0];
+    /** The moving light, on the screen-sized canvas: a short streak on some strands, and the specks. */
+    let lastTime = 0;
+    function drawLight(time: number) {
+      const dt = Math.min(50, lastTime ? time - lastTime : 16) / 16; // 1 = one frame at 60 fps
+      lastTime = time;
+      const sy = window.scrollY;
+      lctx!.clearRect(0, 0, w, h);
+      if (pts.length < 2) return;
+      // Only the part of the river on the screen.
+      const top = pts.findIndex((p) => p[1] >= sy - 200);
+      if (top < 0) return;
+      let bottom = top;
+      for (let i = top; i < pts.length && pts[i][1] <= sy + h + 200; i++) bottom = i;
+      lctx!.globalCompositeOperation = "lighter";
+      lctx!.lineCap = "round";
+      lctx!.strokeStyle = "#fff4ef";
+      const tail = Math.round(150 / STEP);
+      for (const s of strands) {
+        if (s.pulse < 0) continue;
+        if (!still) s.pulse = (s.pulse + s.pace * dt) % (pts.length * STEP);
+        const head = Math.floor(s.pulse / STEP);
+        if (head < top || head - tail > bottom) continue;
+        const center = 1 - Math.abs(s.k) * 1.1;
+        lctx!.lineWidth = s.width * 1.8;
+        const parts = 5;
+        for (let c = 0; c < parts; c++) {
+          const from = Math.max(0, head - tail + Math.floor((tail * c) / parts));
+          const to = Math.min(pts.length - 1, head - tail + Math.floor((tail * (c + 1)) / parts));
+          lctx!.globalAlpha = ((c + 1) / parts) * 0.75 * Math.max(0.4, center) * soft();
+          stroke(lctx!, s.k, from, to, sy);
+        }
+      }
+      lctx!.fillStyle = colors[0];
+      const t = time * 0.001;
+      const hw = half();
       for (const d of dust) {
         if (!still) d.at = (d.at + 0.3 * dt) % (pts.length * STEP);
         const i = Math.floor(d.at / STEP);
-        if (i < i0 || i > i1) continue;
-        const x = pts[i][0] + across[i][0] * d.off * hw;
-        const y = pts[i][1] + across[i][1] * d.off * hw - sy;
-        ctx!.globalAlpha = d.a * (0.6 + 0.4 * Math.sin(t * 1.5 + d.phase)) * soft;
-        ctx!.beginPath();
-        ctx!.arc(x, y, d.r, 0, Math.PI * 2);
-        ctx!.fill();
+        if (i < top || i > bottom) continue;
+        lctx!.globalAlpha = d.a * (0.6 + 0.4 * Math.sin(t * 1.5 + d.phase)) * soft();
+        lctx!.beginPath();
+        lctx!.arc(pts[i][0] + across[i][0] * d.off * hw, pts[i][1] + across[i][1] * d.off * hw - sy, d.r, 0, Math.PI * 2);
+        lctx!.fill();
       }
-      ctx!.globalAlpha = 1;
-      ctx!.globalCompositeOperation = "source-over";
+      lctx!.globalAlpha = 1;
+      lctx!.globalCompositeOperation = "source-over";
     }
 
-    // Place the path again whenever the page's layout changes (fonts, the demo accounts, a resize…).
+    // Draw the river again only when the page's layout changes (fonts, the demo accounts, a resize…).
     let planned = 0;
+    let lastSize = "";
     const replan = () => {
       cancelAnimationFrame(planned);
       planned = requestAnimationFrame(() => {
+        const size = `${window.innerWidth}x${host.offsetHeight}`;
+        if (size === lastSize) return;
+        lastSize = size;
         plan();
-        if (still) draw(0);
+        if (still) drawLight(0);
       });
     };
+    lastSize = `${w}x${host.offsetHeight}`;
     plan();
     const watcher = new ResizeObserver(replan);
-    watcher.observe(document.body);
-    const later = [setTimeout(replan, 600), setTimeout(replan, 1800)];
+    watcher.observe(host);
+    const later = [setTimeout(() => ((lastSize = ""), replan()), 600), setTimeout(() => ((lastSize = ""), replan()), 1800)];
 
     let frame = 0;
     const loop = (time: number) => {
-      draw(time);
+      drawLight(time);
       frame = requestAnimationFrame(loop);
     };
     const onScroll = () => {
-      if (still) draw(0);
+      if (still) drawLight(0);
     };
-    if (still) draw(0);
+    if (still) drawLight(0);
     else frame = requestAnimationFrame(loop);
     window.addEventListener("scroll", onScroll, { passive: true });
     const onResize = () => {
-      resize();
+      sizeLight();
       replan();
     };
     window.addEventListener("resize", onResize);
@@ -363,5 +379,10 @@ export function LightRiver({ colors, className }: { colors: [string, string, str
     };
   }, [colors]);
 
-  return <canvas ref={ref} aria-hidden="true" className={cn("pointer-events-none fixed inset-0 h-full w-full", className)} />;
+  return (
+    <>
+      <canvas ref={bodyRef} aria-hidden="true" className={cn("pointer-events-none absolute top-0 left-0 w-full", className)} />
+      <canvas ref={lightRef} aria-hidden="true" className={cn("pointer-events-none fixed inset-0 h-full w-full", className)} />
+    </>
+  );
 }
