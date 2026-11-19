@@ -92,7 +92,7 @@ The server must filter, not only the pages:
 **History** (`GET /tasks/:id/history`): every event `{id, task_id, actor_id, kind, from?, to?, note?, at}`.
 **It can't be edited or deleted by anyone through the API**, and normal users can't hide it (the brief).
 `kind`: `created`, `status`, `blocked`, `unblocked`, `approval_requested`, `approved`, `rejected`,
-`assignee`, `due`, `priority`, `title`, `description`, `phase` (old and new phase ids), `comment`, `attachment_added` (`to`: the file name),
+`assignee`, `due`, `priority`, `title`, `description`, `phase` (old and new phase ids), `sprint` (old and new sprint **names**; none = the backlog), `comment`, `attachment_added` (`to`: the file name),
 `attachment_removed` (`from`: the file name).
 
 **Phases on tasks:** `phase_id` (on create and PATCH) must be one of the project's phases (422 on `phase_id`).
@@ -126,6 +126,7 @@ Every change updates the task's `updated_at`.
 | `POST /projects/:id/sprints` | its PM, `ceo` | `Sprint` |
 | `PATCH /sprints/:id` | its project's PM, `ceo` | `Sprint` |
 | `DELETE /sprints/:id` | its project's PM, `ceo` | nothing |
+| `POST /sprints/:id/close` `{move_to}` | its project's PM, `ceo` | `Sprint` (section 6) |
 | `GET /projects/:id/history` | can see it | `ProjectEvent[]` |
 | `GET /me/tasks` | signed in | `Task[]`: the tasks assigned to me, in projects I can see |
 | `GET /notifications` | signed in | `Notification[]`, mine only, newest first (the latest 100) |
@@ -205,6 +206,28 @@ The demo backend (`src/features/projects/mock.ts`) is the exact reference.
   before `start` (422 on `end`).
 - Sprints of one project **can't overlap** (422 on `start`, naming the other sprint).
 - Deleting a sprint that has tasks → **409**. Log `sprint_added` / `sprint_changed` / `sprint_removed`.
+- An **ended** sprint (`closed_at` set) can't be changed or deleted (409) and takes no tasks (422 on `sprint_id`); a
+  task in it stays there (moving it out → 422 on `sprint_id`).
+
+**The board** (the brief: "each project picks the board that fits it"): a project with `uses_sprints` gets the **Scrum
+board** (one sprint's planned, done and left tasks; the backlog = its tasks with no sprint; all its tasks), the others
+the Kanban board. *(Assumption: the sprint switch is the board choice; no separate setting.)*
+
+`Sprint`: `{id, project_id, name, start, end, planned_ratio, closed_at?, result?}`, `result` =
+`{planned, done, moved, moved_to?}`, kept when it ends.
+
+**Ending a sprint** (`POST /sprints/:id/close {move_to}`; the brief: unfinished tasks at the end of a sprint need handling):
+
+- Who: the project's PM and the `ceo` (403). Already ended → 409. Not started yet (`start` after today) → 409. It may
+  end early or after its `end` day: the team decides. *(Assumption.)*
+- `move_to`: another **open** sprint of the same project, or `null` for the backlog (422 on `move_to` otherwise).
+- Tasks in the sprint whose status is in the `done` family **stay**; every other task moves to `move_to` (or loses its
+  `sprint_id`), each with a task history line `sprint` (`from`, `to` = the sprints' **names**; no `to` = backlog).
+- Set `closed_at` and `result` (`planned` = tasks in it when it ended, `done`, `moved`, `moved_to`). Log
+  `sprint_closed` (`from` = its name, `to` = where the tasks went, `note` = `"done/planned"`). Answer: the `Sprint`.
+
+**Backlog → sprint:** `PATCH /tasks/:id {sprint_id}` (managers); `sprint_id: null` takes it out (back to the backlog).
+Every change logs a task history line `sprint` as above.
 
 **History** (`GET /projects/:id/history`): `[{id, project_id, actor_id, kind, from?, to?, note?, at}]`. Like the
 task history, nobody can edit or hide it through the API.

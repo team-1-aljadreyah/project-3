@@ -44,6 +44,11 @@ function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses" | "
       return tr("غيّر العنوان", "changed the title");
     case "description":
       return tr("عدّل الوصف", "edited the description");
+    case "sprint":
+      // from / to are the sprints' names; none = the backlog (no sprint).
+      return e.to
+        ? tr(`نقلها إلى الدورة «${e.to}»`, `moved it to the sprint "${e.to}"`)
+        : tr(`أعادها من «${e.from ?? "-"}» إلى قائمة الانتظار`, `moved it from "${e.from ?? "-"}" back to the backlog`);
     case "phase":
       return e.to ? tr(`نقلها إلى مرحلة ${phase(e.to)}`, `moved it to the ${phase(e.to)} phase`) : tr("أخرجها من المراحل", "took it out of its phase");
     case "comment":

@@ -68,6 +68,7 @@ export type TaskEventKind =
   | "title"
   | "description"
   | "phase"
+  | "sprint"
   | "comment"
   | "attachment_added"
   | "attachment_removed";
@@ -101,7 +102,9 @@ export interface TaskInput {
 }
 
 /** Fields that can be changed on a task. `due_note` explains a changed due day (it goes into the history). */
-export type TaskPatch = Partial<Pick<Task, "title" | "description" | "priority" | "due" | "start" | "sprint_id">> & {
+export type TaskPatch = Partial<Pick<Task, "title" | "description" | "priority" | "due" | "start">> & {
+  /** `null` takes the task out of its sprint (back to the backlog). */
+  sprint_id?: number | null;
   /** `null` takes the task off the person (unassigned). */
   assignee_id?: number | null;
   /** `null` takes the task out of its phase. */

@@ -98,7 +98,16 @@ export function seed(now = new Date()): MockDb {
     },
   ];
 
-  const sprints: Sprint[] = [{ id: 1, project_id: 1, name: "الدورة 4", start: d(-6), end: d(5), planned_ratio: 0 }];
+  // Project 1 works in sprints: "الدورة 3" ended (its blocked task moved on to "الدورة 4"), "الدورة 4" runs today,
+  // "الدورة 5" comes next. A sprint's ended numbers are kept in `result`.
+  const sprints: Sprint[] = [
+    { id: 1, project_id: 1, name: "الدورة 4", start: d(-6), end: d(5), planned_ratio: 0 },
+    {
+      id: 2, project_id: 1, name: "الدورة 3", start: d(-20), end: d(-7), planned_ratio: 1,
+      closed_at: `${d(-7)}T15:00:00.000Z`, result: { planned: 2, done: 1, moved: 1, moved_to: 1 },
+    },
+    { id: 3, project_id: 1, name: "الدورة 5", start: d(6), end: d(19), planned_ratio: 0 },
+  ];
 
   // A moment `days` ago at `hour` o'clock, for history and comments.
   const at = (days: number, hour = 10) => {
@@ -147,6 +156,9 @@ export function seed(now = new Date()): MockDb {
     "TSK-092": 3,
   };
   for (const t of tasks) if (PHASE_OF[t.code]) t.phase_id = PHASE_OF[t.code];
+  // The sprints: TSK-085 was done in the ended "الدورة 3"; TSK-121 waits in the backlog (no sprint yet).
+  tasks.find((t) => t.code === "TSK-085")!.sprint_id = 2;
+  tasks.find((t) => t.code === "TSK-121")!.sprint_id = undefined;
 
   // TSK-099: Ali asked to mark it done; it waits for the PM's approval.
   const asked = tasks.find((t) => t.code === "TSK-099")!;
@@ -164,6 +176,7 @@ export function seed(now = new Date()): MockDb {
   ev("TSK-099", { actor_id: 6, kind: "approval_requested", from: "in_review", to: "completed", at: at(0, 9) });
   ev("TSK-085", { actor_id: 6, kind: "approval_requested", from: "testing", to: "completed", at: at(5, 12) });
   ev("TSK-085", { actor_id: 2, kind: "approved", from: "testing", to: "completed", at: at(4, 9) });
+  ev("TSK-097", { actor_id: 2, kind: "sprint", from: "الدورة 3", to: "الدورة 4", at: at(7, 15) });
   ev("TSK-109", { actor_id: 2, kind: "due", from: d(-5), to: d(-2), note: "أُضيف قسم الإعلانات المثبّتة", at: at(6) });
 
   let commentId = 0;
@@ -184,6 +197,7 @@ export function seed(now = new Date()): MockDb {
   }));
   project_events.push(
     { id: ++projectEventId, project_id: 1, actor_id: 2, kind: "member_added", to: "7", at: at(30) },
+    { id: ++projectEventId, project_id: 1, actor_id: 2, kind: "sprint_closed", from: "الدورة 3", to: "الدورة 4", note: "1/2", at: at(7, 15) },
     { id: ++projectEventId, project_id: 1, actor_id: 2, kind: "dates", from: `${d(-40)} → ${d(20)}`, to: `${d(-40)} → ${d(25)}`, note: "أُضيف ربط المهام بمستودعات GitHub إلى نطاق العمل", at: at(12) },
   );
 

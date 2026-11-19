@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Dialog, Field, Input, PRIORITY, Select, Textarea, errorText, useToast } from "@/shared/ui";
-import type { Project, Sprint } from "@/features/projects";
+import { isClosed, type Project, type Sprint } from "@/features/projects";
 import { ApiError } from "@/shared/api";
 import type { Priority, User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -59,8 +59,11 @@ export function TaskForm({
   const { tr, lang } = useFmt();
   const toast = useToast();
   const day = today();
-  // A new task goes into the sprint running today, if there is one.
-  const current = sprints.find((s) => s.start <= day && day <= s.end);
+  // A new task goes into the open sprint running today, if there is one.
+  const current = sprints.find((s) => !isClosed(s) && s.start <= day && day <= s.end);
+  // Only open sprints take tasks. A task in an ended sprint stays there (the field is then shown but locked).
+  const inClosed = sprints.find((s) => s.id === task?.sprint_id && isClosed(s));
+  const sprintChoices = inClosed ? [inClosed] : sprints.filter((s) => !isClosed(s));
   const [v, setV] = useState<Values>(() => fromTask(task, project, current));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string>();
@@ -99,7 +102,8 @@ export function TaskForm({
           start: v.start,
           due: v.due,
           due_note: dueChanged ? v.due_note : undefined,
-          sprint_id: v.sprint_id ? Number(v.sprint_id) : undefined,
+          // "" = out of its sprint (back to the backlog); a task in an ended sprint isn't sent (it can't move).
+          sprint_id: inClosed || !project.uses_sprints ? undefined : v.sprint_id ? Number(v.sprint_id) : null,
           phase_id: project.phases.length ? (v.phase_id ? Number(v.phase_id) : null) : undefined,
         };
         saved = await tasksApi.updateTask(task.id, patch);
@@ -213,9 +217,9 @@ export function TaskForm({
 
           {project.uses_sprints && sprints.length > 0 && (
             <Field label={tr("الدورة", "Sprint")} htmlFor="task-sprint" error={errors.sprint_id}>
-              <Select id="task-sprint" value={v.sprint_id} onChange={(e) => set("sprint_id", e.target.value)}>
-                <option value="">{tr("خارج الدورات", "No sprint")}</option>
-                {sprints.map((s) => (
+              <Select id="task-sprint" value={v.sprint_id} disabled={!!inClosed} onChange={(e) => set("sprint_id", e.target.value)}>
+                <option value="">{tr("خارج الدورات (قائمة الانتظار)", "No sprint (backlog)")}</option>
+                {sprintChoices.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
