@@ -3,23 +3,27 @@
 /* Dark mode follows the "dark" class on <html> (set by the theme switch), not only the system setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* The approved design (board D, 16 November 2026): warm paper background, ink text, ONE strong colour (indigo)
-   for actions, and a soft colour per task-status family. Every colour on the site comes from these tokens. */
+/* The design (board D, 16 November 2026), recoloured on 19 November 2026 with the palette Yasser chose
+   (colorhunt.co/palette/7c0e44aa5e7ad49a9af2dace): wine #7C0E44, mauve #AA5E7A, dusty rose #D49A9A, blush #F2DACE.
+   Mauve is never used for text (too light on white): it draws the strong lines in dark mode.
+   A light blush page, wine-black text, ONE strong colour (wine) for actions, and a soft colour per task-status family
+   (kept as they were, so a status never looks like a button). Every text pair here is at least 4.5:1 (WCAG AA).
+   Every colour on the site comes from these tokens. */
 :root {
-  --bg: #f5f4f0;            /* page: warm paper */
+  --bg: #faf1ec;            /* page: a light blush (from #F2DACE) */
   --card: #ffffff;          /* cards, the top bar */
-  --card-2: #faf9f6;        /* inner boxes */
-  --chip: #ecebe6;          /* neutral chips, empty bars */
-  --text: #1b1e23;          /* ink */
-  --muted: #5d626a;         /* second lines (5.9:1 on the page) */
-  --faint: #686d75;         /* placeholders (4.6:1 on white) */
-  --line: #e1ded6;
-  --line-strong: #cfcbc1;
+  --card-2: #fdf7f4;        /* inner boxes */
+  --chip: #f2dace;          /* blush: neutral chips, empty bars */
+  --text: #2a1620;          /* wine-black ink (15:1 on the page) */
+  --muted: #6b5560;         /* second lines (6.1:1 on the page, 5.1:1 on blush) */
+  --faint: #7a6470;         /* placeholders (5.4:1 on white) */
+  --line: #ecd9d1;
+  --line-strong: #d49a9a;   /* dusty rose */
 
-  --accent: #3346d3;        /* indigo: buttons, links, the active tab */
-  --accent-hover: #2a3bb8;
-  --accent-soft: #e6e9fb;
-  --accent-ink: #2633a8;    /* indigo text on the soft indigo */
+  --accent: #7c0e44;        /* wine: buttons, links, the active tab (white on it: 10.5:1) */
+  --accent-hover: #650b37;
+  --accent-soft: #f2dace;   /* blush */
+  --accent-ink: #7c0e44;    /* wine text on blush (7.8:1) */
   --on-accent: #ffffff;
 
   --danger: #a3261b;
@@ -30,14 +34,14 @@
   /* Task-status families: soft background + readable text (each pair ≥ 4.5:1). */
   --st-new: #e9e8e3;      --st-new-ink: #45484f;
   --st-todo: #ece6f8;     --st-todo-ink: #55399e;
-  --st-progress: #e6e9fb; --st-progress-ink: #2633a8;
+  --st-progress: #f2dace; --st-progress-ink: #7c0e44;
   --st-review: #fcefd9;   --st-review-ink: #7a4500;
   --st-testing: #dcedf8;  --st-testing-ink: #165f86;
   --st-done: #dcf2e6;     --st-done-ink: #1b6b43;
   --st-blocked: #fbe7e5;  --st-blocked-ink: #a3261b;
 
   /* Avatars: one pair per person (picked by their id). */
-  --av-1: #e6e9fb; --av-1-ink: #2633a8;
+  --av-1: #f2dace; --av-1-ink: #7c0e44;
   --av-2: #dcf2e6; --av-2-ink: #1b6b43;
   --av-3: #fcefd9; --av-3-ink: #7a4500;
   --av-4: #fbe3ec; --av-4-ink: #8e1f4c;
@@ -47,21 +51,21 @@
 }
 
 .dark {
-  --bg: #121418;
-  --card: #1b1e23;
-  --card-2: #16181c;
-  --chip: #262a31;
-  --text: #ecedef;
-  --muted: #a2a7af;
-  --faint: #8d929a;
-  --line: #2a2e35;
-  --line-strong: #3a3f47;
+  --bg: #170d12;            /* deep wine-black */
+  --card: #22141b;
+  --card-2: #1c1016;
+  --chip: #33202a;
+  --text: #f6ebef;
+  --muted: #c4a9b4;
+  --faint: #ad929e;
+  --line: #3a2530;
+  --line-strong: #aa5e7a;  /* mauve: strong lines (3.8:1 on the cards) */
 
-  --accent: #8c9bff;
-  --accent-hover: #a3afff;
-  --accent-soft: #252a4d;
-  --accent-ink: #c3cbff;
-  --on-accent: #0d1033;
+  --accent: #d49a9a;        /* dusty rose: buttons, links, the active tab */
+  --accent-hover: #f2dace;  /* blush */
+  --accent-soft: #4a1830;   /* deep wine */
+  --accent-ink: #f2dace;
+  --on-accent: #3b0720;
 
   --danger: #ffaaa2;
   --danger-soft: #3a1d1d;
@@ -70,13 +74,13 @@
 
   --st-new: #2a2e35;      --st-new-ink: #c4c8cf;
   --st-todo: #2e2547;     --st-todo-ink: #cdb9ff;
-  --st-progress: #252a4d; --st-progress-ink: #c3cbff;
+  --st-progress: #4a1830; --st-progress-ink: #f2dace;
   --st-review: #3a2a12;   --st-review-ink: #f6c681;
   --st-testing: #14324a;  --st-testing-ink: #9fd3ff;
   --st-done: #143a2a;     --st-done-ink: #86dcae;
   --st-blocked: #3a1d1d;  --st-blocked-ink: #ffaaa2;
 
-  --av-1: #252a4d; --av-1-ink: #c3cbff;
+  --av-1: #4a1830; --av-1-ink: #f2dace;
   --av-2: #143a2a; --av-2-ink: #86dcae;
   --av-3: #3a2a12; --av-3-ink: #f6c681;
   --av-4: #3a1d2a; --av-4-ink: #ffb3cf;
