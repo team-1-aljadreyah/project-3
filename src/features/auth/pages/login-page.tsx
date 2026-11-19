@@ -81,8 +81,8 @@ export function LoginPage() {
   };
 
   return (
-    // The front door (19 November 2026): the ring counts the page in and folds into the logo, a river of light runs down the
-    // side of the page and light races along it as you scroll, a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
+    // The front door (19 November 2026): the ring counts the page in and folds into the logo, a river of light winds down the
+    // page between the content (it travels with it as you scroll), a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
     // sections settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
     <main className="front-door relative min-h-dvh overflow-x-clip">
       <IntroRing target={logoRef} onLand={land} />
@@ -90,16 +90,16 @@ export function LoginPage() {
       <div className="relative z-10">
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-8">
-        <span ref={logoRef} className={cn("inline-block rounded-xl", landed && "logo-land")}>
+        <span ref={logoRef} data-river-avoid className={cn("inline-block rounded-xl", landed && "logo-land")}>
           <Logo />
         </span>
-        <Button variant="ghost" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
+        <Button data-river-avoid variant="ghost" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
           {lang === "ar" ? "English" : "العربية"}
         </Button>
       </header>
 
       <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pt-10 pb-20 sm:px-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:pt-16">
-        <div className="settle flex flex-col gap-6">
+        <div data-river-avoid className="settle flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <span className="w-fit rounded-full border border-line bg-card/60 px-3 py-1 text-xs text-muted">{tr("منصة الشركة الداخلية", "The company's own platform")}</span>
             <h1 className="text-4xl leading-tight font-semibold sm:text-5xl">
@@ -179,13 +179,20 @@ export function LoginPage() {
             )}
         </div>
         <div className="flex justify-center lg:justify-end">
-          <FlowWindow />
+          <div data-river-avoid className="w-full max-w-[520px]">
+            <FlowWindow />
+          </div>
         </div>
       </section>
 
       <FlowPlate />
 
-      <section aria-label={tr("نظرة على المنصة", "A look at the platform")} className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-8 md:grid-cols-2">
+      {/* A wide gap between the two columns, so the river of light can run between the cards. */}
+      <section
+        data-river-avoid-children
+        aria-label={tr("نظرة على المنصة", "A look at the platform")}
+        className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-8 md:grid-cols-2 md:gap-x-20"
+      >
         <WeekPreview />
         <HistoryPreview />
         <SprintMeter />
@@ -204,7 +211,7 @@ export function LoginPage() {
         </Reveal>
       </section>
 
-      <footer className="border-t border-line px-4 py-6 text-center text-xs text-faint">{tr(BRAND.ar, BRAND.en)}</footer>
+      <footer data-river-avoid className="border-t border-line px-4 py-6 text-center text-xs text-faint">{tr(BRAND.ar, BRAND.en)}</footer>
       </div>
     </main>
   );

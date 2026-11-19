@@ -119,9 +119,9 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
 - **Motion:** things arrive slightly out of focus and settle into place. `Reveal` (`src/shared/ui/motion.tsx`) does it
   for a block when it scrolls into view; each part of the signed-in site settles in (`.settle` in the frame).
 - **The front door** (the sign-in page, `src/features/auth/components/front-door.tsx`): a ring counts the page in and
-  folds into the logo (once per visit), a river of light runs down the side margin beside the content (`LightRiver`, a canvas in
-  `src/shared/ui/light-river.tsx`): its bends move with the page, and scrolling sends light racing along it, down or up;
-  a tilting glass window shows a live
+  folds into the logo (once per visit), a river of light winds down the page through the gaps between the content, never under it
+  (`LightRiver`, `src/shared/ui/light-river.tsx`; blocks marked `data-river-avoid`), travelling with the page as you scroll,
+  calm and slow; a tilting glass window shows a live
   task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always at the top.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
 

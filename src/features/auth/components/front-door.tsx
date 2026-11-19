@@ -178,7 +178,7 @@ export function FlowPlate() {
   ];
   return (
     <section aria-labelledby="flow-title" className="mx-auto w-full max-w-5xl px-4 py-24">
-      <div className="plate relative flex flex-col gap-8 rounded-3xl border border-line bg-card p-8 sm:p-12">
+      <div data-river-avoid className="plate relative flex flex-col gap-8 rounded-3xl border border-line bg-card p-8 sm:p-12">
         <span aria-hidden="true" className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-on-accent">
           {BRAND.mark}
         </span>
