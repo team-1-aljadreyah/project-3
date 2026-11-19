@@ -5,7 +5,7 @@ import { dataChanged } from "@/shared/lib/live";
 import { seed, type MockDb } from "./seed";
 
 const KEY = "p3.mock.db";
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 let db: MockDb | null = null;
 

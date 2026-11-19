@@ -139,6 +139,10 @@ Every change updates the task's `updated_at`.
 | `DELETE /sprints/:id` | its project's PM, `ceo` | nothing |
 | `POST /sprints/:id/close` `{move_to}` | its project's PM, `ceo` | `Sprint` (section 6) |
 | `GET /templates` | `ceo`, `pm` | `ProjectTemplate[]` |
+| `GET /performance` `?from&to` | `ceo`, `pm`, `monitor`, `lead` | `{people, teams}` (section 13) |
+| `GET /performance/people/:id` `?from&to` | see section 13 | `PersonDetail` |
+| `GET /performance/criteria`, `PUT …`, `POST …/approve` | read: signed in; change: `ceo` | `Criteria` |
+| `POST /reviews`, `PATCH /reviews/:id`, `POST /reviews/:id/finalize` | the direct manager (section 13) | `Review` |
 | `GET /reports/overview` | `ceo`, `pm`, `monitor`, `lead` | `Overview` (section 12) |
 | `POST /projects/:id/template` `{name, description?}` | its PM, `ceo` | `ProjectTemplate` |
 | `DELETE /templates/:id` | its maker, `ceo` | nothing |
@@ -290,6 +294,7 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `bug_assigned` | a bug is given to a developer | the developer |
 | `bug_status` | a bug moves (data: `bug_status`, the send-back reason as `note`) | its reporter, its developer, the project's PM |
 | `bug_late` | the expected fix day has passed and the bug isn't closed (a daily reminder, like `task_overdue`) | the developer and the PM, once per bug and day |
+| `review_final` | a performance review of you is made final (data: `note` = the period) | the reviewed person |
 | `dependency_done` | the last unfinished task another task waited for is done (`task_id` = the waiting task; data: `note` = the finished task's code) | the waiting task's assignee |
 | `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
 
@@ -455,6 +460,47 @@ sprints: SprintRow[], bugs: {open, late, closed, critical_open}}`.
 The dashboard also shows the 3 latest announcements (`GET /announcements`). The reports page downloads each table as
 CSV in the browser (no server call). Cells that start with `= + - @` are written as text (no spreadsheet formulas).
 
-## 13. Coming next (not used by the site yet)
+## 13. Performance
 
-Performance reviews, admin (users, roles, settings) and the audit log, GitHub. Each will add its section here in its own PR.
+Shapes: `src/features/performance/types.ts`. **Counting and scoring: `src/features/performance/metrics.ts`**; who may do
+what: `src/features/performance/rules.ts` (both pure and tested). The demo backend is `src/features/performance/mock.ts`.
+
+**Counted for a person over a period** `{from, to}` (query `?from=YYYY-MM-DD&to=YYYY-MM-DD`; 422 on `period` if wrong),
+over the projects **the asking person** may see:
+
+- `assigned`: their tasks open at some point in the period (`created_at` ≤ `to`, and not finished before `from`).
+- `done`: finished inside the period. *Finished* = the approval's `decided_at`, else the task's last change.
+- `late`: finished after its `due`, or still open with `due` before the period's end (or today).
+- `completion` = done / assigned; `on_time` = finished on or before `due` / finished with a `due` (null if none);
+  `blocked` = blocked now, with the reasons on the person's page.
+- **Teams:** the members' numbers added up, `left` = assigned − done, `planned` = the average time-gone of the team's
+  projects at the period's end (plan vs actual).
+
+**Criteria** (`GET /performance/criteria`; `PUT /performance/criteria {items}`; `POST /performance/criteria/approve`):
+`{items: [{id, name, name_en, kind: "auto"|"manual", metric?: "completion"|"on_time"|"not_late", weight}], approved_by?,
+approved_at?, updated_at}`. Only the `ceo` changes or approves (403). Weights are whole numbers adding up to **100**;
+every name in both languages; an `auto` one needs its `metric`; **at least one `manual` criterion** (the brief: not on
+the number of tasks alone): 422 on `items`. **Any change clears the approval.** *(Assumption: the CEO is "the management".)*
+
+**Scores:** `completion` → completion × 100; `on_time` → on_time × 100 (completion when null); `not_late` →
+(1 − late / assigned) × 100. A `manual` criterion: the reviewer's 1–5 stars × 20. **Total** = Σ score × weight / 100, rounded.
+
+**Reviews** (`POST /reviews`, `PATCH /reviews/:id` with `{user_id, period, stars: {criterionId: 1..5}, note}`;
+`POST /reviews/:id/finalize`):
+
+- **Who reviews whom** *(assumption)*: the `ceo` anyone; a `pm` the members of their projects; a `lead` the employees
+  of their team; never themselves, the CEO or the admin (403). Only a finished period (`to` ≤ today, 422 on `period`).
+- The server counts the numbers itself, stores them (`perf`), the criteria as they are (`criteria`), `scores` and
+  `total`. Starts as `draft`; only its reviewer changes it (404 for others).
+- **Final:** only its reviewer; the criteria must be **approved** (409) and every manual criterion scored (422 on
+  `stars`). A final review never changes (409). Notify `review_final` to the person.
+- **Who sees:** a draft its reviewer and the `ceo`; a final one also the person, `monitor`, and whoever may review them.
+
+`GET /performance?from&to` → `{people: PersonPerf[], teams: TeamPerf[]}`: `ceo`, `pm`, `monitor`, `lead` (403 others);
+people = everyone they may open (the CEO and M&E: everyone but the CEO and admin; a PM: their projects' people; a lead:
+their team). `GET /performance/people/:id?from&to` → `{perf, blocked, reviews, can_review}`: themselves, the CEO, M&E,
+or who may review them (404 otherwise).
+
+## 14. Coming next (not used by the site yet)
+
+Admin (users, roles, settings) and the audit log, GitHub. Each will add its section here in its own PR.
