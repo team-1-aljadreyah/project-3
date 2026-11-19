@@ -56,7 +56,8 @@ export const NAV: NavItem[] = [
   { key: "announcements", ar: "الإعلانات", en: "Announcements", href: "/announcements", roles: ALL, ready: true },
   { key: "performance", ar: "الأداء", en: "Performance", href: "/performance", roles: WORK, ready: true },
   { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
-  { key: "users", ar: "المستخدمون", en: "Users", href: "/users", roles: ["admin"], ready: false },
+  { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },
+  { key: "audit", ar: "سجل العمليات", en: "Audit log", href: "/audit", roles: ["ceo", "admin"], ready: true },
 ];
 
 export function navFor(role: Role) {

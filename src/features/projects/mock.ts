@@ -1,5 +1,6 @@
 // The demo backend for projects, their setup and sprints: the same calls as ./api.ts, with the rules the real server
 // must keep (docs/backend.md). Only the demo build loads it (see ./api.ts).
+import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { aboutProject, notify } from "@/mock/notify";
@@ -128,6 +129,7 @@ export const projectsMock: ProjectsApi = {
     }
     db.projects.push(project);
     log({ project_id: id, actor_id: user.id, kind: "created", note: template ? template.name : undefined });
+    audit(user.id, "project_created", { type: "project", id, label: project.name }, template ? [{ field: "template", to: template.name }] : undefined);
     notify(project.member_ids, "project_added", { actor_id: user.id, project_id: id, data: aboutProject(project) });
     commit();
     return wait(project);
@@ -167,6 +169,8 @@ export const projectsMock: ProjectsApi = {
     if (p.pm_id !== undefined && p.pm_id !== project.pm_id) {
       // The old manager stays a member, so their tasks and access stay until the CEO changes the members.
       log({ project_id: id, actor_id: user.id, kind: "pm", from: String(project.pm_id), to: String(p.pm_id), note });
+      const pmName = (uid: number) => getDb().users.find((u) => u.id === uid)?.name;
+      audit(user.id, "project_pm_changed", { type: "project", id, label: project.name }, [{ field: "pm", from: pmName(project.pm_id), to: pmName(p.pm_id) }]);
       // A new manager is an edge case in the brief: the whole team hears it.
       notify(withPm(project.member_ids, p.pm_id), "project_pm", { actor_id: user.id, project_id: id, data: { ...aboutProject(project), pm_id: String(p.pm_id), note } });
       project.member_ids = withPm(project.member_ids, p.pm_id);
@@ -348,6 +352,7 @@ export const projectsMock: ProjectsApi = {
       project_id: s.project_id, actor_id: user.id, kind: "sprint_closed", from: s.name, to: target?.name,
       note: `${s.result.done}/${s.result.planned}`,
     });
+    audit(user.id, "sprint_closed", { type: "sprint", id, label: s.name }, [{ field: "moved_to", to: target?.name ?? "backlog" }, { field: "done", to: `${s.result.done}/${s.result.planned}` }]);
     commit();
     return wait({ ...s, planned_ratio: 1 });
   },
@@ -386,6 +391,7 @@ export const projectsMock: ProjectsApi = {
     if (!template || !canUseTemplates(user)) return fail(404, "NOT_FOUND", "لم يُعثر على القالب.", "Template not found.");
     if (!canRemoveTemplate(user, template)) return fail(403, "FORBIDDEN", "يحذف القالبَ من أنشأه أو المدير التنفيذي.", "Only who made the template, or the CEO, can remove it.");
     db.templates = db.templates.filter((t) => t.id !== id);
+    audit(user.id, "template_deleted", { type: "template", id, label: template.name });
     commit();
     return wait(undefined);
   },

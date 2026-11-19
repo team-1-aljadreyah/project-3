@@ -23,6 +23,8 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   task_due_soon: { ar: "اقتراب موعد التسليم", en: "A due date is near", hint_ar: "قبل موعد التسليم بيوم، ويوم التسليم.", hint_en: "The day before, and on the day." },
   task_overdue: { ar: "تجاوز موعد التسليم", en: "A task is late", hint_ar: "عند تجاوز مهمتك موعد تسليمها.", hint_en: "When your task passes its due date." },
   approval_requested: { ar: "طلب اعتماد إكمال", en: "Approval is requested", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
+  team_joined: { ar: "انضمامك إلى فريق", en: "You join a team", hint_ar: "عند إضافتك إلى فريق أو جعلك قائده.", hint_en: "When you are put in a team or made its leader." },
+  account_locked: { ar: "قفل حساب", en: "An account is locked", hint_ar: "للمسؤول: عند قفل حساب بعد محاولات دخول خاطئة.", hint_en: "For the admin: when an account locks after wrong passwords." },
   review_final: { ar: "تقييم أدائك", en: "Your performance review", hint_ar: "عند اعتماد تقييم لأدائك.", hint_en: "When a review of your work is made final." },
   dependency_done: { ar: "انتهاء ما تنتظره مهمتك", en: "A task yours waits for is done", hint_ar: "عند إنجاز آخر مهمة كانت مهمتك تنتظرها.", hint_en: "When the last task yours was waiting for is done." },
   approval_decided: { ar: "قرار الاعتماد", en: "Approval is decided", hint_ar: "عند اعتماد إكمال مهمة طلبتَه أو إرجاعها.", hint_en: "When a completion you asked for is approved or sent back." },
@@ -73,6 +75,12 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أضافك إلى مشروع ${project}`, `${who} added you to ${project}`);
     case "project_pm":
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
+    case "team_joined":
+      // d.note = the team's name.
+      return tr(`${who} أضافك إلى «${d.note ?? "-"}»`, `${who} put you in "${d.note ?? "-"}"`);
+    case "account_locked":
+      // d.note = the locked person's name.
+      return tr(`قُفل حساب ${d.note ?? "-"} بعد محاولات دخول خاطئة`, `${d.note ?? "-"}'s account locked after wrong passwords`);
     case "review_final":
       // d.note = the review's period.
       return tr(`${who} اعتمد تقييم أدائك للفترة ${d.note ?? ""}`, `${who} made your performance review final (${d.note ?? ""})`);
@@ -108,6 +116,7 @@ export function notificationLink(n: Notification) {
   if (n.bug_id) return `/bugs/${n.bug_id}`;
   if (n.chat_key) return `/chat/${n.chat_key}`;
   if (n.kind === "review_final") return "/performance";
+  if (n.kind === "account_locked") return "/admin";
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";
 }

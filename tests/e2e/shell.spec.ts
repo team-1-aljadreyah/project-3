@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./helpers";
 
-test("pages that are not built yet are greyed out, never broken links", async ({ page }) => {
-  // "Users" (the admin's part) is the one page still to come.
+test("every menu item is a working link (pages not built yet would be greyed out, never broken)", async ({ page }) => {
   await signInAs(page, /حسن رعد/);
   const nav = page.getByRole("navigation", { name: "القائمة الرئيسية" });
-  await expect(nav.getByRole("link", { name: "المستخدمون" })).toHaveCount(0);
-  await expect(nav.getByText("المستخدمون")).toBeVisible();
+  await nav.getByRole("link", { name: "إدارة النظام" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "إدارة النظام" })).toBeVisible();
+  await nav.getByRole("link", { name: "سجل العمليات" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "سجل العمليات" })).toBeVisible();
 });
 
 test("dark mode stays after a reload", async ({ page }) => {
