@@ -1,5 +1,6 @@
 // The demo backend for announcements, with the rules the real server must keep (docs/backend.md, section 9).
 // Only the demo build loads it (see ./api.ts).
+import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
@@ -63,6 +64,7 @@ export const announcementsMock: AnnouncementsApi = {
     if (!canManageAnnouncement(user, a)) return fail(403, "FORBIDDEN", "لا يحق لك حذف هذا الإعلان.", "You can't remove this announcement.");
     const db = getDb();
     db.announcements = db.announcements.filter((x) => x.id !== id);
+    audit(user.id, "announcement_deleted", { type: "announcement", id, label: a.title });
     db.announcement_reads = db.announcement_reads.filter((r) => r.announcement_id !== id);
     commit();
     return wait(undefined);

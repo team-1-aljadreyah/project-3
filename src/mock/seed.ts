@@ -5,6 +5,7 @@ import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
 import type { Message } from "@/features/chat";
 import type { Criteria, Review } from "@/features/performance";
+import type { AuditEntry, Settings } from "@/features/admin";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
@@ -47,6 +48,10 @@ export interface MockDb {
   /** The review criteria (set and approved by the CEO) and the performance reviews. */
   criteria: Criteria;
   reviews: Review[];
+  /** The audit log (nobody changes or removes a line), the platform settings, and each person's sign-in record. */
+  audit: AuditEntry[];
+  settings: Settings;
+  logins: { user_id: number; failed: number; locked_until?: string; last_login_at?: string }[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
@@ -54,7 +59,7 @@ export interface MockDb {
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number; review: number;
+    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number; review: number; audit: number; team: number;
   };
 }
 
@@ -343,6 +348,17 @@ export function seed(now = new Date()): MockDb {
     pastReview(2, 60, 1, { done: 7, assigned: 8, on_time: 0.86, late: 1 }, [4, 4], 80, "تحسن واضح في الالتزام بالمواعيد وجودة الواجهات."),
   ];
 
+  // The audit log so far: what the admin, the CEO and the PM did (newest last).
+  let auditId = 0;
+  const audit: AuditEntry[] = [
+    { id: ++auditId, actor_id: 8, action: "team_created", target: { type: "team", id: 1, label: "فريق التطوير" }, changes: [{ field: "lead", to: "مصطفى جواد" }], at: at(45, 9) },
+    ...projects.map((p): AuditEntry => ({ id: ++auditId, actor_id: p.pm_id, action: "project_created", target: { type: "project", id: p.id, label: p.name }, at: at(Math.max(0, -daysFrom(p.start)) + 2, 9) })),
+    { id: ++auditId, actor_id: 1, action: "criteria_approved", target: { type: "criteria", label: "معايير التقييم" }, at: at(20) },
+    { id: ++auditId, actor_id: 2, action: "sprint_closed", target: { type: "sprint", id: 2, label: "الدورة 3" }, changes: [{ field: "moved_to", to: "الدورة 4" }], at: at(7, 15) },
+    { id: ++auditId, actor_id: 8, action: "user_changed", target: { type: "user", id: 7, label: "زينب فاضل" }, changes: [{ field: "team", to: "فريق التطوير" }], at: at(30, 11) },
+  ];
+  audit.sort((a, b) => a.at.localeCompare(b.at)).forEach((e, i) => (e.id = i + 1));
+
   // One project template, made by the PM: a mobile app in three phases, worked in sprints.
   const templates: ProjectTemplate[] = [{
     id: 1, name: "تطبيق جوال", description: "تحليل، ثم تطوير، ثم إطلاق في المتاجر.", from_project: "تطبيق المبيعات",
@@ -359,11 +375,11 @@ export function seed(now = new Date()): MockDb {
 
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates, criteria, reviews,
+    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
-      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length, review: reviews.length,
+      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length, review: reviews.length, audit: audit.length, team: teams.length,
     },
   };
 }

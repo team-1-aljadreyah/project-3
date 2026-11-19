@@ -53,7 +53,8 @@ export function remindDueTasks(userId: number) {
     const project = db.projects.find((p) => p.id === task.project_id);
     if (!project || project.statuses.find((s) => s.key === task.status)?.tone === "done") continue;
     const left = daysBetween(day, task.due);
-    const kind: NotificationKind | null = left < 0 ? "task_overdue" : left <= 1 ? "task_due_soon" : null;
+    // How many days before the due day the reminder starts: the admin's setting (1 by default).
+    const kind: NotificationKind | null = left < 0 ? "task_overdue" : left <= db.settings.due_soon_days ? "task_due_soon" : null;
     if (!kind) continue;
     const sent = db.notifications.some((n: Notification) => n.user_id === userId && n.kind === kind && n.task_id === task.id && n.data.due === task.due);
     if (!sent) notify([userId], kind, { project_id: project.id, task_id: task.id, data: { ...aboutTask(task, project), due: task.due } });

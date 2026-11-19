@@ -20,7 +20,9 @@ export type NotificationKind =
   | "bug_late"
   | "chat_mention"
   | "dependency_done"
-  | "review_final";
+  | "review_final"
+  | "team_joined"
+  | "account_locked";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -42,6 +44,8 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "chat_mention",
   "dependency_done",
   "review_final",
+  "team_joined",
+  "account_locked",
 ];
 
 /**

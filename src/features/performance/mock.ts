@@ -1,5 +1,6 @@
 // The demo backend for performance, with the rules the real server must keep (docs/backend.md, section 13): the
 // numbers come from ./metrics.ts, the permissions from ./rules.ts. Only the demo build loads it.
+import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
@@ -90,6 +91,9 @@ export const performanceMock: PerformanceApi = {
     if (problem) invalid("items", ...MESSAGES[problem]);
     const db = getDb();
     // A change needs a new approval (the brief: approved by the management before it is applied).
+    audit(user.id, "criteria_changed", { type: "criteria", label: "معايير التقييم" }, [
+      { field: "items", from: db.criteria.items.map((c) => `${c.name} ${c.weight}`).join("، "), to: clean.map((c) => `${c.name} ${c.weight}`).join("، ") },
+    ]);
     db.criteria = { items: clean, updated_at: nowIso() };
     commit();
     return wait(db.criteria);
@@ -101,6 +105,7 @@ export const performanceMock: PerformanceApi = {
     const db = getDb();
     if (criteriaProblem(db.criteria.items)) invalid("items", "أصلح المعايير قبل اعتمادها.", "Fix the criteria before approving them.");
     db.criteria = { ...db.criteria, approved_by: user.id, approved_at: nowIso() };
+    audit(user.id, "criteria_approved", { type: "criteria", label: "معايير التقييم" });
     commit();
     return wait(db.criteria);
   },
@@ -148,6 +153,7 @@ export const performanceMock: PerformanceApi = {
     // Every criterion the reviewer scores needs its stars before the review is final.
     if (review.criteria.some((c) => c.kind === "manual" && !review.scores[c.id])) invalid("stars", "قيّم كل المعايير قبل اعتماد التقييم.", "Score every criterion before making the review final.");
     review.state = "final";
+    audit(user.id, "review_finalized", { type: "review", id, label: db.users.find((u) => u.id === review.user_id)?.name ?? "-" }, [{ field: "total", to: String(review.total) }]);
     review.finalized_at = nowIso();
     notify([review.user_id], "review_final", { actor_id: user.id, data: { note: `${review.period.from} → ${review.period.to}` } });
     commit();

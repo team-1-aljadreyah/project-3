@@ -143,6 +143,10 @@ Every change updates the task's `updated_at`.
 | `GET /performance/people/:id` `?from&to` | see section 13 | `PersonDetail` |
 | `GET /performance/criteria`, `PUT …`, `POST …/approve` | read: signed in; change: `ceo` | `Criteria` |
 | `POST /reviews`, `PATCH /reviews/:id`, `POST /reviews/:id/finalize` | the direct manager (section 13) | `Review` |
+| `GET /admin/users`, `POST /admin/users`, `PATCH /admin/users/:id` | `admin` | `AdminUser[]` / `User` (section 14) |
+| `GET /teams`, `POST /admin/teams`, `PATCH /admin/teams/:id` | read: signed in; change: `admin` | `Team` |
+| `GET /admin/settings`, `PUT /admin/settings`, `GET /admin/health` | `admin` | `Settings` / `DataHealth` |
+| `GET /audit` `?action&actor_id&from&to` | `ceo`, `admin` | `AuditEntry[]` |
 | `GET /reports/overview` | `ceo`, `pm`, `monitor`, `lead` | `Overview` (section 12) |
 | `POST /projects/:id/template` `{name, description?}` | its PM, `ceo` | `ProjectTemplate` |
 | `DELETE /templates/:id` | its maker, `ceo` | nothing |
@@ -294,6 +298,8 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `bug_assigned` | a bug is given to a developer | the developer |
 | `bug_status` | a bug moves (data: `bug_status`, the send-back reason as `note`) | its reporter, its developer, the project's PM |
 | `bug_late` | the expected fix day has passed and the bug isn't closed (a daily reminder, like `task_overdue`) | the developer and the PM, once per bug and day |
+| `team_joined` | you are put in a team or made its leader (data: `note` = the team's name) | that person |
+| `account_locked` | an account locks after wrong passwords (data: `note` = the person's name) | every active admin |
 | `review_final` | a performance review of you is made final (data: `note` = the period) | the reviewed person |
 | `dependency_done` | the last unfinished task another task waited for is done (`task_id` = the waiting task; data: `note` = the finished task's code) | the waiting task's assignee |
 | `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
@@ -501,6 +507,43 @@ people = everyone they may open (the CEO and M&E: everyone but the CEO and admin
 their team). `GET /performance/people/:id?from&to` → `{perf, blocked, reviews, can_review}`: themselves, the CEO, M&E,
 or who may review them (404 otherwise).
 
-## 14. Coming next (not used by the site yet)
+## 14. Administration and the audit log
 
-Admin (users, roles, settings) and the audit log, GitHub. Each will add its section here in its own PR.
+Shapes: `src/features/admin/types.ts`; rules: `src/features/admin/rules.ts`; the demo backend: `src/features/admin/mock.ts`,
+the sign-in lock in `src/features/auth/mock.ts`, the audit helper in `src/mock/audit.ts`.
+
+**Users** (`GET /admin/users` → `AdminUser[]` with `failed_logins`, `locked_until?`, `last_login_at?`;
+`POST /admin/users`; `PATCH /admin/users/:id`): the `admin` only (403).
+
+- `name` required ≤ 120; `email` valid, stored lower case, **unique** (422 on `email`); `role` one of the six; `title` ≤ 80;
+  `team_id` an existing team or null (422).
+- **No account is deleted:** `active: false` stops it (it can't sign in: 403), `true` restarts it. The history stays.
+- **Guards (409):** an admin can't change their own role or stop themselves; at least one active admin always stays; a
+  `pm` who manages projects that aren't `done` can't lose the role or be stopped (the message names the projects:
+  change their PM first).
+- `unlock: true` ends a sign-in lock. A changed team notifies the person `team_joined`.
+
+**Sign-in lock** (the brief: "a user who can't sign in for a while"): every wrong password logs `login_failed` (no
+password is ever stored). After `lock_after` wrong passwords in a row the account locks for `lock_minutes`: log
+`login_locked`, notify every active admin `account_locked`. While locked, sign-in answers **429 `RATE_LIMITED`** (even
+with the right password). A good sign-in resets the count and sets `last_login_at`.
+
+**Teams** (`GET /teams`; `POST /admin/teams`, `PATCH /admin/teams/:id` `{name, name_en?, lead_id?}`): admin only. Name
+required ≤ 80 and unique; `lead_id` an active user with role `lead` (422). The leader joins the team (`team_id`) and is
+told `team_joined`. Members are set on each user. *(Assumption: a team is fixed, BRIEF question 6.)*
+
+**Settings** (`GET/PUT /admin/settings`): `{due_soon_days 1–7, lock_after 3–10, lock_minutes 5–120}` (422 on the field).
+`due_soon_days` decides when `task_due_soon` starts. **Data health** (`GET /admin/health`): counts of users (active,
+stopped, locked), projects, tasks, files and their size, audit lines. Backups: DevOps (BRIEF question 14).
+
+**Audit log** (`GET /audit?action&actor_id&from&to`, newest first): `ceo` and `admin` (403 others). Each line
+`{id, actor_id?, action, target: {type, id?, label}, changes?: [{field, from?, to?}], at}`. **There is no call that
+changes or removes a line** (the brief: normal users can't hide it); keep it in its own table, append only. Written for:
+`user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
+`team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
+`project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
+`criteria_approved`, `review_finalized`. (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+
+## 15. Coming next (not used by the site yet)
+
+GitHub. It will add its section here in its own PR.
