@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AttachmentsPanel } from "@/features/attachments";
 import { authApi } from "@/features/auth";
+import { GithubPanel } from "@/features/github";
 import { canManageProject, lateDays, projectsApi, type Project, type Sprint } from "@/features/projects";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -141,6 +142,8 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
           </section>
 
           <Dependencies task={task} project={project} tasks={projectTasks} canEdit={canManageTasks(user, project)} onSaved={reload} />
+
+          <GithubPanel owner={{ type: "task", id: task.id }} />
 
           <section aria-labelledby="files-title" className="rounded-xl border border-line bg-card p-4">
             <h2 id="files-title" className="mb-3 text-sm font-semibold text-muted">

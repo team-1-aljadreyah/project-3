@@ -22,7 +22,8 @@ export type NotificationKind =
   | "dependency_done"
   | "review_final"
   | "team_joined"
-  | "account_locked";
+  | "account_locked"
+  | "github_pr_merged";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -46,6 +47,7 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "review_final",
   "team_joined",
   "account_locked",
+  "github_pr_merged",
 ];
 
 /**

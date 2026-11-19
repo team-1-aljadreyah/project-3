@@ -23,6 +23,7 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   task_due_soon: { ar: "اقتراب موعد التسليم", en: "A due date is near", hint_ar: "قبل موعد التسليم بيوم، ويوم التسليم.", hint_en: "The day before, and on the day." },
   task_overdue: { ar: "تجاوز موعد التسليم", en: "A task is late", hint_ar: "عند تجاوز مهمتك موعد تسليمها.", hint_en: "When your task passes its due date." },
   approval_requested: { ar: "طلب اعتماد إكمال", en: "Approval is requested", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
+  github_pr_merged: { ar: "دمج طلب سحب مرتبط بمهمتك", en: "A PR for your task is merged", hint_ar: "عند دمج طلب سحب في GitHub يذكر مهمتك، لتنقلها.", hint_en: "When a GitHub pull request that mentions your task is merged, so you can move it." },
   team_joined: { ar: "انضمامك إلى فريق", en: "You join a team", hint_ar: "عند إضافتك إلى فريق أو جعلك قائده.", hint_en: "When you are put in a team or made its leader." },
   account_locked: { ar: "قفل حساب", en: "An account is locked", hint_ar: "للمسؤول: عند قفل حساب بعد محاولات دخول خاطئة.", hint_en: "For the admin: when an account locks after wrong passwords." },
   review_final: { ar: "تقييم أدائك", en: "Your performance review", hint_ar: "عند اعتماد تقييم لأدائك.", hint_en: "When a review of your work is made final." },
@@ -75,6 +76,9 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أضافك إلى مشروع ${project}`, `${who} added you to ${project}`);
     case "project_pm":
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
+    case "github_pr_merged":
+      // d.note = the pull request ("aljadreyah/booking-web #41").
+      return tr(`دُمج ${d.note ?? "-"} المرتبط بـ ${task}: هل تنقل المهمة؟`, `${d.note ?? "-"} for ${task} was merged: move the task?`);
     case "team_joined":
       // d.note = the team's name.
       return tr(`${who} أضافك إلى «${d.note ?? "-"}»`, `${who} put you in "${d.note ?? "-"}"`);

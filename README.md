@@ -75,6 +75,7 @@ src/
 │   ├── reports/      the CEO dashboard and the reports (by project, team and person, sprint), CSV download
 │   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), sprint rules, templates, counts
 │   ├── bugs/         the bug tracker: report, the fix flow, reports
+│   ├── github/       the GitHub link: per-project setting, PRs and commits on tasks and bugs
 │   ├── notifications/ the bell, the notifications page and preferences
 │   └── tasks/        the project boards (Kanban, Scrum: sprint, backlog), the task page, dependencies, my tasks, task rules
 ├── shared/
@@ -95,7 +96,7 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth`; `attachments` uses `projects` and `auth`; `projects`,
+Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth`; `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
 `notifications` and `announcements` use `auth`. Never the other way, so there is no loop.
 
 **How data flows:**

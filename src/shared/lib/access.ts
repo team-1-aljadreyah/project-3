@@ -16,6 +16,14 @@ export function canSeeProject(user: Pick<User, "id" | "role">, project: Members)
 }
 
 /**
+ * Change a project's setup: details, members, statuses, phases, sprints, GitHub. The project's PM and the CEO. Here (not
+ * in the projects feature) because the GitHub feature needs it too, and features may not import each other in a loop.
+ */
+export function canManageProjectSetup(user: Pick<User, "id" | "role">, project: { pm_id: number }) {
+  return user.role === "ceo" || project.pm_id === user.id;
+}
+
+/**
  * Takes part in a project's work: comments, adds files. Everyone who can see the project, except the system admin
  * (accounts, not project work). Used by the task rules and the file attachments, so both follow the same rule.
  */

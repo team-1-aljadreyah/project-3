@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AttachmentsPanel } from "@/features/attachments";
+import { GithubPanel } from "@/features/github";
 import { authApi } from "@/features/auth";
 import { projectsApi, type Project } from "@/features/projects";
 import { tasksApi, type Task } from "@/features/tasks";
@@ -183,6 +184,7 @@ function BugView({ bug, project, task, people, history }: Loaded) {
             </h2>
             <AttachmentsPanel owner={{ type: "bug", id: bug.id }} canAdd={canReportBug(user, project)} canManage={canManageBugs(user, project)} />
           </section>
+          <GithubPanel owner={{ type: "bug", id: bug.id }} />
           <section aria-labelledby="bug-history" className="rounded-xl border border-line bg-card p-4">
             <h2 id="bug-history" className="mb-2 text-sm font-semibold text-muted">
               {tr("السجل", "History")}

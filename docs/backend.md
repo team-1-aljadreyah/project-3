@@ -147,6 +147,8 @@ Every change updates the task's `updated_at`.
 | `GET /teams`, `POST /admin/teams`, `PATCH /admin/teams/:id` | read: signed in; change: `admin` | `Team` |
 | `GET /admin/settings`, `PUT /admin/settings`, `GET /admin/health` | `admin` | `Settings` / `DataHealth` |
 | `GET /audit` `?action&actor_id&from&to` | `ceo`, `admin` | `AuditEntry[]` |
+| `GET /projects/:id/github`, `PUT /projects/:id/github` | read: can see it; change: its PM, `ceo` | `GithubSettings` (section 15) |
+| `GET /tasks/:id/github`, `GET /bugs/:id/github` | can see its project | `GithubLinks` |
 | `GET /reports/overview` | `ceo`, `pm`, `monitor`, `lead` | `Overview` (section 12) |
 | `POST /projects/:id/template` `{name, description?}` | its PM, `ceo` | `ProjectTemplate` |
 | `DELETE /templates/:id` | its maker, `ceo` | nothing |
@@ -298,6 +300,7 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `bug_assigned` | a bug is given to a developer | the developer |
 | `bug_status` | a bug moves (data: `bug_status`, the send-back reason as `note`) | its reporter, its developer, the project's PM |
 | `bug_late` | the expected fix day has passed and the bug isn't closed (a daily reminder, like `task_overdue`) | the developer and the PM, once per bug and day |
+| `github_pr_merged` | a pull request that mentions your task is merged (data: `note` = "repo #n") | the task's assignee |
 | `team_joined` | you are put in a team or made its leader (data: `note` = the team's name) | that person |
 | `account_locked` | an account locks after wrong passwords (data: `note` = the person's name) | every active admin |
 | `review_final` | a performance review of you is made final (data: `note` = the period) | the reviewed person |
@@ -544,6 +547,26 @@ changes or removes a line** (the brief: normal users can't hide it); keep it in 
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
 `criteria_approved`, `review_finalized`. (Task, project and bug histories stay where they are, sections 4, 6, 10.)
 
-## 15. Coming next (not used by the site yet)
+## 15. GitHub
 
-GitHub. It will add its section here in its own PR.
+Shapes: `src/features/github/types.ts`; rules: `src/features/github/rules.ts`; the demo backend: `src/features/github/mock.ts`.
+
+**The connection is the server's job:** a GitHub App installed on the company's GitHub organization sends webhooks
+(pull requests, pushes) to the backend. **The browser never talks to GitHub and never holds a GitHub key.**
+
+- `GET /projects/:id/github` → `{project_id, enabled, repos}` (can see the project). `PUT /projects/:id/github
+  {enabled, repos}`: the project's PM and the `ceo` (403). `repos`: "owner/name" (422 on `repos`), at most 5, no
+  duplicates; `enabled: true` needs at least one.
+- **Linking:** a pull request (title or branch) or a commit (message) that mentions a task's or bug's **code as a whole
+  word** (`TSK-104`, not `TSK-1040`) in one of the project's repositories is linked to it. Other repositories are ignored.
+- `GET /tasks/:id/github`, `GET /bugs/:id/github` → `{enabled, repos, items: [{id, kind: "pr"|"commit", repo, ref,
+  title, state?: "open"|"merged"|"closed", author, at, url}]}`, newest first; `{enabled: false, repos: [], items: []}`
+  when off. **`url` must be an `https://github.com/` address** (the site shows nothing else as a link).
+- When a linked pull request is **merged**, notify the task's assignee `github_pr_merged` (data: `note` = "repo #n").
+  *(Assumption, BRIEF question 10: one way. The platform shows GitHub; it doesn't move a task by itself.)*
+
+## 16. Still open with the client
+
+Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
+required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
+the review criteria and who reviews whom (13), the sign-in lock and backups (14), GitHub one-way or two-way (15).
