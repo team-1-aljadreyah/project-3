@@ -46,9 +46,9 @@ test("wrong passwords lock the account; the sign-in page says so", async ({ page
   for (let i = 0; i < 5; i++) {
     await page.getByLabel("البريد الإلكتروني").fill("employee@demo.test");
     await page.getByLabel("كلمة المرور").fill("wrong-password");
-    await page.getByRole("button", { name: "دخول" }).click();
+    await page.getByRole("button", { name: "دخول", exact: true }).click();
     await expect(page.getByText("البريد أو كلمة المرور غير صحيحة.")).toBeVisible();
   }
-  await page.getByRole("button", { name: "دخول" }).click();
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
   await expect(page.getByText(/الحساب مقفل مؤقتاً/)).toBeVisible();
 });

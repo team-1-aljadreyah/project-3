@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BRAND } from "@/shared/lib/brand";
 import { useFmt } from "@/shared/lib/i18n";
+import { LoadingRing } from "@/shared/ui";
 
 /**
  * Shown while the first page's code downloads (Next.js loads each page's code on its own).
@@ -23,12 +25,7 @@ export default function Loading() {
     // role="status": screen readers say "Loading…" without moving the focus.
     <div role="status" className="flex min-h-dvh items-center justify-center">
       <span className="sr-only">{tr("جارٍ التحميل…", "Loading…")}</span>
-      {show && (
-        <span
-          aria-hidden="true"
-          className="size-8 animate-spin rounded-full border-[3px] border-line border-t-accent motion-reduce:animate-none"
-        />
-      )}
+      {show && <LoadingRing mark={BRAND.mark} className="settle" />}
     </div>
   );
 }

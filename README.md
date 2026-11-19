@@ -111,6 +111,17 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   assumes the seven default statuses.
 - **The server is the judge** of who sees what. The interface only hides what a job doesn't use.
 
+## Colours and motion
+
+- **Colours:** wine #7C0E44, mauve #AA5E7A, dusty rose #D49A9A, blush #F2DACE, as tokens in `src/app/styles.css`
+  (light and dark). Every text pair is at least 4.5:1. Task status colours stay apart from the brand colour.
+- **Motion:** things arrive slightly out of focus and settle into place. `Reveal` (`src/shared/ui/motion.tsx`) does it
+  for a block when it scrolls into view; each part of the signed-in site settles in (`.settle` in the frame).
+- **The front door** (the sign-in page, `src/features/auth/components/front-door.tsx`): a ring counts the page in and
+  folds into the logo (once per visit), one stream of light runs down the page, a tilting glass window shows a live
+  task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always at the top.
+- **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
+
 ## Documentation
 
 - [docs/backend.md](docs/backend.md): the backend contract: every call, who may do what, and the task rules
