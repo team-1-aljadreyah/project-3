@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/shared/lib/brand";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
-import { Pill, Reveal } from "@/shared/ui";
+import { Frost, Pill, Reveal } from "@/shared/ui";
 
 const INTRO_KEY = "p3.intro";
 const reducedMotion = () => {
@@ -16,19 +16,22 @@ const reducedMotion = () => {
   }
 };
 
+/** Will the ring count the page in on this visit? (Once per browser tab, never with "reduce motion" or in a background tab.) */
+export function introPlays() {
+  try {
+    // Not in a background tab either: the browser slows its timers, and the ring would wait there.
+    return !sessionStorage.getItem(INTRO_KEY) && !reducedMotion() && document.visibilityState === "visible";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The ring that counts the page in (0 → 100), then folds away into the logo. Once per visit (this browser tab), never
  * with "reduce motion". It never blocks a click (pointer-events: none) and is gone after two seconds.
  */
 export function IntroRing({ target, onLand }: { target: React.RefObject<HTMLElement | null>; onLand: () => void }) {
-  const [playing, setPlaying] = useState(() => {
-    try {
-      // Not in a background tab either: the browser slows its timers, and the ring would wait there.
-      return !sessionStorage.getItem(INTRO_KEY) && !reducedMotion() && document.visibilityState === "visible";
-    } catch {
-      return false;
-    }
-  });
+  const [playing, setPlaying] = useState(introPlays);
   const [count, setCount] = useState(0);
   const ring = useRef<HTMLDivElement>(null);
 
@@ -122,8 +125,9 @@ export function FlowWindow() {
         box.current?.style.removeProperty("--ry");
       }}
       aria-hidden="true"
-      className="glass relative w-full max-w-[520px] rounded-3xl p-5"
+      className="glass relative isolate w-full max-w-[520px] rounded-3xl p-5"
     >
+      <Frost />
       <div className="mb-4 flex items-center justify-between text-xs text-muted">
         <span dir="ltr" className="num">
           TSK-204
@@ -156,7 +160,8 @@ export function FlowWindow() {
         {stage === 2 && <span className="text-xs text-muted">{tr("بانتظار اعتماد الإكمال", "Waiting for approval")}</span>}
       </div>
 
-      <ul className="flex flex-col gap-1.5 border-t border-line pt-3 text-xs">
+      {/* Room for all four lines from the start, so the window never changes size. */}
+      <ul className="flex min-h-[5.75rem] flex-col gap-1.5 border-t border-line pt-3 text-xs">
         {lines.map((l, i) => (
           <li key={i} className={cn("flex gap-2 text-muted", i === lines.length - 1 && "settle text-text")}>
             <b className="font-medium">{lang === "en" ? l.who_en : l.who}</b>
@@ -177,8 +182,10 @@ export function FlowPlate() {
     { n: "٣", n_en: "3", ar: "تابع", en: "Follow", body_ar: "لوحة قيادة وتقارير وتقييم أداء عادل، وكل تغيير مسجّل.", body_en: "A dashboard, reports and fair reviews, with every change on record." },
   ];
   return (
-    <section aria-labelledby="flow-title" className="mx-auto w-full max-w-5xl px-4 py-24">
-      <div data-river="plate" className="plate relative flex flex-col gap-8 rounded-3xl border border-line bg-card p-8 sm:p-12">
+    // A soft section: the threads of light behind it show as a blurred glow (the Frost), like frosted glass.
+    <section data-threads="soft" aria-labelledby="flow-title" className="relative isolate border-t border-white/5 px-4 py-24">
+      <Frost kind="soft" />
+      <div className="plate relative mx-auto flex w-full max-w-5xl flex-col gap-8 rounded-3xl border border-line bg-card/75 p-8 sm:p-12">
         <span aria-hidden="true" className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-on-accent">
           {BRAND.mark}
         </span>
@@ -211,7 +218,8 @@ export function WeekPreview() {
   ];
   const max = Math.max(...days.map((d) => d.n));
   return (
-    <Reveal as="section" className="rounded-3xl border border-line bg-card p-6">
+    <Reveal as="section" className="relative isolate rounded-3xl border border-line bg-card p-6">
+      <Frost />
       <p className="text-xs text-muted">{tr("لوحة الأسبوع", "The week's dashboard")}</p>
       <h3 className="mt-1 mb-5 text-xl font-semibold">{tr("ما أُنجز، يوماً بيوم", "What got done, day by day")}</h3>
       <ul className="flex h-40 items-end gap-3">
@@ -239,7 +247,8 @@ export function HistoryPreview() {
     { ar: "أوقف TSK-097: بانتظار صلاحية الوصول", en: "blocked TSK-097: waiting for access", when_ar: "قبل يومين", when_en: "2 days ago" },
   ];
   return (
-    <Reveal as="section" delay={120} className="rounded-3xl border border-line bg-card p-6">
+    <Reveal as="section" delay={120} className="relative isolate rounded-3xl border border-line bg-card p-6">
+      <Frost />
       <p className="text-xs text-muted">{tr("سجل لا يُمحى", "A record nobody erases")}</p>
       <h3 className="mt-1 mb-5 text-xl font-semibold">{tr("كل تغيير، مع من ومتى ولماذا", "Every change: who, when and why")}</h3>
       <ul className="flex flex-col gap-3 text-sm">
@@ -264,7 +273,8 @@ export function SprintMeter() {
   const done = Math.min(1, Math.max(0, (day / 10) ** 1.35 * 0.95));
   const behind = planned - done > 0.12;
   return (
-    <Reveal as="section" delay={60} className="rounded-3xl border border-line bg-card p-6">
+    <Reveal as="section" delay={60} className="relative isolate rounded-3xl border border-line bg-card p-6">
+      <Frost />
       <p className="text-xs text-muted">{tr("مقياس الدورة", "The sprint meter")}</p>
       <h3 className="mt-1 mb-5 text-xl font-semibold">{tr("اسحب لترى الدورة يوماً بيوم", "Drag to see the sprint day by day")}</h3>
       <label htmlFor="sprint-day" className="mb-2 block text-sm text-muted">

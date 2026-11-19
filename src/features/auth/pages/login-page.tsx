@@ -9,13 +9,10 @@ import { setSession, useSession } from "@/shared/lib/session";
 import { Logo } from "@/shared/shell";
 import { BRAND } from "@/shared/lib/brand";
 import { cn } from "@/shared/lib/utils";
-import { Avatar, Button, Field, Input, LightRiver, Reveal, errorText } from "@/shared/ui";
+import { Avatar, Button, Field, Frost, Input, LightThreads, Reveal, errorText } from "@/shared/ui";
 import { authApi } from "../api";
-import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview } from "../components/front-door";
+import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview, introPlays } from "../components/front-door";
 import { safeNext } from "../safe-next";
-
-/** The river of light down the side of the front door, in the brand palette: blush → dusty rose → mauve → fading wine. */
-const RIVER_COLORS: [string, string, string, string] = ["#f2dace", "#d49a9a", "#aa5e7a", "rgba(124, 14, 68, 0)"];
 
 interface Demo {
   accounts: User[];
@@ -47,6 +44,8 @@ export function LoginPage() {
   const demo = useDemoAccounts();
   const logoRef = useRef<HTMLSpanElement>(null);
   const [landed, setLanded] = useState(false);
+  // Does the ring count the page in this time? Then the threads of light wait for it before they drop.
+  const [intro] = useState(introPlays);
   const land = useCallback(() => setLanded(true), []);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -81,12 +80,13 @@ export function LoginPage() {
   };
 
   return (
-    // The front door (19 November 2026): the ring counts the page in and folds into the logo, a wide river of light snakes
-    // across the page behind the content (it moves with the page as you scroll), a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
-    // sections settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
+    // The front door (19 November 2026): the ring counts the page in and folds into the logo, a bundle of fine threads of
+    // light turns round a bright knot beside the text and winds down the page behind the content (its ends drop as you
+    // scroll), a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the sections
+    // settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
     <main className="front-door relative min-h-dvh overflow-clip">
       <IntroRing target={logoRef} onLand={land} />
-      <LightRiver colors={RIVER_COLORS} />
+      <LightThreads start={!intro || landed} />
       <div className="relative z-10">
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-8">
@@ -98,8 +98,8 @@ export function LoginPage() {
         </Button>
       </header>
 
-      <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pt-10 pb-20 sm:px-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:pt-16">
-        <div data-river="text" className="settle flex flex-col gap-6">
+      <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pt-10 pb-20 sm:px-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:items-start lg:pt-16">
+        <div data-threads="text" className="settle flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <span className="w-fit rounded-full border border-line bg-card/60 px-3 py-1 text-xs text-muted">{tr("منصة الشركة الداخلية", "The company's own platform")}</span>
             <h1 className="text-4xl leading-tight font-semibold sm:text-5xl">
@@ -107,7 +107,8 @@ export function LoginPage() {
             </h1>
             <p className="text-muted">{tr("المهام والدورات والمحادثات والتقارير وتقييم الأداء، لكل فريق في الشركة.", "Tasks, sprints, chat, reports and reviews, for every team in the company.")}</p>
           </div>
-            <div className="rounded-2xl border border-line bg-card/95 p-6 shadow-card sm:p-8">
+            <div className="relative isolate rounded-2xl border border-line bg-card/95 p-6 shadow-card [--frost-tint:rgb(34_20_27/0.8)] sm:p-8">
+              <Frost />
               <h2 className="text-2xl font-semibold">{tr("تسجيل الدخول", "Sign in")}</h2>
               <p className="mt-1 text-sm text-muted">{tr("استخدم حسابك في الشركة.", "Use your company account.")}</p>
 
@@ -179,7 +180,7 @@ export function LoginPage() {
             )}
         </div>
         <div className="flex justify-center lg:justify-end">
-          <div data-river="window" className="w-full max-w-[520px]">
+          <div data-threads="window" className="w-full max-w-[520px] lg:mt-6">
             <FlowWindow />
           </div>
         </div>
@@ -187,16 +188,17 @@ export function LoginPage() {
 
       <FlowPlate />
 
-      {/* A wide gap between the two columns: the river of light runs down it. */}
+      {/* The cards are frosted glass: the threads of light sweep behind them. */}
       <section
-        data-river="grid"
+        data-threads="grid"
         aria-label={tr("نظرة على المنصة", "A look at the platform")}
-        className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-8 md:grid-cols-2 md:gap-x-20"
+        className="mx-auto grid w-full max-w-6xl gap-5 px-4 pt-10 pb-28 sm:px-8 md:grid-cols-2"
       >
         <WeekPreview />
         <HistoryPreview />
         <SprintMeter />
-        <Reveal as="section" delay={140} className="flex flex-col justify-center gap-4 rounded-3xl border border-line bg-accent-soft p-6">
+        <Reveal as="section" delay={140} className="relative isolate flex flex-col justify-center gap-4 rounded-3xl border border-line bg-accent-soft p-6 [--frost-tint:rgb(74_24_48/0.72)]">
+          <Frost />
           <h3 className="text-2xl font-semibold">{tr("جاهز لبدء يومك؟", "Ready to start your day?")}</h3>
           <p className="text-muted">{tr("سجّل الدخول بحسابك في الشركة.", "Sign in with your company account.")}</p>
           <Button

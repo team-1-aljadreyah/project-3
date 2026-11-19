@@ -20,3 +20,19 @@ test("with reduce motion there is no intro, and the sprint meter still answers t
   await expect(page.getByText("اليوم 10 من 10")).toBeVisible();
   await expect(page.getByText("على الخطة.")).toBeVisible();
 });
+
+test("the threads of light drop in behind the page, and are simply there with reduce motion", async ({ page }) => {
+  await page.goto("/login");
+  // Drawn once behind the page, with a frosted picture of them for the glass cards.
+  await expect(page.locator("canvas[data-drawn]")).toHaveCount(1);
+  // The curtain that uncovers them slides down the page once the intro is over.
+  const curtain = page.locator(".threads-curtain");
+  await expect.poll(() => curtain.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m42), { timeout: 8000 }).toBeGreaterThan(300);
+  // Signing in is never covered: the form is on top and works.
+  await expect(page.getByLabel("البريد الإلكتروني")).toBeEditable();
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await expect(page.locator("canvas[data-drawn]")).toHaveCount(1);
+  await expect(page.locator(".threads-curtain")).toBeHidden();
+});
