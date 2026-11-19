@@ -294,41 +294,6 @@ body {
   }
 }
 
-/* One stream of light down the whole page; its point follows the scroll. */
-.stream {
-  position: fixed;
-  inset-block: 0;
-  inset-inline-start: 14px;
-  width: 2px;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent, #d49a9a 12%, #aa5e7a 50%, #7c0e44 88%, transparent);
-  opacity: 0.55;
-}
-.stream-dot {
-  position: absolute;
-  top: 2%;
-  inset-inline-start: -4px;
-  width: 10px;
-  height: 10px;
-  border-radius: 9999px;
-  background: #f2dace;
-  box-shadow: 0 0 18px 5px rgb(212 154 154 / 0.55);
-}
-@supports (animation-timeline: scroll()) {
-  .stream-dot {
-    animation: stream-run linear both;
-    animation-timeline: scroll(root);
-  }
-}
-@keyframes stream-run {
-  from {
-    top: 2%;
-  }
-  to {
-    top: 96%;
-  }
-}
-
 /* The tilting glass window of the hero (front-door/flow-window.tsx sets --rx and --ry from the pointer). */
 .glass {
   transform: perspective(1100px) rotateX(var(--rx, 6deg)) rotateY(var(--ry, -9deg));
@@ -385,8 +350,7 @@ body {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .plate,
-  .stream-dot {
+  .plate {
     animation: none !important;
   }
   .glass {

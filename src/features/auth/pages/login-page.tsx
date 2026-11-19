@@ -9,10 +9,13 @@ import { setSession, useSession } from "@/shared/lib/session";
 import { Logo } from "@/shared/shell";
 import { BRAND } from "@/shared/lib/brand";
 import { cn } from "@/shared/lib/utils";
-import { Avatar, Button, Field, Input, Reveal, errorText } from "@/shared/ui";
+import { Avatar, Button, Field, Input, LightRibbons, Reveal, errorText } from "@/shared/ui";
 import { authApi } from "../api";
-import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, LightStream, SprintMeter, WeekPreview } from "../components/front-door";
+import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview } from "../components/front-door";
 import { safeNext } from "../safe-next";
+
+/** The light strands behind the front door, in the brand palette: blush core → dusty rose → mauve → fading wine. */
+const RIBBON_COLORS: [string, string, string, string] = ["#f2dace", "#d49a9a", "#aa5e7a", "rgba(124, 14, 68, 0)"];
 
 interface Demo {
   accounts: User[];
@@ -78,12 +81,13 @@ export function LoginPage() {
   };
 
   return (
-    // The front door (19 November 2026): the ring counts the page in and folds into the logo, one stream of light runs
-    // down the page, a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
+    // The front door (19 November 2026): the ring counts the page in and folds into the logo, strands of light behind the
+    // page drop into a new shape as you scroll, a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
     // sections settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
     <main className="front-door relative min-h-dvh overflow-x-clip">
       <IntroRing target={logoRef} onLand={land} />
-      <LightStream />
+      <LightRibbons colors={RIBBON_COLORS} />
+      <div className="relative z-10">
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-8">
         <span ref={logoRef} className={cn("inline-block rounded-xl", landed && "logo-land")}>
@@ -201,6 +205,7 @@ export function LoginPage() {
       </section>
 
       <footer className="border-t border-line px-4 py-6 text-center text-xs text-faint">{tr(BRAND.ar, BRAND.en)}</footer>
+      </div>
     </main>
   );
 }

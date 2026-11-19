@@ -11,4 +11,5 @@ export { errorText } from "./error-text";
 export { ProgressBar } from "./progress";
 export { Stat } from "./stat";
 export { LoadingRing, Reveal } from "./motion";
+export { LightRibbons } from "./light-ribbons";
 export { TONE_CLASS, PRIORITY, avatarClass } from "./tones";
