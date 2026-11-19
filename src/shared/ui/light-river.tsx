@@ -1,43 +1,166 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 
-/** Space kept between the river and a block of content (px). */
-const PAD = 18;
-/** The route is worked out every this many pixels down the page. */
-const STEP = 20;
+type P = [number, number];
+interface Box {
+  l: number;
+  r: number;
+  t: number;
+  b: number;
+  cx: number;
+}
+
+/** The river's points are this far apart along it (px). */
+const STEP = 14;
 
 /**
  * Where an element sits in the page's layout (px from the page's top-left), ignoring transforms: a block that is still
- * sliding or growing into place (the plate, the cards that settle in) is avoided where it will end up.
+ * sliding or growing into place (the plate, the cards that settle in) counts where it will end up.
  */
-function layoutBox(el: HTMLElement) {
-  let left = 0;
-  let top = 0;
+function layoutBox(el: HTMLElement): Box {
+  let l = 0;
+  let t = 0;
   for (let e: HTMLElement | null = el; e; e = e.offsetParent as HTMLElement | null) {
-    left += e.offsetLeft;
-    top += e.offsetTop;
+    l += e.offsetLeft;
+    t += e.offsetTop;
   }
-  return { left, top, width: el.offsetWidth, height: el.offsetHeight };
+  return { l, r: l + el.offsetWidth, t, b: t + el.offsetHeight, cx: l + el.offsetWidth / 2 };
+}
+
+const find = (name: string) => document.querySelector<HTMLElement>(`[data-river="${name}"]`);
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/**
+ * The river's path down the page, as Yasser drew it: from the top corner on the window's side it sweeps across into the
+ * gap between the window and the text, down that gap, out under the window to its side, back across past the demo
+ * accounts to the far side beside the plate, down beside it, back under the plate into the gap between the cards, down
+ * that gap, and out at the bottom on the far side. The places come from the page's own blocks (`data-river="window"`,
+ * `"text"`, `"plate"`, `"grid"`), so it fits any screen. Without them, or when the blocks are stacked (a phone), it is a
+ * plain wide wave from side to side.
+ */
+function plannedPath(w: number, pageH: number): P[] {
+  const els = { win: find("window"), text: find("text"), plate: find("plate"), grid: find("grid") };
+  if (!els.win || !els.text || !els.plate || !els.grid) return wave(w, pageH, true);
+  const W = layoutBox(els.win);
+  const T = layoutBox(els.text);
+  const PL = layoutBox(els.plate);
+  const G = layoutBox(els.grid);
+  const left = W.cx < w / 2; // the window is on the left (an Arabic page)
+  // A phone or a tablet: the window sits under the text, not beside it.
+  if (W.l < T.r && T.l < W.r) return wave(w, pageH, left);
+
+  const cards = Array.from(els.grid.children).map((c) => layoutBox(c as HTMLElement));
+  const colA = cards.filter((c) => c.cx < G.cx);
+  const colB = cards.filter((c) => c.cx >= G.cx);
+  const gridGap = colA.length && colB.length ? (Math.max(...colA.map((c) => c.r)) + Math.min(...colB.map((c) => c.l))) / 2 : G.cx;
+  const startX = left ? w * 0.075 : w * 0.925;
+  const gapX = left ? (W.r + T.l) / 2 : (T.r + W.l) / 2;
+  const winSide = left ? W.l * 0.7 : w - (w - W.r) * 0.7;
+  const farSide = left ? (PL.r + w) / 2 : PL.l / 2;
+  const exitX = left ? w * 0.9 : w * 0.1;
+  // The turn at the window's side, below the window and level with the end of the demo accounts.
+  const turnY = Math.max(W.b + 330, T.b + 20);
+  return [
+    // Across the top, from the corner to just above the window's inner corner.
+    [startX, -80],
+    [lerp(startX, gapX, 0.32), W.t * 0.29],
+    [lerp(startX, gapX, 0.52), W.t * 0.47],
+    [lerp(startX, gapX, 0.81), W.t * 0.71],
+    [lerp(startX, gapX, 0.94), W.t - 40],
+    // Down the gap between the window and the text.
+    [gapX, W.t + 110],
+    [gapX, W.b + 10],
+    // Out under the window to its side, then down that side.
+    [lerp(gapX, winSide, 0.3), W.b + 145],
+    [lerp(gapX, winSide, 0.73), W.b + 175],
+    [winSide, W.b + 235],
+    [winSide, turnY],
+    // Across, just under the demo accounts, and down beside the plate on the far side.
+    [lerp(winSide, farSide, 0.45), turnY + 75],
+    [lerp(winSide, farSide, 0.8), turnY + 105],
+    [farSide, PL.t + 140],
+    [farSide, PL.b - 100],
+    // Back under the plate into the gap between the cards, down it, and out at the bottom on the far side.
+    [lerp(farSide, gridGap, 0.4), PL.b + 25],
+    [lerp(farSide, gridGap, 0.8), PL.b + 45],
+    [gridGap, G.t + 70],
+    [gridGap, G.b - 40],
+    [lerp(gridGap, exitX, 0.45), G.b + 40],
+    [lerp(gridGap, exitX, 0.8), G.b + 70],
+    [exitX, pageH + 120],
+  ];
+}
+
+/** A plain wide wave from one side to the other, every 620 px down the page. */
+function wave(w: number, pageH: number, leftFirst: boolean): P[] {
+  const pts: P[] = [];
+  let side = leftFirst;
+  for (let y = -120; y < pageH + 740; y += 620) {
+    pts.push([side ? w * 0.16 : w * 0.84, y]);
+    side = !side;
+  }
+  return pts;
+}
+
+/** A smooth curve through the points (centripetal Catmull–Rom: no loops, no overshoot at sharp turns). */
+function smoothCurve(pts: P[]): P[] {
+  if (pts.length < 2) return pts;
+  const n = pts.length;
+  const ext: P[] = [
+    [2 * pts[0][0] - pts[1][0], 2 * pts[0][1] - pts[1][1]],
+    ...pts,
+    [2 * pts[n - 1][0] - pts[n - 2][0], 2 * pts[n - 1][1] - pts[n - 2][1]],
+  ];
+  const knot = (a: P, b: P) => Math.max(1e-4, Math.sqrt(Math.hypot(b[0] - a[0], b[1] - a[1])));
+  const at = (a: P, b: P, ta: number, tb: number, t: number): P => {
+    const k = (t - ta) / (tb - ta);
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  };
+  const out: P[] = [];
+  for (let i = 1; i < ext.length - 2; i++) {
+    const [p0, p1, p2, p3] = [ext[i - 1], ext[i], ext[i + 1], ext[i + 2]];
+    const t1 = knot(p0, p1);
+    const t2 = t1 + knot(p1, p2);
+    const t3 = t2 + knot(p2, p3);
+    const steps = Math.max(8, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / 6));
+    for (let s = 0; s < steps; s++) {
+      const t = t1 + ((t2 - t1) * s) / steps;
+      const a1 = at(p0, p1, 0, t1, t);
+      const a2 = at(p1, p2, t1, t2, t);
+      const a3 = at(p2, p3, t2, t3, t);
+      out.push(at(at(a1, a2, 0, t2, t), at(a2, a3, t1, t3, t), t1, t2, t));
+    }
+  }
+  out.push(pts[n - 1]);
+  return out;
+}
+
+/** The same curve with a point every STEP px along it. */
+function evenly(line: P[]): P[] {
+  const out: P[] = [line[0]];
+  let carry = 0;
+  for (let i = 1; i < line.length; i++) {
+    const [ax, ay] = line[i - 1];
+    const [bx, by] = line[i];
+    const seg = Math.hypot(bx - ax, by - ay);
+    let d = STEP - carry;
+    while (d <= seg) {
+      out.push([ax + ((bx - ax) * d) / seg, ay + ((by - ay) * d) / seg]);
+      d += STEP;
+    }
+    carry = seg - (d - STEP);
+  }
+  return out;
 }
 
 /**
- * A river of light that winds down the page **between** the content: through the gaps between the blocks (the headline,
- * the window, the cards…), never under them. The blocks it avoids are the elements matching `avoid` (by default
- * `[data-river-avoid]`, and the children of `[data-river-avoid-children]`). The route is drawn on the page itself, so it
- * travels with the content as you scroll. The motion is calm: the strands flow slowly and the light runs down them at a
- * steady, gentle pace, whatever the scroll does. `colors`: core → middle → edge → end (the brand palette). Pointer events
- * pass through; it pauses in a hidden tab, and with "reduce motion" the strands stay still (the route still follows the
- * page).
+ * A wide river of light that snakes across the page along a set path (see `plannedPath`), behind the content. It is
+ * drawn on the page itself, so it moves with the page as you scroll, like a background. The motion is calm: the strands
+ * sway slowly and the light runs along them at a gentle, steady pace, whatever the scroll does. `colors`: core → middle →
+ * edge → end (the brand palette). Pointer events pass through; it pauses in a hidden tab, and with "reduce motion" it
+ * stays still.
  */
-export function LightRiver({
-  colors,
-  avoid = "[data-river-avoid], [data-river-avoid-children] > *",
-  className,
-}: {
-  colors: [string, string, string, string];
-  avoid?: string;
-  className?: string;
-}) {
+export function LightRiver({ colors, className }: { colors: [string, string, string, string]; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -58,115 +181,41 @@ export function LightRiver({
     };
     resize();
 
-    const narrow = () => w < 768;
-    const half = () => (narrow() ? 6 : 16); // half the river's width
-    const count = narrow() ? 8 : 18;
+    const narrow = () => w < 1024;
+    // Half the river's width: wide on a computer, narrower on a phone.
+    const half = () => (w < 640 ? 16 : Math.min(58, Math.max(30, w * 0.028)));
+    const count = w < 640 ? 12 : 30;
     const strands = Array.from({ length: count }, (_, i) => ({
       k: i / (count - 1) - 0.5,
       phase: Math.random() * Math.PI * 2,
-      speed: 0.35 + Math.random() * 0.4,
-      width: 0.6 + Math.random() * 0.9,
-      shine: 0.35 + Math.random() * 0.4,
-      // The light running down this strand: where it is on the page (px) and how fast it goes (px per frame).
-      pulse: Math.random() * 3000,
-      pace: 0.6 + Math.random() * 0.6,
+      speed: 0.3 + Math.random() * 0.35,
+      width: 0.6 + Math.random() * 1,
+      shine: 0.3 + Math.random() * 0.4,
+      // The light running along this strand: where it is along the river (px) and how fast (px per frame, gentle).
+      pulse: Math.random() * 4000,
+      pace: 0.7 + Math.random() * 0.6,
     }));
-    const dust = Array.from({ length: narrow() ? 10 : 26 }, () => ({
-      y: Math.random() * 3000,
-      off: (Math.random() - 0.5) * 3,
-      r: 0.6 + Math.random() * 1.6,
+    const dust = Array.from({ length: w < 640 ? 14 : 40 }, () => ({
+      at: Math.random() * 4000,
+      off: (Math.random() - 0.5) * 3.2,
+      r: 0.6 + Math.random() * 1.8,
       a: 0.2 + Math.random() * 0.45,
       phase: Math.random() * Math.PI * 2,
     }));
 
-    // The route: for every STEP px down the page, where the river's middle is (x, px).
-    let route: number[] = [];
-    let pageH = 0;
-
-    /**
-     * Works the route out from where the blocks are: at each height it takes the free space between the blocks, keeps
-     * going straight while it fits there, and moves to the nearest free space when a block is in the way. Then it is
-     * smoothed into long curves.
-     */
+    // The river: points every STEP px along it (page coordinates), and the direction across it at each point.
+    let pts: P[] = [];
+    let across: P[] = [];
     function plan() {
-      pageH = document.documentElement.scrollHeight;
-      const hw = half();
-      const blocks = Array.from(document.querySelectorAll<HTMLElement>(avoid))
-        .map(layoutBox)
-        .filter((r) => r.width > 0 && r.height > 0)
-        .map((r) => ({ l: r.left - PAD, r: r.left + r.width + PAD, t: r.top - PAD, b: r.top + r.height + PAD }));
-      const edge = narrow() ? 4 : 10;
-      const need = hw * 2 + 6;
-      const n = Math.ceil(pageH / STEP) + 2;
-      const xs: number[] = new Array(n).fill(NaN);
-      let prev = w / 2;
-      // Rows with no block beside them, in a row: across open space the river is free to move to a better gap.
-      let open = 0;
-      for (let i = 0; i < n; i++) {
-        const y = i * STEP;
-        const here = blocks.filter((b) => y >= b.t && y <= b.b).sort((a, b) => a.l - b.l);
-        if (!here.length) {
-          open++;
-          continue; // filled in below: a straight glide between the rows around it
-        }
-        // The free spaces across the screen at this height.
-        const free: [number, number][] = [];
-        let x = edge;
-        for (const b of here) {
-          if (b.l > x) free.push([x, b.l]);
-          x = Math.max(x, b.r);
-        }
-        if (w - edge > x) free.push([x, w - edge]);
-        const wide = free.filter(([a, b]) => b - a >= need);
-        const widest = free.length ? free.reduce((m, f) => (f[1] - f[0] > m[1] - m[0] ? f : m)) : ([edge, edge + need] as [number, number]);
-        const choices = wide.length ? wide : [widest];
-        const isEdge = (g: [number, number]) => g[0] <= edge + 1 || g[1] >= w - edge - 1;
-        const fresh = i === 0 || open >= 3;
-        // Coming out of open space: the best gap BETWEEN the blocks (not the screen's edge), near the middle. Otherwise:
-        // the nearest gap to where the river already is, so it runs on smoothly (a gap between blocks still preferred).
-        const cost = fresh
-          ? (g: [number, number]) => (isEdge(g) ? 1000 : 0) + Math.abs((g[0] + g[1]) / 2 - w / 2) * 0.5 - (g[1] - g[0]) * 0.05
-          : (g: [number, number]) => Math.abs(Math.min(Math.max(prev, g[0] + hw), g[1] - hw) - prev) - (g[1] - g[0]) * 0.05 + (isEdge(g) ? 160 : 0);
-        const [a, b] = choices.reduce((best, f) => (cost(f) < cost(best) ? f : best));
-        const inset = Math.min(hw + 2, (b - a) / 2);
-        prev = fresh ? (a + b) / 2 : Math.min(Math.max(prev, a + inset), b - inset);
-        xs[i] = prev;
-        open = 0;
-      }
-      // Across open space: a straight glide from the row before to the row after.
-      for (let i = 0; i < n; i++) {
-        if (!Number.isNaN(xs[i])) continue;
-        let j = i;
-        while (j < n && Number.isNaN(xs[j])) j++;
-        const from = i > 0 ? xs[i - 1] : j < n ? xs[j] : w / 2;
-        const to = j < n ? xs[j] : from;
-        for (let k = i; k < j; k++) xs[k] = from + ((to - from) * (k - i + 1)) / (j - i + 1);
-        i = j;
-      }
-      // Long, smooth curves instead of corners.
-      let sm = xs;
-      for (let pass = 0; pass < 6; pass++) {
-        sm = sm.map((_, i) => {
-          let sum = 0;
-          let c = 0;
-          for (let j = i - 4; j <= i + 4; j++) {
-            if (j >= 0 && j < sm.length) {
-              sum += sm[j];
-              c++;
-            }
-          }
-          return sum / c;
-        });
-      }
-      route = sm;
+      const pageH = document.documentElement.scrollHeight;
+      pts = evenly(smoothCurve(plannedPath(w, pageH)));
+      across = pts.map((_, i) => {
+        const a = pts[Math.max(0, i - 1)];
+        const b = pts[Math.min(pts.length - 1, i + 1)];
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        return [-(b[1] - a[1]) / len, (b[0] - a[0]) / len];
+      });
     }
-
-    const routeAt = (pageY: number) => {
-      if (route.length < 2) return w / 2;
-      const f = Math.max(0, pageY / STEP);
-      const i = Math.min(route.length - 2, Math.floor(f));
-      return route[i] + (route[i + 1] - route[i]) * Math.min(1, f - i);
-    };
 
     let lastTime = 0;
     function draw(time: number) {
@@ -175,93 +224,106 @@ export function LightRiver({
       const t = time * 0.001;
       const sy = window.scrollY;
       const hw = half();
+      const soft = narrow() ? 0.7 : 1;
+      ctx!.clearRect(0, 0, w, h);
+      if (pts.length < 2) return;
 
-      const line = (s: (typeof strands)[number] | null) => {
-        const pts: [number, number][] = [];
-        const top = Math.floor((sy - STEP * 2) / STEP) * STEP;
-        for (let py = top; py <= sy + h + STEP * 2; py += STEP) {
-          let x = routeAt(py);
-          if (s) {
-            // Each strand flows slowly around the river's middle (calm: it does not speed up with the scroll).
-            const weave = still ? 0 : Math.sin(py * 0.006 + t * s.speed + s.phase * 0.35) * hw * 0.22;
-            x += s.k * 2 * hw + weave;
-          }
-          pts.push([x, py - sy]);
-        }
-        return pts;
+      // Only the part of the river on the screen (and a little around it).
+      const margin = hw * 4 + 60;
+      let i0 = pts.findIndex((p) => p[1] >= sy - margin);
+      if (i0 < 0) return;
+      let i1 = i0;
+      for (let i = i0; i < pts.length && pts[i][1] <= sy + h + margin; i++) i1 = i;
+      i0 = Math.max(0, i0 - 2);
+      i1 = Math.min(pts.length - 1, i1 + 2);
+      if (i1 - i0 < 2) return;
+
+      const strandAt = (s: (typeof strands)[number] | null, i: number): P => {
+        const off = s ? s.k * 2 * hw + (still ? 0 : Math.sin(i * STEP * 0.004 + t * s.speed + s.phase * 0.35) * hw * 0.16) : 0;
+        return [pts[i][0] + across[i][0] * off, pts[i][1] + across[i][1] * off - sy];
       };
-      const stroke = (pts: [number, number][]) => {
+      const stroke = (s: (typeof strands)[number] | null, from: number, to: number) => {
+        if (to - from < 1) return;
         ctx!.beginPath();
-        ctx!.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length - 1; i++) {
-          ctx!.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+        let p = strandAt(s, from);
+        ctx!.moveTo(p[0], p[1]);
+        for (let i = from + 1; i < to; i++) {
+          const q = strandAt(s, i + 1);
+          p = strandAt(s, i);
+          ctx!.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
         }
+        p = strandAt(s, to);
+        ctx!.lineTo(p[0], p[1]);
         ctx!.stroke();
       };
 
-      ctx!.clearRect(0, 0, w, h);
-      if (route.length < 2) return;
       ctx!.globalCompositeOperation = "lighter";
-
-      // The strands' colour: blush in the middle of the screen, deeper toward the top and the bottom.
+      ctx!.lineCap = "round";
+      // The colour: blush in the middle of the screen, deeper toward the top and the bottom.
       const body = ctx!.createLinearGradient(0, 0, 0, h);
       body.addColorStop(0, colors[2]);
-      body.addColorStop(0.35, colors[0]);
-      body.addColorStop(0.65, colors[1]);
+      body.addColorStop(0.4, colors[0]);
+      body.addColorStop(0.7, colors[1]);
       body.addColorStop(1, colors[2]);
 
-      // A soft haze along the river.
+      // A wide, soft glow under the strands: the river feels like part of the background.
       ctx!.strokeStyle = body;
-      ctx!.globalAlpha = 0.06;
-      ctx!.lineWidth = hw * 4;
-      stroke(line(null));
+      for (const [width, alpha] of [
+        [hw * 5, 0.035],
+        [hw * 2.4, 0.05],
+      ]) {
+        ctx!.globalAlpha = alpha * soft;
+        ctx!.lineWidth = width;
+        stroke(null, i0, i1);
+      }
 
       for (const s of strands) {
-        const pts = line(s);
         const center = 1 - Math.abs(s.k) * 1.1;
         ctx!.strokeStyle = body;
-        for (const [lineWidth, alpha] of [
-          [s.width * 6, 0.06],
+        for (const [width, alpha] of [
+          [s.width * 6, 0.05],
           [s.width, s.shine],
         ]) {
-          ctx!.globalAlpha = Math.max(0.06, alpha * center);
-          ctx!.lineWidth = lineWidth;
-          stroke(pts);
+          ctx!.globalAlpha = Math.max(0.05, alpha * center) * soft;
+          ctx!.lineWidth = width;
+          stroke(s, i0, i1);
         }
 
-        // The light running gently down the strand, at its own steady pace.
-        if (!still) s.pulse = (s.pulse + s.pace * dt) % Math.max(pageH, 1);
-        const head = (s.pulse - sy) / h;
-        const tail = 140 / h;
-        if (head > 0 && head - tail < 1) {
-          const glow = ctx!.createLinearGradient(0, 0, 0, h);
-          const clamp = (v: number) => Math.min(1, Math.max(0, v));
-          glow.addColorStop(clamp(head - tail), "transparent");
-          glow.addColorStop(clamp(head), "#fff4ef");
-          glow.addColorStop(clamp(head + 0.006), "transparent");
-          ctx!.strokeStyle = glow;
-          ctx!.globalAlpha = 0.7 * Math.max(0.4, center);
-          ctx!.lineWidth = s.width * 2;
-          stroke(pts);
+        // The light running gently along the strand: a short streak that fades behind it.
+        if (!still) s.pulse = (s.pulse + s.pace * dt) % (pts.length * STEP);
+        const head = Math.floor(s.pulse / STEP);
+        const tail = Math.round(150 / STEP);
+        if (head >= i0 && head - tail <= i1) {
+          ctx!.strokeStyle = "#fff4ef";
+          ctx!.lineWidth = s.width * 1.8;
+          const parts = 6;
+          for (let c = 0; c < parts; c++) {
+            const from = Math.max(i0, head - tail + Math.floor((tail * c) / parts));
+            const to = Math.min(i1, head - tail + Math.floor((tail * (c + 1)) / parts));
+            ctx!.globalAlpha = ((c + 1) / parts) * 0.75 * Math.max(0.4, center) * soft;
+            stroke(s, from, to);
+          }
         }
       }
 
-      // Specks of light along the river, drifting slowly down the page.
+      // Specks of light along the river, drifting slowly with it.
       ctx!.fillStyle = colors[0];
       for (const d of dust) {
-        if (!still) d.y = (d.y + 0.25 * dt) % Math.max(pageH, 1);
-        const y = d.y - sy;
-        if (y < -10 || y > h + 10) continue;
-        ctx!.globalAlpha = d.a * (0.6 + 0.4 * Math.sin(t * 1.5 + d.phase));
+        if (!still) d.at = (d.at + 0.3 * dt) % (pts.length * STEP);
+        const i = Math.floor(d.at / STEP);
+        if (i < i0 || i > i1) continue;
+        const x = pts[i][0] + across[i][0] * d.off * hw;
+        const y = pts[i][1] + across[i][1] * d.off * hw - sy;
+        ctx!.globalAlpha = d.a * (0.6 + 0.4 * Math.sin(t * 1.5 + d.phase)) * soft;
         ctx!.beginPath();
-        ctx!.arc(routeAt(d.y) + d.off * hw, y, d.r, 0, Math.PI * 2);
+        ctx!.arc(x, y, d.r, 0, Math.PI * 2);
         ctx!.fill();
       }
       ctx!.globalAlpha = 1;
       ctx!.globalCompositeOperation = "source-over";
     }
 
-    // Work the route out again whenever the page's layout changes (fonts, images, demo accounts, a resize…).
+    // Place the path again whenever the page's layout changes (fonts, the demo accounts, a resize…).
     let planned = 0;
     const replan = () => {
       cancelAnimationFrame(planned);
@@ -299,7 +361,7 @@ export function LightRiver({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
-  }, [colors, avoid]);
+  }, [colors]);
 
   return <canvas ref={ref} aria-hidden="true" className={cn("pointer-events-none fixed inset-0 h-full w-full", className)} />;
 }
