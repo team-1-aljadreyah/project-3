@@ -9,15 +9,17 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
-import { ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
+import { Copy } from "lucide-react";
+import { Button, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { projectsApi } from "../api";
 import { DetailsTab } from "../components/settings/details-tab";
 import { MembersTab } from "../components/settings/members-tab";
 import { PhasesTab } from "../components/settings/phases-tab";
+import { SaveTemplateDialog } from "../components/save-template-dialog";
 import { ProjectHistory } from "../components/settings/project-history";
 import { SprintsTab } from "../components/settings/sprints-tab";
 import { StatusesTab } from "../components/settings/statuses-tab";
-import { canManageProject } from "../rules";
+import { canManageProject, canUseTemplates } from "../rules";
 import type { Project, ProjectEvent, Sprint } from "../types";
 
 const TABS = [
@@ -66,6 +68,7 @@ export function ProjectSettingsPage() {
 function Settings({ project, people, sprints, history }: Loaded) {
   const { tr, lang } = useFmt();
   const user = useUser();
+  const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>("details");
   const name = lang === "en" && project.name_en ? project.name_en : project.name;
   usePageTitle(tr(`إعدادات ${name}`, `${name} settings`));
@@ -99,8 +102,17 @@ function Settings({ project, people, sprints, history }: Loaded) {
           <span aria-hidden="true"> / </span>
           <span>{tr("الإعدادات", "Settings")}</span>
         </nav>
-        <h1 className="text-2xl font-semibold">{tr("إعدادات المشروع", "Project settings")}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">{tr("إعدادات المشروع", "Project settings")}</h1>
+          {canUseTemplates(user) && (
+            <Button variant="secondary" pill onClick={() => setSaving(true)}>
+              <Copy size={15} aria-hidden="true" />
+              {tr("احفظ كقالب", "Save as template")}
+            </Button>
+          )}
+        </div>
       </div>
+      {saving && <SaveTemplateDialog project={project} open onClose={() => setSaving(false)} />}
 
       <div role="tablist" aria-label={tr("أقسام الإعدادات", "Settings sections")} className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1 [scrollbar-width:none]">
         {TABS.map((t) => (

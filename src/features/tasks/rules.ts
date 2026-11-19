@@ -4,7 +4,7 @@
 //
 // Not yet decided by the client (BRIEF.md question 5, who approves completion): for now the project's PM, a team
 // leader in the project, and the CEO. Kept in `canApprove` only, so changing it later is one line.
-import type { Project } from "@/features/projects";
+import { isDone, type Project } from "@/features/projects";
 import type { TaskStatus, User } from "@/shared/api/types";
 import { canTakePart, isMember } from "@/shared/lib/access";
 import type { Task } from "./types";
@@ -64,4 +64,35 @@ export const LIMITS = {
   description: 5000,
   comment: 2000,
   reason: 300,
+  /** Tasks one task may wait for. */
+  dependencies: 10,
 };
+
+type Dep = Pick<Task, "id" | "status" | "depends_on">;
+
+/** The tasks this one waits for that aren't done yet. While there are any, the task can't be marked done. */
+export function openDependencies<T extends Dep>(project: Pick<Project, "statuses">, task: Pick<Task, "depends_on">, all: T[]): T[] {
+  const ids = new Set(task.depends_on ?? []);
+  return all.filter((t) => ids.has(t.id) && !isDone(project, t));
+}
+
+/** The tasks that wait for this one. */
+export const waitingOn = <T extends Dep>(task: Pick<Task, "id">, all: T[]) => all.filter((t) => t.depends_on?.includes(task.id));
+
+/**
+ * True when "task waits for `dependsOn`" would make a loop (A waits for B, B waits for A, through any chain): then
+ * none of them could ever be done.
+ */
+export function makesLoop(taskId: number, dependsOn: number[], all: Pick<Task, "id" | "depends_on">[]) {
+  const byId = new Map(all.map((t) => [t.id, t]));
+  const seen = new Set<number>();
+  const stack = [...dependsOn];
+  while (stack.length) {
+    const id = stack.pop()!;
+    if (id === taskId) return true;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    stack.push(...(byId.get(id)?.depends_on ?? []));
+  }
+  return false;
+}

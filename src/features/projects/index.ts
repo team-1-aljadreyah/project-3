@@ -6,4 +6,5 @@ export { canChangePm, canCreateProject, canManageProject } from "./rules";
 export { canCloseSprint, currentSprint, isClosed, moveTargets, sprintNumbers, type SprintNumbers } from "./sprints";
 export { ProjectSettingsPage } from "./pages/project-settings-page";
 export { ProjectsPage } from "./pages/projects-page";
+export { TemplatesPage } from "./pages/templates-page";
 export type * from "./types";

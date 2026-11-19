@@ -70,10 +70,10 @@ src/
 │   ├── attachments/  file attachments (tasks, projects) and the project files page
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
 │   ├── chat/         project, team and private chats: replies, @mentions, files, unread counts
-│   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), counts
+│   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), sprint rules, templates, counts
 │   ├── bugs/         the bug tracker: report, the fix flow, reports
 │   ├── notifications/ the bell, the notifications page and preferences
-│   └── tasks/        the project board, the task page, my tasks, task rules, and their parts
+│   └── tasks/        the project boards (Kanban, Scrum: sprint, backlog), the task page, dependencies, my tasks, task rules
 ├── shared/
 │   ├── ui/           the design system (tokens in app/styles.css)
 │   ├── shell/        the top bar, the account menu, the signed-in frame

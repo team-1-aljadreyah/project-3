@@ -8,7 +8,7 @@ import { aboutTask, notify } from "@/mock/notify";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { TasksApi } from "./api";
-import { canApprove, canComment, canManageTasks, LIMITS, planMove, statusOf } from "./rules";
+import { canApprove, canComment, canManageTasks, LIMITS, makesLoop, openDependencies, planMove, statusOf, waitingOn } from "./rules";
 import type { Task, TaskEvent, TaskPatch } from "./types";
 
 const data = getDb;
@@ -172,6 +172,7 @@ export const tasksMock: TasksApi = {
     if (plan === "unknown") return invalid("status", "حالة غير معروفة في هذا المشروع.", "Unknown status for this project.");
     if (plan === "needs_reason") return invalid("blocked_reason", "اكتب سبب توقف المهمة.", "Write why the task is blocked.");
     if (plan === "same") return wait({ task, outcome: "moved" as const });
+    if (statusOf(project, move.status)?.tone === "done") mustNotWait(project, task);
 
     if (plan === "request_approval") {
       task.approval = { state: "pending", from: task.status, to: move.status, requested_by: user.id, requested_at: nowIso() };
@@ -211,6 +212,7 @@ export const tasksMock: TasksApi = {
     }
     const about = { actor_id: user.id, project_id: project.id, task_id: id };
     notify([task.assignee_id, project.pm_id], "task_status", { ...about, data: { ...aboutTask(task, project), status: target.name, status_en: target.name_en, note: reason } });
+    if (target.tone === "done") freeWaiting(project, task, user.id);
     // Done by someone who may approve, while a request was waiting: the person who asked hears it was approved.
     if (target.tone === "done" && task.approval?.requested_by !== user.id) {
       notify([task.approval?.requested_by], "approval_decided", { ...about, data: { ...aboutTask(task, project), decision: "approved" } });
@@ -218,6 +220,26 @@ export const tasksMock: TasksApi = {
     touch(task);
     commit();
     return wait({ task, outcome: "moved" as const });
+  },
+
+  async setDependencies(id, dependsOn) {
+    const user = currentUser();
+    const { task, project } = taskFor(user, id);
+    if (!canManageTasks(user, project)) return fail(403, "FORBIDDEN", "يحدد ما تنتظره المهمة مديرُ المشروع وقادة الفرق.", "Only the PM and team leaders set what a task waits for.");
+    const all = data().tasks.filter((t) => t.project_id === project.id);
+    const next = [...new Set(dependsOn)];
+    if (next.length > LIMITS.dependencies) invalid("depends_on", `مهمة واحدة تنتظر ${LIMITS.dependencies} مهام على الأكثر.`, `A task can wait for at most ${LIMITS.dependencies} tasks.`);
+    if (next.includes(id)) invalid("depends_on", "لا تنتظر المهمة نفسها.", "A task can't wait for itself.");
+    if (next.some((d) => !all.some((t) => t.id === d))) invalid("depends_on", "كل المهام يجب أن تكون من المشروع نفسه.", "Every task must be in the same project.");
+    if (makesLoop(id, next, all)) invalid("depends_on", "هذا يصنع حلقة: مهمة تنتظر أخرى تنتظرها.", "This makes a loop: tasks waiting for each other.");
+    const before = new Set(task.depends_on ?? []);
+    const code = (tid: number) => all.find((t) => t.id === tid)?.code;
+    for (const d of next) if (!before.has(d)) log({ task_id: id, actor_id: user.id, kind: "dependency_added", to: code(d) });
+    for (const d of before) if (!next.includes(d)) log({ task_id: id, actor_id: user.id, kind: "dependency_removed", from: code(d) });
+    task.depends_on = next;
+    touch(task);
+    commit();
+    return wait(task);
   },
 
   async decideCompletion(id, decision) {
@@ -233,6 +255,7 @@ export const tasksMock: TasksApi = {
     a.decided_at = nowIso();
     a.note = note || undefined;
     if (decision.approve) {
+      mustNotWait(project, task);
       a.state = "approved";
       log({ task_id: id, actor_id: user.id, kind: "approved", from: task.status, to: a.to, note: a.note });
       task.status = a.to;
@@ -243,6 +266,7 @@ export const tasksMock: TasksApi = {
       log({ task_id: id, actor_id: user.id, kind: "rejected", from: a.to, to: a.from, note });
       task.status = a.from;
     }
+    if (decision.approve) freeWaiting(project, task, user.id);
     notify([a.requested_by], "approval_decided", {
       actor_id: user.id, project_id: project.id, task_id: id,
       data: { ...aboutTask(task, project), decision: decision.approve ? "approved" : "rejected", note: a.note },
@@ -281,3 +305,20 @@ export const tasksMock: TasksApi = {
     return wait(data().events.filter((e) => e.task_id === taskId));
   },
 };
+
+/** A task that still waits for unfinished tasks can't be done (409, naming them). */
+function mustNotWait(project: Project, task: Task) {
+  const open = openDependencies(project, task, data().tasks);
+  if (open.length) {
+    const codes = open.map((t) => t.code).join("، ");
+    fail(409, "BAD_STATE", `المهمة تنتظر: ${codes}. أنجزها أولاً.`, `The task is waiting for: ${open.map((t) => t.code).join(", ")}. Finish them first.`);
+  }
+}
+
+/** `done` was just finished: the people whose tasks waited only for it (now) hear they can go on. */
+function freeWaiting(project: Project, done: Task, actorId: number) {
+  for (const t of waitingOn(done, data().tasks)) {
+    if (openDependencies(project, t, data().tasks).length) continue;
+    notify([t.assignee_id], "dependency_done", { actor_id: actorId, project_id: project.id, task_id: t.id, data: { ...aboutTask(t, project), note: done.code } });
+  }
+}

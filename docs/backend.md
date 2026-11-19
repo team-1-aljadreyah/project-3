@@ -93,7 +93,17 @@ The server must filter, not only the pages:
 **It can't be edited or deleted by anyone through the API**, and normal users can't hide it (the brief).
 `kind`: `created`, `status`, `blocked`, `unblocked`, `approval_requested`, `approved`, `rejected`,
 `assignee`, `due`, `priority`, `title`, `description`, `phase` (old and new phase ids), `sprint` (old and new sprint **names**; none = the backlog), `comment`, `attachment_added` (`to`: the file name),
-`attachment_removed` (`from`: the file name).
+`attachment_removed` (`from`: the file name), `dependency_added` (`to`: a task code), `dependency_removed` (`from`: a task code).
+
+**Dependencies** (the brief: "a task waits for another one"). `Task.depends_on`: the ids of the tasks it waits for.
+
+- Set with `PUT /tasks/:id/dependencies {depends_on: number[]}` (replaces the list): managers only (403). Every id
+  is a task of **the same project**, not itself, at most **10**, and **no loop** (A waits for B that waits, through any
+  chain, for A): 422 on `depends_on`. Log `dependency_added` (`to`: the code) / `dependency_removed` (`from`).
+- **A task can't be done while any task it waits for isn't done** (status not in the `done` family): moving it to a
+  done status, asking for that approval, or approving it → **409 `BAD_STATE`**, naming the codes.
+- When a task is done, every task that waited for it **and now waits for nothing** tells its assignee:
+  `dependency_done` (section 7). *(Assumption: a dependency doesn't stop starting a task, only finishing it.)*
 
 **Phases on tasks:** `phase_id` (on create and PATCH) must be one of the project's phases (422 on `phase_id`).
 On PATCH, `null` takes the task out of its phase.
@@ -116,6 +126,7 @@ Every change updates the task's `updated_at`.
 | `PATCH /tasks/:id` | managers | `Task` |
 | `POST /tasks/:id/status` | managers, assignee | `{task, outcome}` |
 | `POST /tasks/:id/approval` | managers, CEO | `Task` |
+| `PUT /tasks/:id/dependencies` `{depends_on}` | managers | `Task` (section 4) |
 | `GET /tasks/:id/comments` | can see its project | `TaskComment[]` |
 | `POST /tasks/:id/comments` | see section 2 | `TaskComment` |
 | `GET /tasks/:id/history` | can see its project | `TaskEvent[]` |
@@ -127,6 +138,9 @@ Every change updates the task's `updated_at`.
 | `PATCH /sprints/:id` | its project's PM, `ceo` | `Sprint` |
 | `DELETE /sprints/:id` | its project's PM, `ceo` | nothing |
 | `POST /sprints/:id/close` `{move_to}` | its project's PM, `ceo` | `Sprint` (section 6) |
+| `GET /templates` | `ceo`, `pm` | `ProjectTemplate[]` |
+| `POST /projects/:id/template` `{name, description?}` | its PM, `ceo` | `ProjectTemplate` |
+| `DELETE /templates/:id` | its maker, `ceo` | nothing |
 | `GET /projects/:id/history` | can see it | `ProjectEvent[]` |
 | `GET /me/tasks` | signed in | `Task[]`: the tasks assigned to me, in projects I can see |
 | `GET /notifications` | signed in | `Notification[]`, mine only, newest first (the latest 100) |
@@ -229,6 +243,19 @@ the Kanban board. *(Assumption: the sprint switch is the board choice; no separa
 **Backlog → sprint:** `PATCH /tasks/:id {sprint_id}` (managers); `sprint_id: null` takes it out (back to the backlog).
 Every change logs a task history line `sprint` as above.
 
+**Templates** (the brief: "templates for recurring projects, so they can be created easily"):
+
+- `ProjectTemplate`: `{id, name, description, statuses, phases: string[], uses_sprints, tasks: [{title, description,
+  priority, phase?}], from_project?, created_by, created_at}`. **No people, dates, comments or files** are kept.
+- `GET /templates`: `ceo` and `pm` (the people who create projects; 403 for others).
+- `POST /projects/:id/template {name, description?}`: the project's managers who may create projects. `name` required,
+  ≤ 80, unique (422 on `name`); at most 200 tasks. Copies the statuses, phase names, `uses_sprints` and every task.
+- `DELETE /templates/:id`: its maker or the `ceo` (403). Projects made from it don't change.
+- `POST /projects` with `template_id`: the new project gets the template's statuses and phases (new ids) and one task
+  per template task: in the **first status**, **no assignee, no dates, no sprint** (in the backlog), with its phase;
+  each logs `created`. Unknown `template_id` → 422. The project history line `created` has the template's name as `note`.
+  *(Assumption: dependencies between tasks are not kept in templates yet.)*
+
 **History** (`GET /projects/:id/history`): `[{id, project_id, actor_id, kind, from?, to?, note?, at}]`. Like the
 task history, nobody can edit or hide it through the API.
 
@@ -262,6 +289,7 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `bug_assigned` | a bug is given to a developer | the developer |
 | `bug_status` | a bug moves (data: `bug_status`, the send-back reason as `note`) | its reporter, its developer, the project's PM |
 | `bug_late` | the expected fix day has passed and the bug isn't closed (a daily reminder, like `task_overdue`) | the developer and the PM, once per bug and day |
+| `dependency_done` | the last unfinished task another task waited for is done (`task_id` = the waiting task; data: `note` = the finished task's code) | the waiting task's assignee |
 | `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
 
 **Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
@@ -406,4 +434,4 @@ removes them (no PM override). The same types and sizes as section 8; **no histo
 
 ## 12. Coming next (not used by the site yet)
 
-Project templates and task dependencies, reports, performance, GitHub. Each will add its section here in its own PR.
+Reports and the CEO dashboard, performance reviews, admin and the audit log, GitHub. Each will add its section here in its own PR.

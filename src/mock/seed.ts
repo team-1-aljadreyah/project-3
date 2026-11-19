@@ -5,7 +5,7 @@ import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
 import type { Message } from "@/features/chat";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
-import type { Project, ProjectEvent, Sprint } from "@/features/projects";
+import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
 import type { Priority, TaskStatus, Team, User } from "@/shared/api/types";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
@@ -42,6 +42,7 @@ export interface MockDb {
   messages: Omit<Message, "files">[];
   /** The last message each person has read in each chat. */
   chat_reads: { chat: string; user_id: number; last_id: number }[];
+  templates: ProjectTemplate[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
@@ -49,7 +50,7 @@ export interface MockDb {
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number;
+    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number;
   };
 }
 
@@ -159,6 +160,11 @@ export function seed(now = new Date()): MockDb {
   // The sprints: TSK-085 was done in the ended "الدورة 3"; TSK-121 waits in the backlog (no sprint yet).
   tasks.find((t) => t.code === "TSK-085")!.sprint_id = 2;
   tasks.find((t) => t.code === "TSK-121")!.sprint_id = undefined;
+  // Dependencies: "who saw the announcement" waits for the announcements page (not done yet); the performance report
+  // waits for the roles (already done).
+  const byCode = (code: string) => tasks.find((t) => t.code === code)!;
+  byCode("TSK-092").depends_on = [byCode("TSK-109").id];
+  byCode("TSK-121").depends_on = [byCode("TSK-085").id];
 
   // TSK-099: Ali asked to mark it done; it waits for the PM's approval.
   const asked = tasks.find((t) => t.code === "TSK-099")!;
@@ -310,13 +316,27 @@ export function seed(now = new Date()): MockDb {
     data: { note: messages[5].body }, at: at(0, 10), read: false,
   });
 
+  // One project template, made by the PM: a mobile app in three phases, worked in sprints.
+  const templates: ProjectTemplate[] = [{
+    id: 1, name: "تطبيق جوال", description: "تحليل، ثم تطوير، ثم إطلاق في المتاجر.", from_project: "تطبيق المبيعات",
+    statuses: structuredClone(DEFAULT_STATUSES), phases: ["التحليل والتصميم", "التطوير", "الإطلاق"], uses_sprints: true,
+    tasks: [
+      { title: "جمع المتطلبات مع العميل", description: "", priority: "high", phase: "التحليل والتصميم" },
+      { title: "تصميم الشاشات الرئيسية", description: "", priority: "high", phase: "التحليل والتصميم" },
+      { title: "إعداد مشروع التطبيق وبيئة الاختبار", description: "", priority: "medium", phase: "التطوير" },
+      { title: "ربط التطبيق بالخادم", description: "", priority: "medium", phase: "التطوير" },
+      { title: "النشر في متجري التطبيقات", description: "", priority: "medium", phase: "الإطلاق" },
+    ],
+    created_by: 2, created_at: at(10),
+  }];
+
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads,
+    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
-      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId,
+      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length,
     },
   };
 }
