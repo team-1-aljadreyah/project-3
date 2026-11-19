@@ -48,13 +48,13 @@ const ALL: Role[] = ["ceo", "pm", "monitor", "lead", "employee", "admin"];
 const WORK: Role[] = ["ceo", "pm", "monitor", "lead", "employee"];
 
 export const NAV: NavItem[] = [
-  { key: "dashboard", ar: "لوحة القيادة", en: "Dashboard", href: "/dashboard", roles: ["ceo", "pm", "monitor", "lead"], ready: false },
+  { key: "dashboard", ar: "لوحة القيادة", en: "Dashboard", href: "/dashboard", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
   { key: "my-tasks", ar: "مهامي", en: "My tasks", href: "/my-tasks", roles: ["pm", "lead", "employee"], ready: true },
   { key: "projects", ar: "المشاريع", en: "Projects", href: "/", roles: WORK, ready: true },
   { key: "chat", ar: "المحادثات", en: "Chat", href: "/chat", roles: WORK, ready: true },
   { key: "bugs", ar: "الأخطاء البرمجية", en: "Bugs", href: "/bugs", roles: WORK, ready: true },
   { key: "announcements", ar: "الإعلانات", en: "Announcements", href: "/announcements", roles: ALL, ready: true },
-  { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: false },
+  { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
   { key: "users", ar: "المستخدمون", en: "Users", href: "/users", roles: ["admin"], ready: false },
 ];
 

@@ -139,6 +139,7 @@ Every change updates the task's `updated_at`.
 | `DELETE /sprints/:id` | its project's PM, `ceo` | nothing |
 | `POST /sprints/:id/close` `{move_to}` | its project's PM, `ceo` | `Sprint` (section 6) |
 | `GET /templates` | `ceo`, `pm` | `ProjectTemplate[]` |
+| `GET /reports/overview` | `ceo`, `pm`, `monitor`, `lead` | `Overview` (section 12) |
 | `POST /projects/:id/template` `{name, description?}` | its PM, `ceo` | `ProjectTemplate` |
 | `DELETE /templates/:id` | its maker, `ceo` | nothing |
 | `GET /projects/:id/history` | can see it | `ProjectEvent[]` |
@@ -432,6 +433,28 @@ removes them (no PM override). The same types and sizes as section 8; **no histo
 
 **Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats.
 
-## 12. Coming next (not used by the site yet)
+## 12. Dashboard and reports
 
-Reports and the CEO dashboard, performance reviews, admin and the audit log, GitHub. Each will add its section here in its own PR.
+Shapes: `src/features/reports/types.ts`. **The counting is `src/features/reports/compute.ts`** (pure functions, tested):
+the server must give the same numbers. The demo backend is `src/features/reports/mock.ts`.
+
+`GET /reports/overview` → `Overview`: `{today, projects: ProjectRow[], people: PersonRow[], teams: TeamRow[],
+sprints: SprintRow[], bugs: {open, late, closed, critical_open}}`.
+
+- **Who:** `ceo`, `pm`, `monitor`, `lead` (403 for `employee` and `admin`). **Everything is counted over the projects
+  this person may see** (section 2): a PM or team leader sees their projects' numbers, the CEO and M&E all.
+- `ProjectRow`: the project's fields + `total, done, late, blocked, ratio` (done / total), `planned_ratio` (days gone /
+  project length, 0–1), `overdue` (not done and past `end`), `behind` (active and `ratio + 0.15 < planned_ratio`).
+  *(Assumption: "late project" = overdue or more than 15 points behind the plan; to confirm with the client.)*
+- `PersonRow`: per assignee in those projects: `open, done, late, blocked, in_review`, `team_id`.
+- `TeamRow`: per team with tasks: `members` (active people with the `team_id`), `open, done, late, ratio`.
+- `SprintRow`: per sprint of those projects: `planned, done, left` (an ended sprint: its kept `result`), `closed`.
+  **Velocity** = the average `done` of the last 3 ended sprints (the site works it out).
+- `bugs`: open (not `closed`), late (past `due`, not closed), closed, critical and open.
+
+The dashboard also shows the 3 latest announcements (`GET /announcements`). The reports page downloads each table as
+CSV in the browser (no server call). Cells that start with `= + - @` are written as text (no spreadsheet formulas).
+
+## 13. Coming next (not used by the site yet)
+
+Performance reviews, admin (users, roles, settings) and the audit log, GitHub. Each will add its section here in its own PR.
