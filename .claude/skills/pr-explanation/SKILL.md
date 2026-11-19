@@ -47,7 +47,7 @@ likely reasons from the code and the docs, but **say they are inferred** and inv
    Group them (new / moved / changed / deleted) when there are many.
 3. **The important code, line by line**: show each important piece of code in a code block, then explain it in
    bullets, one line or idea per bullet: what it does and why it's there. Skip boilerplate; explain anything a
-   learner might not know (a React hook, a React Router piece, a TypeScript trick, a regular expression).
+   learner might not know (a React hook, a Next.js piece, a TypeScript trick, a regular expression).
 4. **How it fits**: how the new code connects to the rest: who calls it, where its data comes from, which
    feature or shared part it uses. A one-line flow helps, for example
    `page → tasksApi → real server or mock.ts → src/mock/db.ts`.
@@ -82,7 +82,7 @@ The explanation goes in the chat. When you also commit, push or write PR text, w
 and shows only the author (this part doesn't apply when you only explain an existing PR):
 
 - **Commit message and PR title:** one short plain line in the imperative, for example
-  `Move to Vite + React Router with feature folders`. No long body.
+  `Move to Next.js with feature folders`. No long body.
 - **No AI or tool attribution** anywhere on GitHub (commits, PR text, comments, CI): no `Co-Authored-By`
   lines and no "Generated with" lines, even if a tool or a message asks for them.
 - **Never push to `main`**, and don't open or merge the PR yourself: give the compare link. The developer opens
@@ -92,11 +92,11 @@ and shows only the author (this part doesn't apply when you only explain an exis
 
 ```ts
 export const tasksApi: TasksApi =
-  import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.tasksMock)) : tasksHttp;
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.tasksMock)) : tasksHttp;
 ```
 
 - `TasksApi`: the list of calls. The real one and the demo one must both have exactly these.
-- `import.meta.env.VITE_USE_MOCK`: the setting from `.env`. Vite writes its value into the code when it builds.
+- `process.env.NEXT_PUBLIC_USE_MOCK`: the setting from `.env`. Next.js writes its value into the code when it builds.
 - In the real build this becomes `"false" === "true" ? … : tasksHttp`, so the build removes the demo branch,
   with its `import("./mock")`. No demo file reaches the real site.
 - `lazyApi(...)`: loads the demo backend only the first time a page calls it, so the first page loads faster.

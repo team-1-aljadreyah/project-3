@@ -1,6 +1,7 @@
 import { Pin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { authApi } from "@/features/auth";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -35,7 +36,7 @@ function AnnouncementView({ a, users }: { a: Announcement; users: User[] }) {
   const { tr, lang, dateTime, num } = useFmt();
   const user = useUser();
   const toast = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [removing, setRemoving] = useState(false);
   usePageTitle(a.title);
   const people = new Map(users.map((u) => [u.id, u]));
@@ -50,7 +51,7 @@ function AnnouncementView({ a, users }: { a: Announcement; users: User[] }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
       <nav aria-label={tr("مسار الصفحة", "Breadcrumb")} className="text-[13px] text-muted">
-        <Link to="/announcements" className="hover:text-text hover:underline">
+        <Link href="/announcements" className="hover:text-text hover:underline">
           {tr("الإعلانات", "Announcements")}
         </Link>
       </nav>
@@ -107,7 +108,7 @@ function AnnouncementView({ a, users }: { a: Announcement; users: User[] }) {
                 try {
                   await announcementsApi.remove(a.id);
                   toast(tr("حُذف الإعلان.", "Announcement removed."));
-                  navigate("/announcements", { replace: true });
+                  router.replace("/announcements");
                 } catch (e) {
                   toast(errorText(e, tr), "danger");
                   setRemoving(false);

@@ -1,5 +1,5 @@
 import { Languages, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/shared/ui";
 import { ROLES } from "@/shared/lib/access";
@@ -16,7 +16,7 @@ const itemClass = "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-st
 export function AccountMenu({ user }: { user: User }) {
   const { tr, lang } = useFmt();
   const theme = useTheme();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -44,7 +44,7 @@ export function AccountMenu({ user }: { user: User }) {
   const signOut = () => {
     setOpen(false);
     clearSession();
-    navigate("/login", { replace: true });
+    router.replace("/login");
   };
 
   return (

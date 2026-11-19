@@ -1,4 +1,4 @@
-// Reads the settings from .env (see .env.example). Vite puts the VITE_* values into the built files.
+// Reads the settings from .env (see .env.example). Next.js puts the NEXT_PUBLIC_* values into the built files.
 
 /**
  * The server's address without "/api/v1" (shared/api/axios.ts adds it). A "/" or "/api/v1" at the end is cut off,
@@ -8,7 +8,7 @@ export function cleanApiUrl(raw: string | undefined) {
   return (raw ?? "http://localhost:8000").trim().replace(/\/+$/, "").replace(/\/api\/v1$/i, "");
 }
 
-export const API_URL = cleanApiUrl(import.meta.env.VITE_API_URL);
+export const API_URL = cleanApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 // true = fake data in the browser (each feature's mock.ts), false = the real backend.
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
+export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";

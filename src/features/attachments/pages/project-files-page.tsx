@@ -1,4 +1,5 @@
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { canManageProject, projectsApi } from "@/features/projects";
 import { canTakePart } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
@@ -32,11 +33,11 @@ export function ProjectFilesPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <nav aria-label={tr("مسار الصفحة", "Breadcrumb")} className="text-[13px] text-muted">
-          <Link to="/" className="hover:text-text hover:underline">
+          <Link href="/" className="hover:text-text hover:underline">
             {tr("المشاريع", "Projects")}
           </Link>
           <span aria-hidden="true"> / </span>
-          <Link to={`/projects/${project.id}`} className="hover:text-text hover:underline">
+          <Link href={`/projects/${project.id}`} className="hover:text-text hover:underline">
             {name}
           </Link>
           <span aria-hidden="true"> / </span>

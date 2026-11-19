@@ -37,4 +37,4 @@ export const tasksHttp: TasksApi = {
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
 export const tasksApi: TasksApi =
-  import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.tasksMock)) : tasksHttp;
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.tasksMock)) : tasksHttp;

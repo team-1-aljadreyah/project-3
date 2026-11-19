@@ -70,6 +70,8 @@ export function MessageItem({
               <li key={f.id}>
                 <a href={f.url} download={f.name} className="flex items-center gap-2 rounded-lg border border-line bg-card p-1.5 pe-3 text-xs hover:border-accent">
                   {isImage(f.mime) ? (
+                    // A user's file (a data: link in the demo, a short-lived link later): next/image can't optimise those.
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={f.url} alt="" className="size-14 rounded-md object-cover" />
                   ) : (
                     <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-md bg-chip text-muted">

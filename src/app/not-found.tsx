@@ -1,8 +1,10 @@
-import { Link } from "react-router";
+"use client";
+
+import Link from "next/link";
 import { usePageTitle } from "@/shared/lib/page-title";
 
-/** Any address that matches no page. */
-export function NotFoundPage() {
+/** Any address that matches no page (Next.js shows this file for it). */
+export default function NotFound() {
   usePageTitle("404");
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
@@ -11,7 +13,7 @@ export function NotFoundPage() {
       <p className="text-muted" lang="en" dir="ltr">
         Page not found
       </p>
-      <Link to="/" className="mt-2 font-medium text-accent underline underline-offset-4">
+      <Link href="/" className="mt-2 font-medium text-accent underline underline-offset-4">
         العودة إلى الرئيسية · Home
       </Link>
     </main>

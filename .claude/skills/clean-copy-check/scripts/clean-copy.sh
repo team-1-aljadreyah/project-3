@@ -24,7 +24,7 @@ fi
 
 # A server already on the test port would be reused by Playwright and test the wrong code.
 if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
-  fail "port $PORT is busy (stop the other 'vite preview' or 'npm run preview' first)"
+  fail "port $PORT is busy (stop the other 'npm run start' first)"
 fi
 
 COPY="$(mktemp -d)/clean-copy"
@@ -38,9 +38,9 @@ step "npm ci";                 npm ci --no-audit --no-fund       || fail "npm ci
 step "lint";                   npm run lint                       || fail "lint"
 step "type check";             npm run typecheck                  || fail "type check"
 step "unit tests";             npm test                           || fail "unit tests"
-step "real build (no .env)";   env -u VITE_USE_MOCK npm run build || fail "real build"
+step "real build (no .env)";   env -u NEXT_PUBLIC_USE_MOCK npm run build || fail "real build"
 step "no-demo check";          npm run check:no-demo              || fail "no-demo check (demo data is in the real build)"
-step "demo build";             VITE_USE_MOCK=true npm run build   || fail "demo build"
+step "demo build";             NEXT_PUBLIC_USE_MOCK=true npm run build || fail "demo build"
 step "browser tests";          npm run test:e2e                   || fail "browser tests"
 
 cd "$REPO"

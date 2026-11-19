@@ -27,4 +27,4 @@ export const announcementsHttp: AnnouncementsApi = {
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
 export const announcementsApi: AnnouncementsApi =
-  import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.announcementsMock)) : announcementsHttp;
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.announcementsMock)) : announcementsHttp;

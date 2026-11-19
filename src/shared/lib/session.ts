@@ -59,7 +59,8 @@ export function clearSession() {
 
 /** The session, or `null` when nobody is signed in. The page redraws when it changes (in this tab or another). */
 export function useSession(): Session | null {
-  return useSyncExternalStore(subscribe, read);
+  // On the server nobody is signed in yet: the page waits for the browser (see src/app/providers.tsx).
+  return useSyncExternalStore(subscribe, read, () => null);
 }
 
 /** The signed-in person, inside the signed-in pages (RequireAuth shows them only with a session). */

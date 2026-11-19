@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { safeNext } from "@/features/auth/safe-next";
-import { LOCALE_KEY, THEME_KEY } from "@/shared/lib/boot";
+import { BOOT_SCRIPT, LOCALE_KEY, THEME_KEY } from "@/shared/lib/boot";
 import { cleanApiUrl } from "@/shared/lib/config";
 import { arDays, makeFmt } from "@/shared/lib/format";
 import { daysBetween, matches, today } from "@/shared/lib/utils";
@@ -82,9 +81,10 @@ describe("dates and search", () => {
   });
 });
 
-describe("the start-up script in index.html", () => {
-  it("reads the same language and theme keys as the app (or the saved choice is lost on reload)", () => {
-    const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+describe("the start-up script in <head> (src/app/layout.tsx)", () => {
+  it("reads the same language and theme keys as the app, and is valid JavaScript", () => {
+    expect(() => new Function(BOOT_SCRIPT)).not.toThrow();
+    const html = BOOT_SCRIPT;
     expect(html).toContain(`localStorage.getItem("${LOCALE_KEY}")`);
     expect(html).toContain(`localStorage.getItem("${THEME_KEY}")`);
   });

@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import Link from "next/link";
 import { cn } from "@/shared/lib/utils";
 
 type Variant = "primary" | "secondary" | "ghost";

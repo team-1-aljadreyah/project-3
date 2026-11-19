@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { activeNavKey, navFor } from "@/shared/lib/access";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -13,7 +14,7 @@ import { Logo } from "./logo";
  */
 export function TopNav({ user, actions }: { user: User; actions?: React.ReactNode }) {
   const { tr } = useFmt();
-  const path = useLocation().pathname;
+  const path = usePathname();
   const active = activeNavKey(path);
 
   return (
@@ -41,7 +42,7 @@ export function TopNav({ user, actions }: { user: User; actions?: React.ReactNod
             return (
               <li key={item.key}>
                 <Link
-                  to={item.href}
+                  href={item.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex h-[38px] items-center rounded-full px-3.5 text-sm whitespace-nowrap transition-colors",

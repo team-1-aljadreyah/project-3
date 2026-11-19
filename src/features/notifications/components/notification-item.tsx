@@ -1,5 +1,5 @@
 import { Bell } from "lucide-react";
-import { Link } from "react-router";
+import Link from "next/link";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -19,7 +19,7 @@ export function NotificationItem({ n, people, onOpen }: { n: Notification; peopl
 
   return (
     <Link
-      to={notificationLink(n)}
+      href={notificationLink(n)}
       onClick={() => onOpen(n)}
       className={cn("flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-chip", !n.read && "bg-accent-soft/50")}
     >

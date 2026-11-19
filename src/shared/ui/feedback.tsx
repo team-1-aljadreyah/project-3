@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import Link from "next/link";
 import { ApiError } from "@/shared/api/errors";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -42,7 +42,7 @@ export function ErrorBox({ error, onRetry, backHref = "/" }: { error: unknown; o
     <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-line bg-card px-6 py-10 text-center">
       <p className="font-medium">{errorText(error, tr)}</p>
       {final || !onRetry ? (
-        <Link to={backHref} className="text-sm font-medium text-accent underline underline-offset-4">
+        <Link href={backHref} className="text-sm font-medium text-accent underline underline-offset-4">
           {tr("رجوع", "Back")}
         </Link>
       ) : (

@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { useLoad } from "@/shared/lib/use-load";
@@ -90,7 +90,7 @@ export function NotificationBell() {
               list.slice(0, 8).map((n) => <NotificationItem key={n.id} n={n} people={people} onOpen={openOne} />)
             )}
           </div>
-          <Link to="/notifications" onClick={() => setOpen(false)} className="border-t border-line px-4 py-3 text-center text-sm font-medium text-accent hover:bg-chip">
+          <Link href="/notifications" onClick={() => setOpen(false)} className="border-t border-line px-4 py-3 text-center text-sm font-medium text-accent hover:bg-chip">
             {tr("عرض كل الإشعارات والتفضيلات", "All notifications and settings")}
           </Link>
         </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { ROLES } from "@/shared/lib/access";
@@ -23,8 +23,10 @@ interface Demo {
 function useDemoAccounts() {
   const [demo, setDemo] = useState<Demo | null>(null);
   useEffect(() => {
-    if (import.meta.env.VITE_USE_MOCK !== "true") return;
-    import("@/mock/seed").then((m) => setDemo({ accounts: m.demoAccounts(), password: m.DEMO_PASSWORD }));
+    // Written as an `if` block on purpose: the bundler removes the whole block (and the demo file) from the real build.
+    if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
+      import("@/mock/seed").then((m) => setDemo({ accounts: m.demoAccounts(), password: m.DEMO_PASSWORD }));
+    }
   }, []);
   return demo;
 }
@@ -32,8 +34,8 @@ function useDemoAccounts() {
 export function LoginPage() {
   const { tr, lang } = useFmt();
   usePageTitle(tr("تسجيل الدخول", "Sign in"));
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const router = useRouter();
+  const params = useSearchParams();
   const next = safeNext(params.get("next"));
   const session = useSession();
   const demo = useDemoAccounts();
@@ -44,8 +46,8 @@ export function LoginPage() {
 
   // Already signed in (another tab, or the back button): straight on.
   useEffect(() => {
-    if (session) navigate(next, { replace: true });
-  }, [session, next, navigate]);
+    if (session) router.replace(next);
+  }, [session, next, router]);
 
   const signIn = async (id: string, pw: string) => {
     if (!id.trim() || !pw) {

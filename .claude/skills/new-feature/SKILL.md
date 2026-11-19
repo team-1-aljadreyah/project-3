@@ -50,7 +50,7 @@ step 7, not before.
    `projects/project-state.ts` does.
 2. **`api.ts`**: the `XxxApi` interface (every call), `xxxHttp` (the real calls, through `http` from
    `@/shared/api`), and the switch:
-   `import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.xxxMock)) : xxxHttp`.
+   `process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.xxxMock)) : xxxHttp`.
    **Write the switch out in full exactly like this.** Through a variable or a helper, the build can't tell the
    demo branch never runs, and the demo data ends up in the real site (the no-demo check will fail).
 3. **`mock.ts`**: the demo backend, with the **same rules the real server must keep** (who may see and change
@@ -74,8 +74,12 @@ step 7, not before.
      underlined name (until the detail page exists, plain rows are fine);
    - works on a phone, in dark mode and in English (left to right).
 7. **`index.ts`**: export only what others need (the API, the pages, a few types or rules).
-8. **Route** in `src/app/routes.tsx`, inside the signed-in layout, loaded lazily:
-   `{ path: "/announcements", lazy: () => import("@/features/announcements").then((m) => ({ Component: m.AnnouncementsPage })) }`.
+8. **Route** (Next.js App Router): one folder per address under `src/app/(signed-in)/`, with a `page.tsx` of
+   one line that shows the feature's page. `/announcements` → `src/app/(signed-in)/announcements/page.tsx`;
+   `/announcements/5` → `src/app/(signed-in)/announcements/[id]/page.tsx` (the page reads it with
+   `useParams()` from `next/navigation`). The `(signed-in)` group adds the sign-in check and the top bar. Next.js
+   loads each page's code on its own, so nothing else is needed. Links use `Link` from `next/link` with `href`;
+   moving in code uses `useRouter()` (`router.push` / `router.replace`).
 9. **Menu**: in `src/shared/lib/access.ts` set the item's `ready: true` (or add it) with the jobs that see it.
 10. **Docs, in the same pull request:**
     - `docs/backend.md`: every new call (path, body, answer, who may call it, errors) and the rules the server
@@ -86,7 +90,7 @@ step 7, not before.
     - `tests/unit/<name>.test.ts` (Vitest): the rules and the demo backend's refusals, called as different people.
     - `tests/e2e/<name>.spec.ts` (Playwright): sign in with `signInAs(page, /name/)`, open the page, do the main
       flow, check what each job sees and doesn't. The browser tests run on the **demo build**, so run
-      `VITE_USE_MOCK=true npm run build` before `npm run test:e2e`.
+      `NEXT_PUBLIC_USE_MOCK=true npm run build` before `npm run test:e2e`.
 12. **When it is ready to push:** commit, run the `clean-copy-check` skill, then explain the change with the
     `pr-explanation` skill. (While still working, run the checks one by one instead.)
 

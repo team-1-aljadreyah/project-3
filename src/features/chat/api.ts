@@ -25,4 +25,4 @@ export const chatHttp: ChatApi = {
 };
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
-export const chatApi: ChatApi = import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.chatMock)) : chatHttp;
+export const chatApi: ChatApi = process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.chatMock)) : chatHttp;

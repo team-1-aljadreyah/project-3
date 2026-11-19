@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Avatar, PriorityPill, ProgressBar, TONE_CLASS } from "@/shared/ui";
 import type { StatusTone, User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -87,7 +87,7 @@ export function TaskCard({ canDrag, justDragged, ...props }: CardProps & { canDr
   return (
     <Link
       ref={setNodeRef}
-      to={`/tasks/${props.task.id}`}
+      href={`/tasks/${props.task.id}`}
       {...(canDrag ? { ...dragAttributes, ...listeners } : {})}
       // A drop right on the card it started from would also count as a click: ignore that one.
       onClick={(e) => {

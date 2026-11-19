@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { isDone, lateDays, projectsApi, type ProjectSummary } from "@/features/projects";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
@@ -90,7 +90,7 @@ function MyTasks({ tasks, projects }: { tasks: Task[]; projects: ProjectSummary[
                   <li key={t.id}>
                     {/* The whole row is one link to the task (click anywhere). */}
                     <Link
-                      to={`/tasks/${t.id}`}
+                      href={`/tasks/${t.id}`}
                       className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-line bg-card px-4 py-3 transition-colors hover:border-accent"
                     >
                       <span className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">

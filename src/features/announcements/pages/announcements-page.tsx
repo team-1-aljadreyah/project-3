@@ -1,6 +1,6 @@
 import { Megaphone, Pin, Plus } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
@@ -52,7 +52,7 @@ export function AnnouncementsPage() {
                 <li key={a.id}>
                   {/* The whole card opens the announcement (click anywhere). */}
                   <Link
-                    to={`/announcements/${a.id}`}
+                    href={`/announcements/${a.id}`}
                     className={cn(
                       "flex flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-accent",
                       a.important ? "border-accent/40" : "border-line",

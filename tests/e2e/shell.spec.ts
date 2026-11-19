@@ -40,7 +40,7 @@ test("the page never scrolls sideways (phone and computer)", async ({ page }) =>
 });
 
 test("a fresh page load prints no warnings or errors in the console", async ({ page }) => {
-  // React Router warned "No HydrateFallback element provided" on every first load (pages load lazily).
+  // With Next.js this also catches hydration warnings: the server's HTML and the browser's first drawing must agree.
   const problems: string[] = [];
   page.on("console", (m) => {
     // The browser asks for /favicon.ico by itself; the site has no icon yet (the logo is not decided).
