@@ -40,6 +40,17 @@ test("the project manager's dashboard: the task calendar and the board over thei
   await expect(page).toHaveURL(/\/tasks\/\d+$/);
 });
 
+test("the team leader's dashboard opens with the team's slide: the sphere's numbers are also in words", async ({ page }) => {
+  await signInAs(page, /مصطفى جواد/);
+  await page.goto("/dashboard");
+  const slide = page.getByRole("region", { name: /لوحة القيادة/ });
+  await expect(slide.getByText("فريق التطوير")).toBeVisible();
+  await expect(slide.getByRole("img", { name: /توزيع مهام الفريق: مكتملة \d+%/ })).toBeVisible();
+  await expect(slide.getByText(/قيد المراجعة: \d+/)).toBeVisible();
+  // The rest of the dashboard is still under it.
+  await expect(page.getByText("المشاريع النشطة")).toBeVisible();
+});
+
 test("reports: by project, by team and person (filter), by sprint with velocity; each table downloads as CSV", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/reports");

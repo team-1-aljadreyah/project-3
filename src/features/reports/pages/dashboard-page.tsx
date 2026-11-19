@@ -10,8 +10,9 @@ import { useLoad } from "@/shared/lib/use-load";
 import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
+import { LeadSphere } from "../components/lead-sphere";
 import { PmPlan } from "../components/pm-plan";
-import { totals } from "../compute";
+import { teamShares, totals } from "../compute";
 import { canSeeReports } from "../rules";
 
 /**
@@ -54,6 +55,8 @@ export function DashboardPage() {
     return u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-";
   };
   const projectName = (p: { name: string; name_en?: string }) => (lang === "en" && p.name_en ? p.name_en : p.name);
+  const ownTeam = o.teams.find((team) => team.team_id === user.team_id);
+  const teamName = ownTeam ? (lang === "en" && ownTeam.name_en ? ownTeam.name_en : ownTeam.name) : tr("فريقك", "Your team");
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
@@ -67,6 +70,9 @@ export function DashboardPage() {
             { label: tr("مهام تأخرت", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0 },
           ]}
         />
+      ) : user.role === "lead" ? (
+        // The team leader: a slide with the team's tasks as spheres in a glass one.
+        <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} />
       ) : (
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">

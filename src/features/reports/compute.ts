@@ -206,3 +206,28 @@ export function planColumns(items: PlanTask[]): Record<PlanColumn, PlanTask[]> {
   for (const key of PLAN_COLUMNS) out[key].sort((a, b) => b.late - a.late || (a.task.due ?? "9999").localeCompare(b.task.due ?? "9999"));
   return out;
 }
+
+// ── The team leader's slide: how the team's tasks split ──
+
+export interface TeamShares {
+  /** Every task of the team's people. `done + doing + review + blocked` add up to it. */
+  total: number;
+  done: number;
+  /** Open, and neither waiting for a review nor blocked. */
+  doing: number;
+  review: number;
+  blocked: number;
+  open: number;
+  late: number;
+}
+
+/** The tasks of one team's people, split four ways, and how many are late. Without a team: everyone in the numbers. */
+export function teamShares(o: Pick<Overview, "people">, teamId?: number): TeamShares {
+  const rows = o.people.filter((r) => teamId === undefined || r.team_id === teamId);
+  const sum = (pick: (r: PersonRow) => number) => rows.reduce((s, r) => s + pick(r), 0);
+  const done = sum((r) => r.done);
+  const open = sum((r) => r.open);
+  const review = sum((r) => r.in_review);
+  const blocked = sum((r) => r.blocked);
+  return { total: done + open, done, doing: Math.max(0, open - review - blocked), review, blocked, open, late: sum((r) => r.late) };
+}

@@ -127,7 +127,8 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   at the top.
 - **The dashboard** (`/dashboard`) opens with a section made for each job (`src/features/reports/components`): the CEO
   gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the project manager gets a task calendar (the days around
-  today) and a board of every task in their projects (`PmPlan`).
+  today) and a board of every task in their projects (`PmPlan`); the team leader gets a slide where a glass sphere
+  clears to show the team's tasks as smaller spheres, with the four shares beside it (`LeadSphere`).
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
 
 ## Documentation

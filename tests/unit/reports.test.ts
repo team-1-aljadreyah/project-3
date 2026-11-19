@@ -1,7 +1,7 @@
 // The dashboard and reports: the counting (pure), the CSV helper, and the demo backend as different people.
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Project } from "@/features/projects/types";
-import { calendarDays, calendarPills, planColumns, planTasks, projectRow, totals, velocity } from "@/features/reports/compute";
+import { calendarDays, calendarPills, planColumns, planTasks, projectRow, teamShares, totals, velocity } from "@/features/reports/compute";
 import type { SprintRow } from "@/features/reports/types";
 import type { Task } from "@/features/tasks/types";
 import { ApiError } from "@/shared/api/errors";
@@ -107,6 +107,25 @@ describe("the project manager's plan", () => {
     expect(strip.more[3]).toBe(2);
     // The last day has one column left.
     expect(at(6)?.span).toBe(1);
+  });
+});
+
+describe("the team leader's slide", () => {
+  const people = [
+    { user_id: 5, team_id: 1, open: 4, done: 2, late: 1, blocked: 1, in_review: 1 },
+    { user_id: 6, team_id: 1, open: 2, done: 2, late: 0, blocked: 0, in_review: 0 },
+    { user_id: 9, team_id: 2, open: 5, done: 0, late: 3, blocked: 0, in_review: 0 },
+  ];
+
+  it("one team's tasks split four ways that add up, with the late ones counted", () => {
+    const s = teamShares({ people }, 1);
+    expect(s).toEqual({ total: 10, done: 4, doing: 4, review: 1, blocked: 1, open: 6, late: 1 });
+    expect(s.done + s.doing + s.review + s.blocked).toBe(s.total);
+  });
+
+  it("without a team it counts everyone; a team with no tasks is all zeros", () => {
+    expect(teamShares({ people }).total).toBe(15);
+    expect(teamShares({ people }, 7)).toEqual({ total: 0, done: 0, doing: 0, review: 0, blocked: 0, open: 0, late: 0 });
   });
 });
 
