@@ -10,4 +10,5 @@ export { Skeleton, LoadingBlock, Empty, ErrorBox } from "./feedback";
 export { errorText } from "./error-text";
 export { ProgressBar } from "./progress";
 export { Stat } from "./stat";
+export { LoadingRing, Reveal } from "./motion";
 export { TONE_CLASS, PRIORITY, avatarClass } from "./tones";

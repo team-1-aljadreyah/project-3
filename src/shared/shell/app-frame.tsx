@@ -1,3 +1,4 @@
+import { usePathname } from "next/navigation";
 import { useFmt } from "@/shared/lib/i18n";
 import { useUser } from "@/shared/lib/session";
 import { TopNav } from "./top-nav";
@@ -10,6 +11,9 @@ import { TopNav } from "./top-nav";
 export function AppFrame({ children, actions }: { children: React.ReactNode; actions?: React.ReactNode }) {
   const { tr } = useFmt();
   const user = useUser();
+  // Each part of the site (projects, chat, bugs…) settles in when you move to it. The key is the first part of the
+  // address only, so moving inside a part (one chat to another) keeps what is on screen instead of drawing it again.
+  const part = usePathname().split("/")[1] ?? "";
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -18,7 +22,9 @@ export function AppFrame({ children, actions }: { children: React.ReactNode; act
       </a>
       <TopNav user={user} actions={actions} />
       <main id="main" className="flex min-h-0 flex-1 flex-col px-3 pt-5 pb-8 sm:px-7">
-        {children}
+        <div key={part} className="settle flex min-h-0 flex-1 flex-col">
+          {children}
+        </div>
       </main>
     </div>
   );
