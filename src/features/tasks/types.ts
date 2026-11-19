@@ -11,6 +11,8 @@ export interface Task {
   sprint_id?: number;
   title: string;
   description: string;
+  /** The tasks (same project) this one waits for (the brief: task dependencies). It can't be done before them. */
+  depends_on?: number[];
   assignee_id?: number;
   start?: string;
   due?: string;
@@ -69,6 +71,8 @@ export type TaskEventKind =
   | "description"
   | "phase"
   | "sprint"
+  | "dependency_added"
+  | "dependency_removed"
   | "comment"
   | "attachment_added"
   | "attachment_removed";

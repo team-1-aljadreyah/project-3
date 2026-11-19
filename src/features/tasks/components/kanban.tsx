@@ -16,7 +16,7 @@ import { StatusPill } from "@/shared/ui";
 import { groupByStatus, lateDays, type Project } from "@/features/projects";
 import type { TaskStatus, User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
-import { canMoveTask, planMove, statusOf } from "../rules";
+import { canMoveTask, openDependencies, planMove, statusOf } from "../rules";
 import type { Task } from "../types";
 import { cn } from "@/shared/lib/utils";
 import { cardClass, TaskCard, TaskCardBody } from "./task-card";
@@ -62,9 +62,12 @@ export function Kanban({
   user,
   today,
   onMove,
+  allTasks,
 }: {
   project: Project;
   tasks: Task[];
+  /** Every task of the project, to count what a card waits for (a shown task may wait for one not shown). */
+  allTasks?: Task[];
   users: User[];
   user: User;
   today: string;
@@ -150,6 +153,7 @@ export function Kanban({
                     assignee={task.assignee_id ? byId.get(task.assignee_id) : undefined}
                     late={lateDays(project, task, today)}
                     today={today}
+                    waiting={openDependencies(project, task, allTasks ?? tasks).length}
                     canDrag={canMoveTask(user, project, task)}
                     justDragged={() => Date.now() - lastDrop.current < 300}
                   />
@@ -169,6 +173,7 @@ export function Kanban({
               assignee={dragging.assignee_id ? byId.get(dragging.assignee_id) : undefined}
               late={lateDays(project, dragging, today)}
               today={today}
+              waiting={openDependencies(project, dragging, allTasks ?? tasks).length}
             />
           </div>
         )}

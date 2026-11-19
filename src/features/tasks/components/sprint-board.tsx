@@ -92,7 +92,7 @@ export function SprintBoard({
           body={closed ? tr("نُقلت مهامها غير المنجزة عند إنهائها.", "Its unfinished tasks moved on when it ended.") : tr("أضف مهام إليها من قائمة الانتظار.", "Add tasks to it from the backlog.")}
         />
       ) : (
-        <Kanban project={project} tasks={mine} users={users} user={user} today={today} onMove={onMove} />
+        <Kanban project={project} tasks={mine} allTasks={tasks} users={users} user={user} today={today} onMove={onMove} />
       )}
 
       <EndSprintDialog

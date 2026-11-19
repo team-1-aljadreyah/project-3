@@ -1,11 +1,11 @@
-import { Plus } from "lucide-react";
+import { Copy, Plus } from "lucide-react";
 import { useState } from "react";
 import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
-import { Button, Empty, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
+import { Button, ButtonLink, Empty, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { projectsApi } from "../api";
 import { NewProjectDialog } from "../components/new-project-dialog";
 import { ProjectCard } from "../components/project-card";
@@ -29,10 +29,16 @@ export function ProjectsPage() {
           )}
         </div>
         {canCreateProject(user) && projects.data && (
-          <Button pill onClick={() => setCreating(true)}>
-            <Plus size={16} aria-hidden="true" />
-            {tr("مشروع جديد", "New project")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ButtonLink href="/templates" variant="secondary" pill>
+              <Copy size={15} aria-hidden="true" />
+              {tr("القوالب", "Templates")}
+            </ButtonLink>
+            <Button pill onClick={() => setCreating(true)}>
+              <Plus size={16} aria-hidden="true" />
+              {tr("مشروع جديد", "New project")}
+            </Button>
+          </div>
         )}
       </div>
 

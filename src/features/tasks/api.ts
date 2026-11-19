@@ -11,6 +11,8 @@ export interface TasksApi {
   task(id: number): Promise<Task>;
   createTask(projectId: number, input: TaskInput): Promise<Task>;
   updateTask(id: number, patch: TaskPatch): Promise<Task>;
+  /** The tasks this one waits for (replaces the list). */
+  setDependencies(id: number, dependsOn: number[]): Promise<Task>;
   /** Change the status. A done status from someone who may not approve becomes an approval request. */
   moveTask(id: number, move: TaskMove): Promise<MoveResult>;
   /** Approve a completion request, or send it back with a note (`note` required to send back). */
@@ -28,6 +30,7 @@ export const tasksHttp: TasksApi = {
   task: (id) => data(http.get<Task>(`/tasks/${id}`)),
   createTask: (projectId, input) => data(http.post<Task>(`/projects/${projectId}/tasks`, input)),
   updateTask: (id, patch) => data(http.patch<Task>(`/tasks/${id}`, patch)),
+  setDependencies: (id, dependsOn) => data(http.put<Task>(`/tasks/${id}/dependencies`, { depends_on: dependsOn })),
   moveTask: (id, move) => data(http.post<MoveResult>(`/tasks/${id}/status`, move)),
   decideCompletion: (id, decision) => data(http.post<Task>(`/tasks/${id}/approval`, decision)),
   comments: (taskId) => data(http.get<TaskComment[]>(`/tasks/${taskId}/comments`)),

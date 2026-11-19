@@ -35,4 +35,12 @@ export const PROJECT_LIMITS = {
   phaseName: 80,
   phases: 20,
   sprintName: 60,
+  templateName: 80,
+  templateTasks: 200,
 };
+
+/** Templates are made and used by the people who create projects (CEO, PM). Removed by who made it, or the CEO. */
+export const canUseTemplates = canCreateProject;
+export function canRemoveTemplate(user: Pick<User, "id" | "role">, template: { created_by: number }) {
+  return user.role === "ceo" || template.created_by === user.id;
+}

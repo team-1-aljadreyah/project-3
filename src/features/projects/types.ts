@@ -77,6 +77,35 @@ export interface ProjectInput {
   end: string;
   priority: Priority;
   uses_sprints: boolean;
+  /** Start from a template: its statuses, phases and tasks are copied into the new project. */
+  template_id?: number;
+}
+
+/** One task of a template: what to do, not who or when (those belong to the real project). */
+export interface TemplateTask {
+  title: string;
+  description: string;
+  priority: Priority;
+  /** The phase's name in the template, if the template has phases. */
+  phase?: string;
+}
+
+/**
+ * A project template (the brief: "templates for recurring projects, so they can be created easily"): a project's
+ * statuses, phases, sprint setting and task list, saved under a name. Nobody's names or dates are kept.
+ */
+export interface ProjectTemplate {
+  id: number;
+  name: string;
+  description: string;
+  statuses: TaskStatus[];
+  phases: string[];
+  uses_sprints: boolean;
+  tasks: TemplateTask[];
+  /** The project it was saved from (its name then). */
+  from_project?: string;
+  created_by: number;
+  created_at: string;
 }
 
 /** Changes to a project. `note` says why (kept in the project's history, for example why the plan changed). */

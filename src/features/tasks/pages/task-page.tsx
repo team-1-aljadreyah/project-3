@@ -15,6 +15,7 @@ import { Avatar, Button, ErrorBox, Field, LoadingBlock, PriorityPill, Select, Sk
 import { tasksApi } from "../api";
 import { ApprovalBanner } from "../components/approval-banner";
 import { Comments } from "../components/comments";
+import { Dependencies } from "../components/dependencies";
 import { History } from "../components/history";
 import { TaskForm } from "../components/task-form";
 import { useMoveTask } from "../hooks/use-move-task";
@@ -28,6 +29,8 @@ interface Loaded {
   sprints: Sprint[];
   comments: TaskComment[];
   history: TaskEvent[];
+  /** Every task of the project (for dependencies). */
+  projectTasks: Task[];
 }
 
 /** One task: what it is, its status (with the brief's rules), the approval, the details, comments and history. */
@@ -36,14 +39,15 @@ export function TaskPage() {
   const load = useLoad<Loaded>(async () => {
     // The task first: it says which project to load.
     const task = await tasksApi.task(id);
-    const [project, users, sprints, comments, history] = await Promise.all([
+    const [project, users, sprints, comments, history, projectTasks] = await Promise.all([
       projectsApi.project(task.project_id),
       authApi.users(),
       projectsApi.sprints(task.project_id),
       tasksApi.comments(id),
       tasksApi.history(id),
+      tasksApi.tasks(task.project_id),
     ]);
-    return { task, project, users, sprints, comments, history };
+    return { task, project, users, sprints, comments, history, projectTasks };
   }, [id]);
 
   if (load.state.status === "loading") {
@@ -62,7 +66,7 @@ export function TaskPage() {
   return <TaskView {...load.state.data} reload={load.reload} />;
 }
 
-function TaskView({ task, project, users, sprints, comments, history, reload }: Loaded & { reload: () => void }) {
+function TaskView({ task, project, users, sprints, comments, history, projectTasks, reload }: Loaded & { reload: () => void }) {
   const fmt = useFmt();
   const { tr, lang, day, due } = fmt;
   const user = useUser();
@@ -135,6 +139,8 @@ function TaskView({ task, project, users, sprints, comments, history, reload }: 
               <p className="text-sm text-faint">{tr("لا يوجد وصف.", "No description.")}</p>
             )}
           </section>
+
+          <Dependencies task={task} project={project} tasks={projectTasks} canEdit={canManageTasks(user, project)} onSaved={reload} />
 
           <section aria-labelledby="files-title" className="rounded-xl border border-line bg-card p-4">
             <h2 id="files-title" className="mb-3 text-sm font-semibold text-muted">

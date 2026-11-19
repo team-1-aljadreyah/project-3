@@ -23,6 +23,7 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   task_due_soon: { ar: "اقتراب موعد التسليم", en: "A due date is near", hint_ar: "قبل موعد التسليم بيوم، ويوم التسليم.", hint_en: "The day before, and on the day." },
   task_overdue: { ar: "تجاوز موعد التسليم", en: "A task is late", hint_ar: "عند تجاوز مهمتك موعد تسليمها.", hint_en: "When your task passes its due date." },
   approval_requested: { ar: "طلب اعتماد إكمال", en: "Approval is requested", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
+  dependency_done: { ar: "انتهاء ما تنتظره مهمتك", en: "A task yours waits for is done", hint_ar: "عند إنجاز آخر مهمة كانت مهمتك تنتظرها.", hint_en: "When the last task yours was waiting for is done." },
   approval_decided: { ar: "قرار الاعتماد", en: "Approval is decided", hint_ar: "عند اعتماد إكمال مهمة طلبتَه أو إرجاعها.", hint_en: "When a completion you asked for is approved or sent back." },
   project_added: { ar: "إضافتك إلى مشروع", en: "You're added to a project", hint_ar: "عند إضافتك إلى أعضاء مشروع.", hint_en: "When you become a project member." },
   project_pm: { ar: "تغيير مدير المشروع", en: "A project's manager changes", hint_ar: "لكل أعضاء المشروع.", hint_en: "For all the project's members." },
@@ -71,6 +72,9 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أضافك إلى مشروع ${project}`, `${who} added you to ${project}`);
     case "project_pm":
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
+    case "dependency_done":
+      // d.note = the task that was finished; the notification is about the task that can go on now.
+      return tr(`أُنجزت ${d.note ?? "-"}، ويمكن متابعة ${task}`, `${d.note ?? "-"} is done: ${task} can go on`);
     case "chat_mention":
       return tr(`${who} ذكرك في محادثة`, `${who} mentioned you in a chat`);
     case "bug_reported":

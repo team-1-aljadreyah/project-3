@@ -9,7 +9,7 @@ import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
 import { today } from "@/shared/lib/utils";
 import type { ProjectsApi } from "./api";
 import { countTasks, isDone, plannedRatio } from "./counts";
-import { canChangePm, canCreateProject, canManageProject, isBaseStatus, PROJECT_LIMITS as L } from "./rules";
+import { canChangePm, canCreateProject, canManageProject, canRemoveTemplate, canUseTemplates, isBaseStatus, PROJECT_LIMITS as L } from "./rules";
 import type { Project, ProjectEvent, ProjectInput, ProjectPatch, Sprint, SprintInput } from "./types";
 
 const TONES = new Set(["new", "todo", "progress", "review", "testing", "done", "blocked"]);
@@ -110,8 +110,24 @@ export const projectsMock: ProjectsApi = {
       statuses: structuredClone(DEFAULT_STATUSES),
       phases: [],
     };
+    const template = fields.template_id === undefined ? undefined : db.templates.find((t) => t.id === fields.template_id);
+    if (fields.template_id !== undefined && !template) invalid("template_id", "القالب غير موجود.", "The template doesn't exist.");
+    if (template) {
+      // The template's statuses and phases, and its tasks: not assigned, no dates, in the first status (the brief).
+      project.statuses = structuredClone(template.statuses);
+      project.phases = template.phases.map((name) => ({ id: ++db.seq.phase, name }));
+      for (const t of template.tasks) {
+        const taskId = ++db.seq.task;
+        db.tasks.push({
+          id: taskId, code: `TSK-${String(1000 + taskId)}`, project_id: id, title: t.title, description: t.description, priority: t.priority,
+          phase_id: project.phases.find((ph) => ph.name === t.phase)?.id, status: project.statuses[0].key,
+          subtasks_done: 0, subtasks_total: 0, created_by: user.id, created_at: nowIso(), updated_at: nowIso(),
+        });
+        db.events.push({ id: ++db.seq.event, task_id: taskId, actor_id: user.id, kind: "created", at: nowIso() });
+      }
+    }
     db.projects.push(project);
-    log({ project_id: id, actor_id: user.id, kind: "created" });
+    log({ project_id: id, actor_id: user.id, kind: "created", note: template ? template.name : undefined });
     notify(project.member_ids, "project_added", { actor_id: user.id, project_id: id, data: aboutProject(project) });
     commit();
     return wait(project);
@@ -334,6 +350,44 @@ export const projectsMock: ProjectsApi = {
     });
     commit();
     return wait({ ...s, planned_ratio: 1 });
+  },
+
+  async templates() {
+    if (!canUseTemplates(currentUser())) return fail(403, "FORBIDDEN", "القوالب لمن ينشئ المشاريع.", "Templates are for the people who create projects.");
+    return wait([...getDb().templates].sort((a, b) => a.name.localeCompare(b.name)));
+  },
+
+  async saveTemplate(projectId, input) {
+    const user = currentUser();
+    const project = manageable(user, projectId);
+    if (!canUseTemplates(user)) return fail(403, "FORBIDDEN", "القوالب لمن ينشئ المشاريع.", "Templates are for the people who create projects.");
+    const db = getDb();
+    const name = input.name.trim();
+    if (!name) invalid("name", "اكتب اسم القالب.", "Enter the template's name.");
+    if (name.length > L.templateName) invalid("name", "الاسم أطول من المسموح.", "The name is too long.");
+    if (db.templates.some((t) => t.name === name)) invalid("name", "يوجد قالب بهذا الاسم.", "A template with this name exists.");
+    const tasks = db.tasks.filter((t) => t.project_id === projectId);
+    if (tasks.length > L.templateTasks) invalid("name", `القالب يحفظ ${L.templateTasks} مهمة على الأكثر.`, `A template keeps at most ${L.templateTasks} tasks.`);
+    const template = {
+      id: ++db.seq.template, name, description: input.description?.trim() ?? "", from_project: project.name,
+      statuses: structuredClone(project.statuses), phases: project.phases.map((ph) => ph.name), uses_sprints: project.uses_sprints,
+      tasks: tasks.map((t) => ({ title: t.title, description: t.description, priority: t.priority, phase: project.phases.find((ph) => ph.id === t.phase_id)?.name })),
+      created_by: user.id, created_at: nowIso(),
+    };
+    db.templates.push(template);
+    commit();
+    return wait(template);
+  },
+
+  async deleteTemplate(id) {
+    const user = currentUser();
+    const db = getDb();
+    const template = db.templates.find((t) => t.id === id);
+    if (!template || !canUseTemplates(user)) return fail(404, "NOT_FOUND", "لم يُعثر على القالب.", "Template not found.");
+    if (!canRemoveTemplate(user, template)) return fail(403, "FORBIDDEN", "يحذف القالبَ من أنشأه أو المدير التنفيذي.", "Only who made the template, or the CEO, can remove it.");
+    db.templates = db.templates.filter((t) => t.id !== id);
+    commit();
+    return wait(undefined);
   },
 
   async history(projectId) {

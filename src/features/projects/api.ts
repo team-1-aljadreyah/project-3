@@ -9,6 +9,7 @@ import type {
   ProjectPatch,
   ProjectSummary,
   Sprint,
+  ProjectTemplate,
   SprintClose,
   SprintInput,
   StatusInput,
@@ -31,6 +32,10 @@ export interface ProjectsApi {
   deleteSprint(id: number): Promise<void>;
   /** Ends a sprint: its unfinished tasks move to another open sprint or back to the backlog. */
   closeSprint(id: number, input: SprintClose): Promise<Sprint>;
+  templates(): Promise<ProjectTemplate[]>;
+  /** Saves the project's statuses, phases, sprint setting and tasks as a template. */
+  saveTemplate(projectId: number, input: { name: string; description?: string }): Promise<ProjectTemplate>;
+  deleteTemplate(id: number): Promise<void>;
   /** The project's history: who changed its setup, what and when. */
   history(projectId: number): Promise<ProjectEvent[]>;
 }
@@ -50,6 +55,9 @@ export const projectsHttp: ProjectsApi = {
   updateSprint: (id, input) => data(http.patch<Sprint>(`/sprints/${id}`, input)),
   deleteSprint: (id) => data(http.delete<void>(`/sprints/${id}`)),
   closeSprint: (id, input) => data(http.post<Sprint>(`/sprints/${id}/close`, input)),
+  templates: () => data(http.get<ProjectTemplate[]>("/templates")),
+  saveTemplate: (projectId, input) => data(http.post<ProjectTemplate>(`/projects/${projectId}/template`, input)),
+  deleteTemplate: (id) => data(http.delete<void>(`/templates/${id}`)),
   history: (projectId) => data(http.get<ProjectEvent[]>(`/projects/${projectId}/history`)),
 };
 

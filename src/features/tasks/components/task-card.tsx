@@ -1,4 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
+import { Link2 } from "lucide-react";
 import Link from "next/link";
 import { Avatar, PriorityPill, ProgressBar, TONE_CLASS } from "@/shared/ui";
 import type { StatusTone, User } from "@/shared/api/types";
@@ -12,13 +13,15 @@ interface CardProps {
   assignee?: User;
   late: number;
   today: string;
+  /** How many unfinished tasks this one waits for (task dependencies). */
+  waiting?: number;
 }
 
 /**
  * What a task card shows (board D): code and priority, the title, a waiting approval, the reason when it is
  * blocked, sub-tasks in the column's colour, and who has it with the due day (red when late).
  */
-export function TaskCardBody({ task, tone, assignee, late, today }: CardProps) {
+export function TaskCardBody({ task, tone, assignee, late, today, waiting = 0 }: CardProps) {
   const { tr, lang, due, day } = useFmt();
   const ratio = task.subtasks_total ? task.subtasks_done / task.subtasks_total : 0;
   const dueIn = task.due ? daysBetween(today, task.due) : undefined;
@@ -33,6 +36,13 @@ export function TaskCardBody({ task, tone, assignee, late, today }: CardProps) {
       </div>
 
       <h3 className="text-sm leading-relaxed font-medium">{task.title}</h3>
+
+      {waiting > 0 && (
+        <p className="flex items-center gap-1.5 rounded-md bg-chip px-2 py-1 text-xs text-muted">
+          <Link2 size={12} aria-hidden="true" />
+          {tr(`تنتظر ${waiting === 1 ? "مهمة واحدة" : `${waiting} مهام`}`, `Waiting for ${waiting} task${waiting === 1 ? "" : "s"}`)}
+        </p>
+      )}
 
       {task.approval?.state === "pending" && (
         <p className="rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent-ink">{tr("بانتظار اعتماد الإكمال", "Waiting for approval")}</p>

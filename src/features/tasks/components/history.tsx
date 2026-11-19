@@ -44,6 +44,10 @@ function eventText(e: TaskEvent, fmt: Fmt, project: Pick<Project, "statuses" | "
       return tr("غيّر العنوان", "changed the title");
     case "description":
       return tr("عدّل الوصف", "edited the description");
+    case "dependency_added":
+      return tr(`جعلها تنتظر ${e.to ?? "-"}`, `made it wait for ${e.to ?? "-"}`);
+    case "dependency_removed":
+      return tr(`لم تعد تنتظر ${e.from ?? "-"}`, `it no longer waits for ${e.from ?? "-"}`);
     case "sprint":
       // from / to are the sprints' names; none = the backlog (no sprint).
       return e.to

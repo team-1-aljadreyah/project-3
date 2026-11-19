@@ -3,16 +3,18 @@ import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
-import { Button, Dialog, errorText, useToast } from "@/shared/ui";
+import { useLoad } from "@/shared/lib/use-load";
+import { Button, Dialog, errorText, Field, Select, useToast } from "@/shared/ui";
 import { projectsApi } from "../api";
-import { canChangePm } from "../rules";
+import { canChangePm, canUseTemplates } from "../rules";
 import { MemberPicker } from "./member-picker";
 import { ProjectFields } from "./project-fields";
 import { valuesOf, type ProjectValues } from "./project-values";
 
 /**
- * Create a project: its main fields and its members. It starts with the seven base statuses and no phases; the
- * project's settings page adds those. After saving, the new project's board opens.
+ * Create a project: its main fields and its members. It starts with the seven base statuses and no phases (the
+ * project's settings page adds those), or from a template: its statuses, phases and tasks. After saving, the new
+ * project's board opens.
  */
 export function NewProjectDialog({ open, onClose, user, people }: { open: boolean; onClose: () => void; user: User; people: User[] }) {
   const { tr } = useFmt();
@@ -26,6 +28,10 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [templateId, setTemplateId] = useState("");
+  // The templates load only while the window is open (and only for people who may use them).
+  const templates = useLoad(() => (open && canUseTemplates(user) ? projectsApi.templates() : Promise.resolve([])), [open]);
+  const template = templates.data?.find((x) => String(x.id) === templateId);
   const set = <K extends keyof ProjectValues>(k: K, value: ProjectValues[K]) => setV((old) => ({ ...old, [k]: value }));
 
   // Each time the window opens, it starts empty, not with what was typed last time.
@@ -35,6 +41,7 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
     if (open) {
       setV(fresh());
       setMembers([]);
+      setTemplateId("");
       setErrors({});
       setFormError(undefined);
     }
@@ -63,6 +70,7 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
         end: v.end,
         priority: v.priority,
         uses_sprints: v.uses_sprints,
+        template_id: template?.id,
       });
       toast(tr(`أُنشئ المشروع ${project.code}.`, `Project ${project.code} created.`));
       onClose();
@@ -100,6 +108,26 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
           save();
         }}
       >
+        {!!templates.data?.length && (
+          <Field label={tr("ابدأ من قالب (اختياري)", "Start from a template (optional)")} htmlFor="project-template" error={errors.template_id}>
+            <Select
+              id="project-template"
+              value={templateId}
+              onChange={(e) => {
+                setTemplateId(e.target.value);
+                const chosen = templates.data?.find((x) => String(x.id) === e.target.value);
+                if (chosen) set("uses_sprints", chosen.uses_sprints);
+              }}
+            >
+              <option value="">{tr("بلا قالب", "No template")}</option>
+              {templates.data.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <ProjectFields
           v={v}
           set={set}
@@ -109,10 +137,15 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
         />
         <MemberPicker people={people} value={members} onChange={setMembers} locked={v.pm_id ? [Number(v.pm_id)] : []} error={errors.member_ids} />
         <p className="text-[13px] text-muted">
-          {tr(
-            "يبدأ المشروع بالحالات الأساسية السبع. تضاف الحالات الخاصة والمراحل والدورات من إعدادات المشروع.",
-            "The project starts with the seven base statuses. Add its own statuses, phases and sprints in the project's settings.",
-          )}
+          {template
+            ? tr(
+                `من القالب «${template.name}»: ${template.statuses.length} حالات، ${template.phases.length} مراحل، ${template.tasks.length} مهام (بلا مسؤول ولا تواريخ).`,
+                `From the template "${template.name}": ${template.statuses.length} statuses, ${template.phases.length} phases, ${template.tasks.length} tasks (no assignee, no dates).`,
+              )
+            : tr(
+                "يبدأ المشروع بالحالات الأساسية السبع. تضاف الحالات الخاصة والمراحل والدورات من إعدادات المشروع.",
+                "The project starts with the seven base statuses. Add its own statuses, phases and sprints in the project's settings.",
+              )}
         </p>
         {formError && (
           <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">

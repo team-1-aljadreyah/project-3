@@ -200,7 +200,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
       <div id="board-panel" role={project.uses_sprints ? "tabpanel" : undefined} aria-labelledby={project.uses_sprints ? `view-${tab}` : undefined}>
         {tab === "sprint" && <SprintBoard project={project} sprints={sprints} tasks={tasks} users={users} user={user} today={today} onMove={move} reload={reload} />}
         {tab === "backlog" && <Backlog project={project} sprints={sprints} tasks={tasks} users={users} user={user} reload={reload} />}
-        {tab === "all" && <Kanban project={project} tasks={shown} users={users} user={user} today={today} onMove={move} />}
+        {tab === "all" && <Kanban project={project} tasks={shown} allTasks={tasks} users={users} user={user} today={today} onMove={move} />}
       </div>
 
       {dialog}
