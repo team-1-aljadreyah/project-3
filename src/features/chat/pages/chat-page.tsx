@@ -1,6 +1,7 @@
 import { ArrowRight, MessageSquarePlus, MessagesSquare } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
@@ -21,7 +22,7 @@ import { chatTitle } from "../rules";
 export function ChatPage() {
   const { tr, lang, num } = useFmt();
   const me = useUser();
-  const { key } = useParams();
+  const { key } = useParams<{ key?: string }>();
   const load = useLoad(() => Promise.all([chatApi.conversations(), authApi.users()]));
   const [starting, setStarting] = useState(false);
 
@@ -74,7 +75,7 @@ export function ChatPage() {
                   title={tr("لم يُعثر على المحادثة", "Chat not found")}
                   body={tr("قد لا تكون عضواً فيها.", "You may not be one of its members.")}
                   action={
-                    <Link to="/chat" className="text-sm font-medium text-accent hover:underline">
+                    <Link href="/chat" className="text-sm font-medium text-accent hover:underline">
                       {tr("كل المحادثات", "All chats")}
                     </Link>
                   }
@@ -84,7 +85,7 @@ export function ChatPage() {
             {open && (
               <>
                 <header className="flex items-center gap-2 border-b border-line px-3 py-2">
-                  <Link to="/chat" aria-label={tr("رجوع إلى المحادثات", "Back to the chats")} className="rounded-lg p-1.5 text-muted hover:bg-chip md:hidden">
+                  <Link href="/chat" aria-label={tr("رجوع إلى المحادثات", "Back to the chats")} className="rounded-lg p-1.5 text-muted hover:bg-chip md:hidden">
                     <ArrowRight size={18} aria-hidden="true" className="ltr:-scale-x-100" />
                   </Link>
                   <span className="flex min-w-0 flex-1 flex-col">

@@ -1,5 +1,5 @@
 import { FolderKanban, Users } from "lucide-react";
-import { Link } from "react-router";
+import Link from "next/link";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -24,7 +24,7 @@ export function ConversationList({ list, people, me, active }: { list: Conversat
         return (
           <li key={c.key}>
             <Link
-              to={`/chat/${c.key}`}
+              href={`/chat/${c.key}`}
               aria-current={c.key === active ? "page" : undefined}
               className={cn("flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors hover:bg-card-2", c.key === active && "bg-accent-soft hover:bg-accent-soft")}
             >

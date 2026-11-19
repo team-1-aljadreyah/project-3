@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import Link from "next/link";
 import { BRAND } from "@/shared/lib/brand";
 import { useFmt } from "@/shared/lib/i18n";
 
@@ -6,7 +6,7 @@ import { useFmt } from "@/shared/lib/i18n";
 export function Logo() {
   const { tr } = useFmt();
   return (
-    <Link to="/" className="flex items-center gap-2.5 rounded-lg ps-1">
+    <Link href="/" className="flex items-center gap-2.5 rounded-lg ps-1">
       <span aria-hidden="true" className="flex size-[34px] items-center justify-center rounded-[9px] bg-accent font-bold text-on-accent">
         {BRAND.mark}
       </span>

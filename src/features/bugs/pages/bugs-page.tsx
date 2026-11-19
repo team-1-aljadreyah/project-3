@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { authApi } from "@/features/auth";
 import { projectsApi, type ProjectSummary } from "@/features/projects";
 import type { User } from "@/shared/api/types";
@@ -199,7 +199,7 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
               return (
                 <li key={b.id}>
                   {/* The whole row opens the bug (click anywhere). */}
-                  <Link to={`/bugs/${b.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-line bg-card px-4 py-3 transition-colors hover:border-accent">
+                  <Link href={`/bugs/${b.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-line bg-card px-4 py-3 transition-colors hover:border-accent">
                     <span className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">
                       <span className="text-xs text-muted">
                         <span dir="ltr">{b.code}</span> · {projectName(b.project_id)} · {nameOf(b.assignee_id ? personOf.get(b.assignee_id) : undefined)}

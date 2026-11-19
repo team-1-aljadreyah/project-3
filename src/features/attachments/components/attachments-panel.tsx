@@ -74,6 +74,8 @@ export function AttachmentsPanel({ owner, canAdd, canManage }: { owner: Attachme
                 {/* The whole row downloads the file (click anywhere); the remove button sits apart. */}
                 <a href={a.url} download={a.name} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 hover:bg-chip">
                   {isImage(a.mime) ? (
+                    // A user's file (a data: link in the demo, a short-lived link later): next/image can't optimise those.
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={a.url} alt="" loading="lazy" className="size-11 shrink-0 rounded-md border border-line object-cover" />
                   ) : (
                     <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-md bg-chip text-muted">

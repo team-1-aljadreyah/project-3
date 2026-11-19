@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { matches } from "@/shared/lib/utils";
@@ -9,7 +9,7 @@ import { chatApi } from "../api";
 /** Choosing a colleague for a private chat. If the two already have one, it opens it; otherwise it starts one. */
 export function NewDirectDialog({ open, onClose, people, me }: { open: boolean; onClose: () => void; people: User[]; me: number }) {
   const { tr, lang } = useFmt();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -22,7 +22,7 @@ export function NewDirectDialog({ open, onClose, people, me }: { open: boolean; 
       const c = await chatApi.startDirect(u.id);
       onClose();
       setQ("");
-      navigate(`/chat/${c.key}`);
+      router.push(`/chat/${c.key}`);
     } catch (e) {
       setError(errorText(e, tr));
     } finally {

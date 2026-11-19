@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import Link from "next/link";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { daysBetween, today } from "@/shared/lib/utils";
@@ -16,7 +16,7 @@ export function ProjectCard({ project, pm }: { project: ProjectSummary; pm?: Use
 
   return (
     <Link
-      to={`/projects/${project.id}`}
+      href={`/projects/${project.id}`}
       className="group flex w-full flex-col gap-4 rounded-xl border border-line bg-card p-4 transition-colors hover:border-accent"
     >
       <div className="flex items-start justify-between gap-3">

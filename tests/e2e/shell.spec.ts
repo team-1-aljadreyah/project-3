@@ -40,7 +40,7 @@ test("the page never scrolls sideways (phone and computer)", async ({ page }) =>
 });
 
 test("a fresh page load prints no warnings or errors in the console", async ({ page }) => {
-  // React Router warned "No HydrateFallback element provided" on every first load (pages load lazily).
+  // With Next.js this also catches hydration warnings: the server's HTML and the browser's first drawing must agree.
   const problems: string[] = [];
   page.on("console", (m) => {
     // The browser asks for /favicon.ico by itself; the site has no icon yet (the logo is not decided).
@@ -51,4 +51,13 @@ test("a fresh page load prints no warnings or errors in the console", async ({ p
   await page.goto("/projects/1"); // a first load of a signed-in page
   await expect(page.getByRole("region", { name: "عمود جديدة" })).toBeVisible();
   expect(problems).toEqual([]);
+});
+
+test("each page keeps its own tab title after a full load", async ({ page }) => {
+  // Next.js used to write its default title a moment after the page set its own (see src/app/layout.tsx).
+  await signInAs(page, /أحمد كريم/);
+  await page.goto("/bugs");
+  await expect(page.getByRole("heading", { level: 1, name: "الأخطاء البرمجية" })).toBeVisible();
+  await page.waitForTimeout(1000); // the late default title came after the page had drawn
+  await expect(page).toHaveTitle("الأخطاء البرمجية · منصة المشاريع");
 });

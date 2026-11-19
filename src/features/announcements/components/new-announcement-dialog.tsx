@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import { useFmt } from "@/shared/lib/i18n";
 import { Button, Dialog, Field, Input, Textarea, errorText, useToast } from "@/shared/ui";
@@ -10,7 +10,7 @@ import { ANNOUNCEMENT_LIMITS as L } from "../rules";
 export function NewAnnouncementDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tr } = useFmt();
   const toast = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [important, setImportant] = useState(false);
@@ -40,7 +40,7 @@ export function NewAnnouncementDialog({ open, onClose }: { open: boolean; onClos
       const a = await announcementsApi.create({ title, body, important });
       toast(tr("نُشر الإعلان وأُبلغ الجميع.", "Posted. Everyone has been notified."));
       onClose();
-      navigate(`/announcements/${a.id}`);
+      router.push(`/announcements/${a.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.errors) setErrors(e.errors);
       else setFormError(errorText(e, tr));

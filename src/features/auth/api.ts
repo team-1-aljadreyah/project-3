@@ -19,4 +19,4 @@ export const authHttp: AuthApi = {
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
 export const authApi: AuthApi =
-  import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.authMock)) : authHttp;
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.authMock)) : authHttp;

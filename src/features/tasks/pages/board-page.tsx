@@ -1,6 +1,7 @@
 import { Paperclip, Plus, Settings } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
 import { canManageProject, countTasks, PROJECT_STATE, projectsApi, type Project, type Sprint } from "@/features/projects";
 import type { User } from "@/shared/api/types";
@@ -68,7 +69,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 flex-col gap-1.5">
           <nav aria-label={tr("مسار الصفحة", "Breadcrumb")} className="text-[13px] text-muted">
-            <Link to="/" className="hover:text-text hover:underline">
+            <Link href="/" className="hover:text-text hover:underline">
               {tr("المشاريع", "Projects")}
             </Link>
             <span aria-hidden="true"> / </span>
@@ -141,13 +142,13 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
             <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
             <AvatarStack users={members} />
           </div>
-          <ButtonLink to={`/projects/${project.id}/files`} variant="secondary" pill>
+          <ButtonLink href={`/projects/${project.id}/files`} variant="secondary" pill>
             <Paperclip size={15} aria-hidden="true" />
             {/* On a phone only the icon shows; screen readers still hear the name. */}
             <span className="sr-only sm:not-sr-only">{tr("الملفات", "Files")}</span>
           </ButtonLink>
           {canManageProject(user, project) && (
-            <ButtonLink to={`/projects/${project.id}/settings`} variant="secondary" pill>
+            <ButtonLink href={`/projects/${project.id}/settings`} variant="secondary" pill>
               <Settings size={15} aria-hidden="true" />
               {/* On a phone only the icon shows; screen readers still hear the name. */}
               <span className="sr-only sm:not-sr-only">{tr("الإعدادات", "Settings")}</span>

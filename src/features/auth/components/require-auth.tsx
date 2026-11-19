@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { usePathname, useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import { clearSession, useSession } from "@/shared/lib/session";
 import { authApi } from "../api";
@@ -10,13 +10,13 @@ import { authApi } from "../api";
  */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const session = useSession();
-  const navigate = useNavigate();
-  const path = useLocation().pathname;
+  const router = useRouter();
+  const path = usePathname();
   const signedIn = !!session;
 
   useEffect(() => {
-    if (!signedIn) navigate(`/login?next=${encodeURIComponent(path)}`, { replace: true });
-  }, [signedIn, path, navigate]);
+    if (!signedIn) router.replace(`/login?next=${encodeURIComponent(path)}`);
+  }, [signedIn, path, router]);
 
   useEffect(() => {
     if (!signedIn) return;

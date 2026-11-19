@@ -49,11 +49,12 @@ accounts leaking into the real build, a test that only passed because of local d
 
 ## What each step protects
 
-- **No `.env`**: the real build must not depend on anyone's local settings. `VITE_*` values are built into the
+- **No `.env`**: the real build must not depend on anyone's local settings. `NEXT_PUBLIC_*` values are built into the
   files, so the real build must work with them unset.
 - **No-demo check** (`npm run check:no-demo`): demo accounts and passwords must never reach the real site. The
   demo backend is dropped only when the switch is written out in full where it is imported
-  (`import.meta.env.VITE_USE_MOCK === "true" ? import("./mock") : …`); see `src/shared/api/demo.ts`.
+  (`process.env.NEXT_PUBLIC_USE_MOCK === "true" ? import("./mock") : …`); see `src/shared/api/demo.ts`. The check reads
+  both `.next/static` (what visitors download) and `.next/server` (what the server runs).
 - **Demo build + browser tests**: the browser tests sign in with the demo accounts, so they need the demo build.
   They run on desktop and a phone size (Pixel 7). Three tests are computer-only and are skipped on the phone;
   that is expected.
@@ -62,7 +63,7 @@ accounts leaking into the real build, a test that only passed because of local d
 
 - Windows PowerShell blocks `npm.ps1`: use `npm.cmd` in PowerShell, or use Git Bash.
 - The browser tests use the installed Google Chrome locally and Playwright's Chromium on Jenkins.
-- If port 3100 is busy, stop the other `npm run preview` first: Playwright would reuse it and test the wrong code.
+- If port 3100 is busy, stop the other `npm run start` first: Playwright would reuse it and test the wrong code.
 
 ## Git text
 

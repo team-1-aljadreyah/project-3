@@ -31,4 +31,4 @@ export const attachmentsHttp: AttachmentsApi = {
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
 export const attachmentsApi: AttachmentsApi =
-  import.meta.env.VITE_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.attachmentsMock)) : attachmentsHttp;
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? lazyApi(() => import("./mock").then((m) => m.attachmentsMock)) : attachmentsHttp;

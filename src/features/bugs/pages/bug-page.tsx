@@ -1,6 +1,7 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { AttachmentsPanel } from "@/features/attachments";
 import { authApi } from "@/features/auth";
 import { projectsApi, type Project } from "@/features/projects";
@@ -120,7 +121,7 @@ function BugView({ bug, project, task, people, history }: Loaded) {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <div className="flex flex-col gap-2">
         <nav aria-label={tr("مسار الصفحة", "Breadcrumb")} className="text-[13px] text-muted">
-          <Link to="/bugs" className="hover:text-text hover:underline">
+          <Link href="/bugs" className="hover:text-text hover:underline">
             {tr("الأخطاء البرمجية", "Bugs")}
           </Link>
           <span aria-hidden="true"> / </span>
@@ -217,7 +218,7 @@ function BugView({ bug, project, task, people, history }: Loaded) {
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
             <dt className="text-muted">{tr("المشروع", "Project")}</dt>
             <dd>
-              <Link to={`/projects/${project.id}`} className="text-accent hover:underline">
+              <Link href={`/projects/${project.id}`} className="text-accent hover:underline">
                 {projectName}
               </Link>
             </dd>
@@ -231,7 +232,7 @@ function BugView({ bug, project, task, people, history }: Loaded) {
               <>
                 <dt className="text-muted">{tr("المهمة", "Task")}</dt>
                 <dd>
-                  <Link to={`/tasks/${task.id}`} className="text-accent hover:underline">
+                  <Link href={`/tasks/${task.id}`} className="text-accent hover:underline">
                     <span dir="ltr">{task.code}</span> · {task.title}
                   </Link>
                 </dd>

@@ -1,6 +1,7 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { AttachmentsPanel } from "@/features/attachments";
 import { authApi } from "@/features/auth";
 import { canManageProject, lateDays, projectsApi, type Project, type Sprint } from "@/features/projects";
@@ -88,11 +89,11 @@ function TaskView({ task, project, users, sprints, comments, history, reload }: 
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       <div className="flex flex-col gap-2">
         <nav aria-label={tr("مسار الصفحة", "Breadcrumb")} className="text-[13px] text-muted">
-          <Link to="/" className="hover:text-text hover:underline">
+          <Link href="/" className="hover:text-text hover:underline">
             {tr("المشاريع", "Projects")}
           </Link>
           <span aria-hidden="true"> / </span>
-          <Link to={`/projects/${project.id}`} className="hover:text-text hover:underline">
+          <Link href={`/projects/${project.id}`} className="hover:text-text hover:underline">
             {projectName}
           </Link>
           <span aria-hidden="true"> / </span>
@@ -204,7 +205,7 @@ function TaskView({ task, project, users, sprints, comments, history, reload }: 
             </dd>
             <dt className="text-muted">{tr("المشروع", "Project")}</dt>
             <dd>
-              <Link to={`/projects/${project.id}`} className="text-accent hover:underline">
+              <Link href={`/projects/${project.id}`} className="text-accent hover:underline">
                 {projectName}
               </Link>
             </dd>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import type { ProjectSummary } from "@/features/projects";
 import { tasksApi } from "@/features/tasks";
 import { ApiError } from "@/shared/api";
@@ -19,7 +19,7 @@ import type { Severity } from "../types";
 export function ReportBugDialog({ open, onClose, projects, user, people }: { open: boolean; onClose: () => void; projects: ProjectSummary[]; user: User; people: User[] }) {
   const { tr, lang } = useFmt();
   const toast = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [projectId, setProjectId] = useState(projects[0]?.id ?? 0);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -71,7 +71,7 @@ export function ReportBugDialog({ open, onClose, projects, user, people }: { ope
       });
       toast(tr(`سُجّلت المشكلة ${bug.code}.`, `${bug.code} reported.`));
       onClose();
-      navigate(`/bugs/${bug.id}`);
+      router.push(`/bugs/${bug.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.errors) setErrors(e.errors);
       else setFormError(errorText(e, tr));

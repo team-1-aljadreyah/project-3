@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -17,7 +17,7 @@ import { valuesOf, type ProjectValues } from "./project-values";
 export function NewProjectDialog({ open, onClose, user, people }: { open: boolean; onClose: () => void; user: User; people: User[] }) {
   const { tr } = useFmt();
   const toast = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   // A project manager creates projects they manage; the CEO picks the manager.
   const pickPm = canChangePm(user);
   const fresh = () => valuesOf(undefined, pickPm ? undefined : user.id);
@@ -66,7 +66,7 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
       });
       toast(tr(`أُنشئ المشروع ${project.code}.`, `Project ${project.code} created.`));
       onClose();
-      navigate(`/projects/${project.id}`);
+      router.push(`/projects/${project.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.errors) setErrors(e.errors);
       else setFormError(errorText(e, tr));

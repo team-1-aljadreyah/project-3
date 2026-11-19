@@ -1,12 +1,14 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useFmt } from "@/shared/lib/i18n";
 
 /**
- * Shown while the first page's code downloads (the pages load lazily, see routes.tsx).
+ * Shown while the first page's code downloads (Next.js loads each page's code on its own).
  * Most loads take a moment, so the spinner waits 300 ms before it appears: a fast load shows nothing at all,
  * instead of a spinner that flashes and is gone.
  */
-export function PageLoading() {
+export default function Loading() {
   const { tr } = useFmt();
   // false at first; becomes true after 300 ms (if this screen is still here).
   const [show, setShow] = useState(false);

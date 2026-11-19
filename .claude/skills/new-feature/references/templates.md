@@ -61,7 +61,7 @@ export const announcementsHttp: AnnouncementsApi = {
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
 export const announcementsApi: AnnouncementsApi =
-  import.meta.env.VITE_USE_MOCK === "true"
+  process.env.NEXT_PUBLIC_USE_MOCK === "true"
     ? lazyApi(() => import("./mock").then((m) => m.announcementsMock))
     : announcementsHttp;
 ```
@@ -204,11 +204,21 @@ export type * from "./types";
 
 ## 7. Route and menu
 
-`src/app/routes.tsx`, inside the `SignedInLayout` children:
+`src/app/(signed-in)/announcements/page.tsx` (the `(signed-in)` group gives it the sign-in check and the top bar):
 
 ```tsx
-{ path: "/announcements", lazy: () => import("@/features/announcements").then((m) => ({ Component: m.AnnouncementsPage })) },
+"use client";
+
+// app/ only routes: the page itself lives in its feature.
+import { AnnouncementsPage } from "@/features/announcements";
+
+export default AnnouncementsPage;
 ```
+
+A page with an id, `/announcements/5`: `src/app/(signed-in)/announcements/[id]/page.tsx`, the same one line, and the
+feature's page reads the id with `const id = Number(useParams().id);` (`import { useParams } from "next/navigation";`).
+A page that reads `?query` with `useSearchParams()` must be wrapped in `<Suspense>` in its `page.tsx` (see
+`src/app/login/page.tsx`).
 
 `src/shared/lib/access.ts`, in `NAV`: set `ready: true` on the `announcements` item (it is already in the menu,
 greyed out). For a new item, add `{ key, ar, en, href, roles, ready: true }`.

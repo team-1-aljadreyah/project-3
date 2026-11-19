@@ -1,8 +1,10 @@
 # dependencies
 /node_modules
 
-# build output (Vite)
-/dist/
+# build output (Next.js)
+/.next/
+/out/
+next-env.d.ts
 
 # tests
 /coverage

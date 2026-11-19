@@ -9,7 +9,7 @@ same calls as the real one (`src/features/*/api.ts`: paths, bodies, answers; sha
 clear, the matching function there is the exact behaviour the pages expect. The unit tests
 (`tests/unit/task-flow.test.ts`) list the rules one by one.
 
-Switching the site to the backend: `VITE_USE_MOCK=false` and `VITE_API_URL=https://api…`, then rebuild.
+Switching the site to the backend: `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC_API_URL=https://api…`, then rebuild.
 
 ---
 
@@ -17,7 +17,7 @@ Switching the site to the backend: `VITE_USE_MOCK=false` and `VITE_API_URL=https
 
 | Topic | What the site expects |
 |---|---|
-| Base URL | `{VITE_API_URL}/api/v1` + the paths below. JSON in, JSON out. |
+| Base URL | `{NEXT_PUBLIC_API_URL}/api/v1` + the paths below. JSON in, JSON out. |
 | Success | `{ "success": true, "data": … }` (the site reads `data`). |
 | Failure | `{ "success": false, "message": "نص للمستخدم", "code": "VALIDATION", "errors": { "field": "نص" } }` with the right HTTP status. `errors` keys are the form's field names (`title`, `blocked_reason`, `note`…): each shows under its field. |
 | Codes | `VALIDATION` 422 · `UNAUTHENTICATED` 401 · `FORBIDDEN` 403 · `NOT_FOUND` 404 · `BAD_STATE` 409 (not allowed in this state) · `RATE_LIMITED` 429. |
