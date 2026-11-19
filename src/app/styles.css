@@ -432,6 +432,11 @@ body {
   animation-delay: 0.55s;
 }
 
+/* The project manager's task calendar: a day off (the weekend) is hatched (pm-plan.tsx). */
+.day-off {
+  background-image: repeating-linear-gradient(135deg, transparent 0 7px, var(--line) 7px 8px);
+}
+
 /* The CEO's banner: a wine night sky, a rose glow on the horizon, small stars (ceo-hero.tsx draws the ridge). */
 .night-hero {
   color: #fff;

@@ -126,7 +126,8 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   window shows a live task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always
   at the top.
 - **The dashboard** (`/dashboard`) opens with a section made for each job (`src/features/reports/components`): the CEO
-  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`).
+  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the project manager gets a task calendar (the days around
+  today) and a board of every task in their projects (`PmPlan`).
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
 
 ## Documentation

@@ -10,6 +10,7 @@ import { useLoad } from "@/shared/lib/use-load";
 import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
+import { PmPlan } from "../components/pm-plan";
 import { totals } from "../compute";
 import { canSeeReports } from "../rules";
 
@@ -98,6 +99,9 @@ export function DashboardPage() {
           note={tr(`متأخرة ${num(o.bugs.late)} · حرجة ${num(o.bugs.critical_open)}`, `${o.bugs.late} late · ${o.bugs.critical_open} critical`)}
         />
       </div>
+
+      {/* The project manager: the task calendar and the board over all their projects. */}
+      {user.role === "pm" && <PmPlan today={o.today} people={people} />}
 
       <section aria-labelledby="attention-title" className="rounded-xl border border-line bg-card p-4">
         <h2 id="attention-title" className="mb-3 flex items-center gap-2 font-semibold">

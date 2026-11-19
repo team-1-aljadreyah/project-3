@@ -29,6 +29,17 @@ test("the CEO's dashboard opens with the night banner: the page's name, today's 
   await expect(page).toHaveURL(/\/reports$/);
 });
 
+test("the project manager's dashboard: the task calendar and the board over their projects; a card opens its task", async ({ page }) => {
+  await signInAs(page, /أحمد كريم/);
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { level: 1, name: "لوحة القيادة" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "تقويم المهام" }).getByText("اليوم")).toBeVisible();
+  const board = page.getByRole("region", { name: "كل المهام" });
+  for (const column of ["للتنفيذ", "قيد التنفيذ", "قيد المراجعة", "مكتملة"]) await expect(board.getByRole("list", { name: column })).toBeVisible();
+  await board.getByRole("list", { name: "قيد التنفيذ" }).getByRole("link").first().click();
+  await expect(page).toHaveURL(/\/tasks\/\d+$/);
+});
+
 test("reports: by project, by team and person (filter), by sprint with velocity; each table downloads as CSV", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/reports");
