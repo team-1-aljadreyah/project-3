@@ -4,6 +4,7 @@ import type { Announcement } from "@/features/announcements";
 import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
 import type { Message } from "@/features/chat";
+import type { Criteria, Review } from "@/features/performance";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
@@ -43,6 +44,9 @@ export interface MockDb {
   /** The last message each person has read in each chat. */
   chat_reads: { chat: string; user_id: number; last_id: number }[];
   templates: ProjectTemplate[];
+  /** The review criteria (set and approved by the CEO) and the performance reviews. */
+  criteria: Criteria;
+  reviews: Review[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** Each person's notification choices, by user id. */
@@ -50,7 +54,7 @@ export interface MockDb {
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number;
+    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number; review: number;
   };
 }
 
@@ -316,6 +320,29 @@ export function seed(now = new Date()): MockDb {
     data: { note: messages[5].body }, at: at(0, 10), read: false,
   });
 
+  // The review criteria, approved by the CEO: half counted from the tasks, half scored by the reviewer (the brief: a
+  // review must not rest on the number of tasks alone). Sara has two final reviews (her trend) from her team leader.
+  const criteria: Criteria = {
+    items: [
+      { id: "completion", name: "إنجاز المهام", name_en: "Tasks done", kind: "auto", metric: "completion", weight: 25 },
+      { id: "on_time", name: "الالتزام بالمواعيد", name_en: "On time", kind: "auto", metric: "on_time", weight: 25 },
+      { id: "quality", name: "جودة العمل", name_en: "Quality of work", kind: "manual", weight: 30 },
+      { id: "teamwork", name: "التعاون والتواصل", name_en: "Teamwork", kind: "manual", weight: 20 },
+    ],
+    approved_by: 1, approved_at: at(20), updated_at: at(21),
+  };
+  const pastReview = (id: number, from: number, to: number, perf: { done: number; assigned: number; on_time: number; late: number }, stars: [number, number], total: number, note: string): Review => ({
+    id, user_id: 5, reviewer_id: 4, period: { from: d(-from), to: d(-to) },
+    scores: { completion: Math.round((perf.done / perf.assigned) * 100), on_time: Math.round(perf.on_time * 100), quality: stars[0] * 20, teamwork: stars[1] * 20 },
+    criteria: structuredClone(criteria.items), total, note,
+    perf: { user_id: 5, team_id: 1, assigned: perf.assigned, done: perf.done, late: perf.late, blocked: 0, completion: perf.done / perf.assigned, on_time: perf.on_time },
+    state: "final", created_at: at(to - 1), finalized_at: at(to - 2),
+  });
+  const reviews: Review[] = [
+    pastReview(1, 120, 61, { done: 6, assigned: 8, on_time: 0.67, late: 2 }, [3, 4], 66, "بداية جيدة. تحتاج إلى تقدير المواعيد بدقة أكبر."),
+    pastReview(2, 60, 1, { done: 7, assigned: 8, on_time: 0.86, late: 1 }, [4, 4], 80, "تحسن واضح في الالتزام بالمواعيد وجودة الواجهات."),
+  ];
+
   // One project template, made by the PM: a mobile app in three phases, worked in sprints.
   const templates: ProjectTemplate[] = [{
     id: 1, name: "تطبيق جوال", description: "تحليل، ثم تطوير، ثم إطلاق في المتاجر.", from_project: "تطبيق المبيعات",
@@ -332,11 +359,11 @@ export function seed(now = new Date()): MockDb {
 
   return {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates,
+    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates, criteria, reviews,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
-      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length,
+      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length, review: reviews.length,
     },
   };
 }
