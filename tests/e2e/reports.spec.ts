@@ -51,6 +51,26 @@ test("the team leader's dashboard opens with the team's slide: the sphere's numb
   await expect(page.getByText("المشاريع النشطة")).toBeVisible();
 });
 
+test("the monitoring officer's dashboard: who is signed in, the summary cards, and every project against its plan with a filter and a search", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.goto("/dashboard");
+  const top = page.getByRole("region", { name: "لوحة القيادة" });
+  await expect(top.getByText("هدى ناصر")).toBeVisible();
+  await expect(page.getByText(/آخر تحديث للبيانات/)).toBeVisible();
+  await expect(page.getByText("المشاريع النشطة")).toBeVisible();
+  const list = page.getByRole("region", { name: "متابعة المشاريع" });
+  await expect(list.getByRole("link", { name: /منصة الحجز الإلكتروني/ })).toBeVisible();
+  await list.getByLabel("ابحث باسم المشروع").fill("المبيعات");
+  await expect(list.getByRole("link")).toHaveCount(1);
+  await list.getByLabel("ابحث باسم المشروع").fill("");
+  await list.getByLabel("اعرض المشاريع").selectOption({ label: "متأخرة عن الخطة" });
+  await expect(list.getByRole("link", { name: /تطبيق المبيعات/ })).toHaveCount(0);
+  // Every row opens its project.
+  await list.getByLabel("اعرض المشاريع").selectOption({ label: "كل المشاريع" });
+  await list.getByRole("link").first().click();
+  await expect(page).toHaveURL(/\/projects\/\d+$/);
+});
+
 test("reports: by project, by team and person (filter), by sprint with velocity; each table downloads as CSV", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/reports");

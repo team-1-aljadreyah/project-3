@@ -5,7 +5,7 @@ import { bugLateDays, isOpen, type Bug } from "@/features/bugs";
 import { countTasks, isDone, keysOfTone, lateDays, plannedRatio, sprintNumbers, type Project, type Sprint } from "@/features/projects";
 import type { Task } from "@/features/tasks";
 import type { StatusTone, Team, User } from "@/shared/api/types";
-import { today as dayFrom } from "@/shared/lib/utils";
+import { today as dayFrom, matches } from "@/shared/lib/utils";
 import type { BugCounts, Overview, PersonRow, ProjectRow, SprintRow, TeamRow } from "./types";
 
 /** How far behind the plan a project may be before it counts as "behind" (points of progress). */
@@ -230,4 +230,17 @@ export function teamShares(o: Pick<Overview, "people">, teamId?: number): TeamSh
   const review = sum((r) => r.in_review);
   const blocked = sum((r) => r.blocked);
   return { total: done + open, done, doing: Math.max(0, open - review - blocked), review, blocked, open, late: sum((r) => r.late) };
+}
+
+// ── Monitoring and evaluation: following every project against its plan ──
+
+export type FollowUpFilter = "all" | "behind" | "overdue" | "on-plan";
+
+/** The follow-up list: the projects a filter keeps, searched by name or code, the ones that need a decision first. */
+export function followUp(projects: ProjectRow[], filter: FollowUpFilter, query: string): ProjectRow[] {
+  const keep = (p: ProjectRow) => (filter === "behind" ? p.behind : filter === "overdue" ? p.overdue : filter === "on-plan" ? !p.behind && !p.overdue : true);
+  const needs = (p: ProjectRow) => Number(p.overdue || p.behind);
+  return projects
+    .filter((p) => keep(p) && matches(query, p.name, p.name_en, p.code))
+    .sort((a, b) => needs(b) - needs(a) || b.late - a.late);
 }

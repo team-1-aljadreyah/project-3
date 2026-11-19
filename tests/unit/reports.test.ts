@@ -1,7 +1,7 @@
 // The dashboard and reports: the counting (pure), the CSV helper, and the demo backend as different people.
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Project } from "@/features/projects/types";
-import { calendarDays, calendarPills, planColumns, planTasks, projectRow, teamShares, totals, velocity } from "@/features/reports/compute";
+import { calendarDays, calendarPills, followUp, planColumns, planTasks, projectRow, teamShares, totals, velocity } from "@/features/reports/compute";
 import type { SprintRow } from "@/features/reports/types";
 import type { Task } from "@/features/tasks/types";
 import { ApiError } from "@/shared/api/errors";
@@ -126,6 +126,24 @@ describe("the team leader's slide", () => {
   it("without a team it counts everyone; a team with no tasks is all zeros", () => {
     expect(teamShares({ people }).total).toBe(15);
     expect(teamShares({ people }, 7)).toEqual({ total: 0, done: 0, doing: 0, review: 0, blocked: 0, open: 0, late: 0 });
+  });
+});
+
+describe("following the projects (monitoring and evaluation)", () => {
+  const row = (id: number, name: string, over: Partial<ReturnType<typeof projectRow>> = {}) => ({ ...projectRow(project({ id, code: `PRJ-${id}`, name }), [], "2026-11-10"), behind: false, overdue: false, late: 0, ...over });
+  const rows = [row(1, "منصة الحجز"), row(2, "تطبيق المبيعات", { behind: true, late: 1 }), row(3, "حملة الشتاء", { overdue: true, late: 4 })];
+
+  it("the ones that need a decision come first, the most late tasks on top", () => {
+    expect(followUp(rows, "all", "").map((p) => p.id)).toEqual([3, 2, 1]);
+  });
+
+  it("the filter keeps one kind; the search reads the name and the code", () => {
+    expect(followUp(rows, "behind", "").map((p) => p.id)).toEqual([2]);
+    expect(followUp(rows, "overdue", "").map((p) => p.id)).toEqual([3]);
+    expect(followUp(rows, "on-plan", "").map((p) => p.id)).toEqual([1]);
+    expect(followUp(rows, "all", "المبيعات").map((p) => p.id)).toEqual([2]);
+    expect(followUp(rows, "all", "prj-3").map((p) => p.id)).toEqual([3]);
+    expect(followUp(rows, "on-plan", "المبيعات")).toEqual([]);
   });
 });
 

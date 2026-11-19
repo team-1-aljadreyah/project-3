@@ -475,6 +475,11 @@ body {
   animation: settle 0.7s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* The monitoring officer's banner: wine to mauve (monitor-summary.tsx draws the waves). */
+.wave-banner {
+  background: linear-gradient(115deg, #4a0828 0%, #7c0e44 48%, #aa5e7a 100%);
+}
+
 /* The CEO's banner: a wine night sky, a rose glow on the horizon, small stars (ceo-hero.tsx draws the ridge). */
 .night-hero {
   color: #fff;
