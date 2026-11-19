@@ -6,18 +6,19 @@
 /* The design (board D, 16 November 2026), recoloured on 19 November 2026 with the palette Yasser chose
    (colorhunt.co/palette/7c0e44aa5e7ad49a9af2dace): wine #7C0E44, mauve #AA5E7A, dusty rose #D49A9A, blush #F2DACE.
    Mauve is never used for text (too light on white): it draws the strong lines in dark mode.
-   A light blush page, wine-black text, ONE strong colour (wine) for actions, and a soft colour per task-status family
-   (kept as they were, so a status never looks like a button). Every text pair here is at least 4.5:1 (WCAG AA).
-   Every colour on the site comes from these tokens. */
+   A soft off-white page (since 19 November 2026: the blush page read as pink; off-white is close to white but easier on
+   the eyes than pure white), white cards, wine-black text, ONE strong colour (wine) for actions, blush for soft accents,
+   and a soft colour per task-status family (kept as they were, so a status never looks like a button). Every text pair
+   here is at least 4.5:1 (WCAG AA). Every colour on the site comes from these tokens. */
 :root {
-  --bg: #faf1ec;            /* page: a light blush (from #F2DACE) */
+  --bg: #f9f7f4;            /* page: a warm off-white, like paper (not pure white: less glare) */
   --card: #ffffff;          /* cards, the top bar */
-  --card-2: #fdf7f4;        /* inner boxes */
+  --card-2: #faf8f6;        /* inner boxes */
   --chip: #f2dace;          /* blush: neutral chips, empty bars */
-  --text: #2a1620;          /* wine-black ink (15:1 on the page) */
-  --muted: #6b5560;         /* second lines (6.1:1 on the page, 5.1:1 on blush) */
-  --faint: #7a6470;         /* placeholders (5.4:1 on white) */
-  --line: #ecd9d1;
+  --text: #2a1620;          /* wine-black ink (15.9:1 on the page) */
+  --muted: #6b5560;         /* second lines (6.3:1 on the page, 5.1:1 on blush) */
+  --faint: #7a6470;         /* placeholders (5.4:1 on white, 5.1:1 on the page) */
+  --line: #e9e3de;          /* a warm grey, no pink */
   --line-strong: #d49a9a;   /* dusty rose */
 
   --accent: #7c0e44;        /* wine: buttons, links, the active tab (white on it: 10.5:1) */
