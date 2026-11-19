@@ -9,13 +9,13 @@ import { setSession, useSession } from "@/shared/lib/session";
 import { Logo } from "@/shared/shell";
 import { BRAND } from "@/shared/lib/brand";
 import { cn } from "@/shared/lib/utils";
-import { Avatar, Button, Field, Input, LightRibbons, Reveal, errorText } from "@/shared/ui";
+import { Avatar, Button, Field, Input, LightRiver, Reveal, errorText } from "@/shared/ui";
 import { authApi } from "../api";
 import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview } from "../components/front-door";
 import { safeNext } from "../safe-next";
 
-/** The light strands behind the front door, in the brand palette: blush core → dusty rose → mauve → fading wine. */
-const RIBBON_COLORS: [string, string, string, string] = ["#f2dace", "#d49a9a", "#aa5e7a", "rgba(124, 14, 68, 0)"];
+/** The river of light down the side of the front door, in the brand palette: blush → dusty rose → mauve → fading wine. */
+const RIVER_COLORS: [string, string, string, string] = ["#f2dace", "#d49a9a", "#aa5e7a", "rgba(124, 14, 68, 0)"];
 
 interface Demo {
   accounts: User[];
@@ -81,12 +81,12 @@ export function LoginPage() {
   };
 
   return (
-    // The front door (19 November 2026): the ring counts the page in and folds into the logo, strands of light behind the
-    // page drop into a new shape as you scroll, a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
+    // The front door (19 November 2026): the ring counts the page in and folds into the logo, a wide river of light snakes
+    // across the page behind the content (it moves with the page as you scroll), a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the
     // sections settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
-    <main className="front-door relative min-h-dvh overflow-x-clip">
+    <main className="front-door relative min-h-dvh overflow-clip">
       <IntroRing target={logoRef} onLand={land} />
-      <LightRibbons colors={RIBBON_COLORS} />
+      <LightRiver colors={RIVER_COLORS} />
       <div className="relative z-10">
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-8">
@@ -99,7 +99,7 @@ export function LoginPage() {
       </header>
 
       <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pt-10 pb-20 sm:px-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:pt-16">
-        <div className="settle flex flex-col gap-6">
+        <div data-river="text" className="settle flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <span className="w-fit rounded-full border border-line bg-card/60 px-3 py-1 text-xs text-muted">{tr("منصة الشركة الداخلية", "The company's own platform")}</span>
             <h1 className="text-4xl leading-tight font-semibold sm:text-5xl">
@@ -107,7 +107,7 @@ export function LoginPage() {
             </h1>
             <p className="text-muted">{tr("المهام والدورات والمحادثات والتقارير وتقييم الأداء، لكل فريق في الشركة.", "Tasks, sprints, chat, reports and reviews, for every team in the company.")}</p>
           </div>
-            <div className="rounded-2xl border border-line bg-card/80 p-6 shadow-card backdrop-blur sm:p-8">
+            <div className="rounded-2xl border border-line bg-card/95 p-6 shadow-card sm:p-8">
               <h2 className="text-2xl font-semibold">{tr("تسجيل الدخول", "Sign in")}</h2>
               <p className="mt-1 text-sm text-muted">{tr("استخدم حسابك في الشركة.", "Use your company account.")}</p>
 
@@ -179,13 +179,20 @@ export function LoginPage() {
             )}
         </div>
         <div className="flex justify-center lg:justify-end">
-          <FlowWindow />
+          <div data-river="window" className="w-full max-w-[520px]">
+            <FlowWindow />
+          </div>
         </div>
       </section>
 
       <FlowPlate />
 
-      <section aria-label={tr("نظرة على المنصة", "A look at the platform")} className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-8 md:grid-cols-2">
+      {/* A wide gap between the two columns: the river of light runs down it. */}
+      <section
+        data-river="grid"
+        aria-label={tr("نظرة على المنصة", "A look at the platform")}
+        className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-8 md:grid-cols-2 md:gap-x-20"
+      >
         <WeekPreview />
         <HistoryPreview />
         <SprintMeter />
