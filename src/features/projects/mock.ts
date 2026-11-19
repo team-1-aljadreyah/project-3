@@ -284,6 +284,7 @@ export const projectsMock: ProjectsApi = {
     const s = db.sprints.find((x) => x.id === id);
     if (!s) return fail(404, "NOT_FOUND", "لم يُعثر على الدورة.", "Sprint not found.");
     manageable(user, s.project_id);
+    if (s.closed_at) return fail(409, "BAD_STATE", "انتهت هذه الدورة ولا يمكن تغييرها.", "This sprint has ended and can't change.");
     const before = `${s.name}: ${s.start} → ${s.end}`;
     Object.assign(s, checkSprint(input, s.project_id, id));
     log({ project_id: s.project_id, actor_id: user.id, kind: "sprint_changed", from: before, to: `${s.name}: ${s.start} → ${s.end}` });
@@ -297,12 +298,42 @@ export const projectsMock: ProjectsApi = {
     const s = db.sprints.find((x) => x.id === id);
     if (!s) return fail(404, "NOT_FOUND", "لم يُعثر على الدورة.", "Sprint not found.");
     manageable(user, s.project_id);
+    if (s.closed_at) return fail(409, "BAD_STATE", "انتهت هذه الدورة ولا يمكن تغييرها.", "This sprint has ended and can't change.");
     const used = db.tasks.filter((t) => t.sprint_id === id).length;
     if (used) return fail(409, "BAD_STATE", `في الدورة ${used} مهمة. انقلها أولاً.`, `The sprint still has ${used} task(s). Move them first.`);
     db.sprints = db.sprints.filter((x) => x.id !== id);
     log({ project_id: s.project_id, actor_id: user.id, kind: "sprint_removed", from: `${s.name}: ${s.start} → ${s.end}` });
     commit();
     return wait(undefined);
+  },
+
+  async closeSprint(id, input) {
+    const user = currentUser();
+    const db = getDb();
+    const s = db.sprints.find((x) => x.id === id);
+    if (!s) return fail(404, "NOT_FOUND", "لم يُعثر على الدورة.", "Sprint not found.");
+    const project = manageable(user, s.project_id);
+    if (s.closed_at) return fail(409, "BAD_STATE", "انتهت هذه الدورة ولا يمكن تغييرها.", "This sprint has ended and can't change.");
+    if (s.start > today()) return fail(409, "BAD_STATE", "لم تبدأ هذه الدورة بعد.", "This sprint hasn't started yet.");
+    const target = input.move_to === null ? undefined : db.sprints.find((x) => x.id === input.move_to);
+    if (input.move_to !== null && (!target || target.project_id !== s.project_id || target.id === id || target.closed_at)) {
+      invalid("move_to", "اختر دورة مفتوحة أخرى من هذا المشروع، أو قائمة الانتظار.", "Choose another open sprint of this project, or the backlog.");
+    }
+    // The brief: unfinished tasks need handling. Done tasks stay in the sprint; the rest move on, each with a line in its history.
+    const mine = db.tasks.filter((t) => t.sprint_id === id);
+    const left = mine.filter((t) => !isDone(project, t));
+    for (const t of left) {
+      t.sprint_id = target?.id;
+      db.events.push({ id: ++db.seq.event, task_id: t.id, actor_id: user.id, kind: "sprint", from: s.name, to: target?.name, at: nowIso() });
+    }
+    s.closed_at = nowIso();
+    s.result = { planned: mine.length, done: mine.length - left.length, moved: left.length, moved_to: target?.id };
+    log({
+      project_id: s.project_id, actor_id: user.id, kind: "sprint_closed", from: s.name, to: target?.name,
+      note: `${s.result.done}/${s.result.planned}`,
+    });
+    commit();
+    return wait({ ...s, planned_ratio: 1 });
   },
 
   async history(projectId) {

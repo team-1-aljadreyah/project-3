@@ -3,22 +3,28 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
-import { canManageProject, countTasks, PROJECT_STATE, projectsApi, type Project, type Sprint } from "@/features/projects";
+import { canManageProject, countTasks, currentSprint, isClosed, PROJECT_STATE, projectsApi, sprintNumbers, type Project, type Sprint } from "@/features/projects";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
-import { today as todayIso } from "@/shared/lib/utils";
+import { cn, today as todayIso } from "@/shared/lib/utils";
 import { AvatarStack, Button, ButtonLink, ErrorBox, LoadingBlock, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
 import { tasksApi } from "../api";
+import { Backlog } from "../components/backlog";
 import { Kanban } from "../components/kanban";
+import { SprintBoard } from "../components/sprint-board";
 import { TaskForm } from "../components/task-form";
 import { useMoveTask } from "../hooks/use-move-task";
 import { canManageTasks } from "../rules";
 import type { Task } from "../types";
 
-/** One project: its header, the sprint against the plan, what needs attention, the numbers, and the board. */
+/**
+ * One project: its header, the sprint against the plan, what needs attention, the numbers, and the board.
+ * Each project picks its board (the brief): a project that works in sprints gets the Scrum board (the sprint, the
+ * backlog, and all its tasks); the others get the Kanban board of all their tasks.
+ */
 export function BoardPage() {
   const id = Number(useParams().id);
   const load = useLoad(
@@ -44,6 +50,8 @@ export function BoardPage() {
   return <Board project={project} tasks={tasks} users={users} sprints={sprints} reload={load.reload} />;
 }
 
+type View = "sprint" | "backlog" | "all";
+
 function Board({ project, tasks, users, sprints, reload }: { project: Project; tasks: Task[]; users: User[]; sprints: Sprint[]; reload: () => void }) {
   const { tr, lang, pct, num, day } = useFmt();
   const user = useUser();
@@ -55,10 +63,17 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
   const shown = !phase ? tasks : tasks.filter((t) => (phase === "none" ? !t.phase_id : String(t.phase_id) === phase));
 
   const counts = countTasks(project, tasks, today);
-  // The sprint running today, if the project works in sprints.
-  const sprint = project.uses_sprints ? sprints.find((s) => s.start <= today && today <= s.end) : undefined;
-  const sprintTasks = sprint ? tasks.filter((t) => t.sprint_id === sprint.id) : [];
-  const sprintCounts = countTasks(project, sprintTasks, today);
+  // The open sprint the header follows, if the project works in sprints (an ended one shows on the Scrum board only).
+  const current = project.uses_sprints ? currentSprint(sprints, today) : undefined;
+  const sprint = current && !isClosed(current) ? current : undefined;
+  const sprintCounts = sprint ? sprintNumbers(project, sprint, tasks) : undefined;
+  const [view, setView] = useState<View>("sprint");
+  const views: { key: View; ar: string; en: string }[] = [
+    { key: "sprint", ar: "لوحة الدورة", en: "Sprint board" },
+    { key: "backlog", ar: "قائمة الانتظار", en: "Backlog" },
+    { key: "all", ar: "كل المهام", en: "All tasks" },
+  ];
+  const tab = project.uses_sprints ? view : "all";
   const members = users.filter((u) => project.member_ids.includes(u.id));
   const name = lang === "en" && project.name_en ? project.name_en : project.name;
   usePageTitle(name);
@@ -81,7 +96,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
           </h1>
         </div>
 
-        {sprint ? (
+        {sprint && sprintCounts ? (
           <div className="flex w-full flex-col gap-2 sm:w-[320px]">
             <div className="flex justify-between gap-3 text-[13px]">
               <span className="text-muted">
@@ -124,8 +139,27 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-base font-semibold">{tr("لوحة المهام", "Task board")}</h2>
-          {project.phases.length > 0 && (
+          {project.uses_sprints ? (
+            <div role="tablist" aria-label={tr("طريقة العرض", "View")} className="flex gap-1 rounded-full bg-chip p-1">
+              {views.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  role="tab"
+                  id={`view-${v.key}`}
+                  aria-controls="board-panel"
+                  aria-selected={tab === v.key}
+                  onClick={() => setView(v.key)}
+                  className={cn("rounded-full px-3 py-1.5 text-[13px] whitespace-nowrap", tab === v.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
+                >
+                  {tr(v.ar, v.en)}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <h2 className="text-base font-semibold">{tr("لوحة المهام", "Task board")}</h2>
+          )}
+          {project.phases.length > 0 && tab === "all" && (
             <Select aria-label={tr("عرض مرحلة", "Show a phase")} value={phase} onChange={(e) => setPhase(e.target.value)} className="h-9 w-auto">
               <option value="">{tr("كل المراحل", "All phases")}</option>
               {project.phases.map((ph) => (
@@ -163,7 +197,11 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
         </div>
       </div>
 
-      <Kanban project={project} tasks={shown} users={users} user={user} today={today} onMove={move} />
+      <div id="board-panel" role={project.uses_sprints ? "tabpanel" : undefined} aria-labelledby={project.uses_sprints ? `view-${tab}` : undefined}>
+        {tab === "sprint" && <SprintBoard project={project} sprints={sprints} tasks={tasks} users={users} user={user} today={today} onMove={move} reload={reload} />}
+        {tab === "backlog" && <Backlog project={project} sprints={sprints} tasks={tasks} users={users} user={user} reload={reload} />}
+        {tab === "all" && <Kanban project={project} tasks={shown} users={users} user={user} today={today} onMove={move} />}
+      </div>
 
       {dialog}
       <TaskForm

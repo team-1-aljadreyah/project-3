@@ -9,6 +9,7 @@ import type {
   ProjectPatch,
   ProjectSummary,
   Sprint,
+  SprintClose,
   SprintInput,
   StatusInput,
 } from "./types";
@@ -28,6 +29,8 @@ export interface ProjectsApi {
   createSprint(projectId: number, input: SprintInput): Promise<Sprint>;
   updateSprint(id: number, input: SprintInput): Promise<Sprint>;
   deleteSprint(id: number): Promise<void>;
+  /** Ends a sprint: its unfinished tasks move to another open sprint or back to the backlog. */
+  closeSprint(id: number, input: SprintClose): Promise<Sprint>;
   /** The project's history: who changed its setup, what and when. */
   history(projectId: number): Promise<ProjectEvent[]>;
 }
@@ -46,6 +49,7 @@ export const projectsHttp: ProjectsApi = {
   createSprint: (projectId, input) => data(http.post<Sprint>(`/projects/${projectId}/sprints`, input)),
   updateSprint: (id, input) => data(http.patch<Sprint>(`/sprints/${id}`, input)),
   deleteSprint: (id) => data(http.delete<void>(`/sprints/${id}`)),
+  closeSprint: (id, input) => data(http.post<Sprint>(`/sprints/${id}/close`, input)),
   history: (projectId) => data(http.get<ProjectEvent[]>(`/projects/${projectId}/history`)),
 };
 

@@ -40,8 +40,10 @@ function checkFields(project: Project, f: Partial<TaskPatch> & { title?: string 
     invalid("assignee_id", "المسؤول عن المهمة ليس من أعضاء المشروع.", "The assignee is not a member of the project.");
   }
   if (f.due && f.start && f.due < f.start) invalid("due", "موعد التسليم قبل تاريخ البدء.", "The due date is before the start date.");
-  if (f.sprint_id !== undefined && f.sprint_id !== null && !data().sprints.some((s) => s.id === f.sprint_id && s.project_id === project.id)) {
-    invalid("sprint_id", "الدورة ليست من هذا المشروع.", "The sprint is not in this project.");
+  if (f.sprint_id !== undefined && f.sprint_id !== null) {
+    const sprint = data().sprints.find((s) => s.id === f.sprint_id && s.project_id === project.id);
+    if (!sprint) invalid("sprint_id", "الدورة ليست من هذا المشروع.", "The sprint is not in this project.");
+    if (sprint?.closed_at) invalid("sprint_id", "انتهت هذه الدورة: اختر دورة مفتوحة.", "This sprint has ended: choose an open one.");
   }
   if (f.phase_id !== undefined && f.phase_id !== null && !project.phases.some((ph) => ph.id === f.phase_id)) {
     invalid("phase_id", "المرحلة ليست من هذا المشروع.", "The phase is not in this project.");
@@ -147,7 +149,14 @@ export const tasksMock: TasksApi = {
       if (kind === "due") notify([task.assignee_id], "task_due_changed", { ...about, data: { ...aboutTask(task, project), due: after === undefined ? undefined : String(after), note: p.due_note?.trim() || undefined } });
     }
     if (p.start !== undefined) task.start = p.start || undefined;
-    if (p.sprint_id !== undefined && project.uses_sprints) task.sprint_id = p.sprint_id;
+    if (p.sprint_id !== undefined && project.uses_sprints && (p.sprint_id ?? undefined) !== task.sprint_id) {
+      // In or out of a sprint (the Scrum board's backlog), with a line in the history: the sprints' names.
+      const name = (sid?: number) => data().sprints.find((s) => s.id === sid)?.name;
+      const sprintOfTask = data().sprints.find((s) => s.id === task.sprint_id);
+      if (sprintOfTask?.closed_at) invalid("sprint_id", "المهمة في دورة منتهية ولا تُنقل منها.", "The task is in an ended sprint and stays there.");
+      log({ task_id: id, actor_id: user.id, kind: "sprint", from: name(task.sprint_id), to: name(p.sprint_id ?? undefined) });
+      task.sprint_id = p.sprint_id ?? undefined;
+    }
     touch(task);
     commit();
     return wait(task);

@@ -50,6 +50,12 @@ function eventText(e: ProjectEvent, fmt: Fmt, people: Map<number, User>) {
       return tr(`عدّل دورة: ${days(e.to)}`, `changed a sprint: ${days(e.to)}`);
     case "sprint_removed":
       return tr(`حذف دورة: ${days(e.from)}`, `removed a sprint: ${days(e.from)}`);
+    case "sprint_closed":
+      // note = "done/planned"; to = the sprint the unfinished tasks went to (none = the backlog).
+      return tr(
+        `أنهى «${e.from ?? "-"}» (أُنجز ${e.note ?? "-"})، والمهام غير المنجزة ${e.to ? `إلى «${e.to}»` : "إلى قائمة الانتظار"}`,
+        `ended "${e.from ?? "-"}" (${e.note ?? "-"} done), unfinished tasks ${e.to ? `to "${e.to}"` : "to the backlog"}`,
+      );
     case "attachment_added":
       return tr(`أرفق الملف «${e.to ?? "-"}»`, `attached "${e.to ?? "-"}"`);
     case "attachment_removed":

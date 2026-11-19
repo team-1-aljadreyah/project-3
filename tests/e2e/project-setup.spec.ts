@@ -56,6 +56,8 @@ test("someone with open tasks can't be removed from the project; the message say
 test("the board shows one phase at a time", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/projects/1");
+  // Project 1 works in sprints: the phase filter is on the "all tasks" board.
+  await page.getByRole("tab", { name: "كل المهام" }).click();
   await expect(card(page, "TSK-118")).toBeVisible();
   await page.getByLabel("عرض مرحلة").selectOption({ label: "الإطلاق" });
   await expect(card(page, "TSK-092")).toBeVisible();

@@ -139,9 +139,9 @@ test("comments are added, and the history says who did what", async ({ page }) =
 test("the PM changes the due date with a reason; it shows in the history", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/projects/1");
-  await card(page, "TSK-121").click();
+  await card(page, "TSK-118").click();
   await page.getByRole("button", { name: "تعديل" }).click();
-  const dialog = page.getByRole("dialog", { name: /تعديل TSK-121/ });
+  const dialog = page.getByRole("dialog", { name: /تعديل TSK-118/ });
   await dialog.getByLabel("موعد التسليم").fill("2027-01-10");
   await dialog.getByLabel(/سبب تغيير موعد التسليم/).fill("أُضيف تقرير الفرق");
   await dialog.getByRole("button", { name: "احفظ" }).click();

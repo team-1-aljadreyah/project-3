@@ -46,6 +46,24 @@ export interface Sprint {
   end: string;
   /** Where the plan says the sprint should be today, 0–1 (for "64% done of 70% planned"). */
   planned_ratio: number;
+  /** When the sprint was ended. A closed sprint can't change and takes no new tasks. */
+  closed_at?: string;
+  /** Its numbers when it was ended (kept, because its unfinished tasks moved away). */
+  result?: SprintResult;
+}
+
+/** A sprint's final numbers: tasks in it when it ended, how many were done, how many moved on (and where). */
+export interface SprintResult {
+  planned: number;
+  done: number;
+  moved: number;
+  /** The sprint the unfinished tasks went to; none = back to the backlog. */
+  moved_to?: number;
+}
+
+/** Ending a sprint (the brief: unfinished tasks need handling): where its unfinished tasks go. null = the backlog. */
+export interface SprintClose {
+  move_to: number | null;
 }
 
 /** A new project. The server makes the code (PRJ-…) and starts it with the seven base statuses. */
@@ -98,6 +116,7 @@ export type ProjectEventKind =
   | "sprint_added"
   | "sprint_changed"
   | "sprint_removed"
+  | "sprint_closed"
   | "attachment_added"
   | "attachment_removed";
 
