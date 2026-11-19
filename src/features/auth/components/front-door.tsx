@@ -1,4 +1,4 @@
-// The front door's moving parts (the sign-in page): the ring that counts the page in, the stream of light, the tilting
+// The front door's moving parts (the sign-in page): the ring that counts the page in, the tilting
 // glass window with a live task, the plate that opens out of the logo, and the sections that settle into focus. Motion
 // is decoration only: everything works and reads the same with "reduce motion" (styles in app/styles.css).
 import { useEffect, useRef, useState } from "react";
@@ -68,15 +68,6 @@ export function IntroRing({ target, onLand }: { target: React.RefObject<HTMLElem
         </svg>
         <span className="num text-2xl font-semibold text-[#f2dace]">{count}</span>
       </div>
-    </div>
-  );
-}
-
-/** One stream of light down the whole page; its point follows the scroll (wide screens). */
-export function LightStream() {
-  return (
-    <div aria-hidden="true" className="stream max-lg:hidden">
-      <span className="stream-dot" />
     </div>
   );
 }
