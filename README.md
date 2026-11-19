@@ -125,6 +125,8 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   frosted glass over it (`Frost`: a blurred picture made once, not a live blur, so it stays smooth). A tilting glass
   window shows a live task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always
   at the top.
+- **The dashboard** (`/dashboard`) opens with a section made for each job (`src/features/reports/components`): the CEO
+  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`).
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
 
 ## Documentation

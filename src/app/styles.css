@@ -412,3 +412,51 @@ body {
     display: none;
   }
 }
+
+/* ── The role pages' banners (features/reports/components). Always dark, whatever the theme. ── */
+
+/* Words that arrive one after the other (the label, the headline, the numbers, the button). */
+.hero-in {
+  animation: settle 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.hero-in:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.hero-in:nth-child(2) {
+  animation-delay: 0.25s;
+}
+.hero-in:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.hero-in:nth-child(4) {
+  animation-delay: 0.55s;
+}
+
+/* The CEO's banner: a wine night sky, a rose glow on the horizon, small stars (ceo-hero.tsx draws the ridge). */
+.night-hero {
+  color: #fff;
+  background:
+    radial-gradient(55% 80% at 74% 100%, rgb(242 218 206 / 0.42) 0%, rgb(212 154 154 / 0.3) 22%, rgb(124 14 68 / 0.3) 48%, transparent 72%),
+    linear-gradient(180deg, #100910 0%, #1a0d17 42%, #34142a 100%);
+}
+.night-stars {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* One small tile of stars, repeated; they thin out toward the horizon. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='230'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='26' r='1' opacity='.9'/%3E%3Ccircle cx='74' cy='112' r='.7' opacity='.6'/%3E%3Ccircle cx='121' cy='44' r='1.2' opacity='.8'/%3E%3Ccircle cx='163' cy='171' r='.7' opacity='.5'/%3E%3Ccircle cx='205' cy='78' r='.9' opacity='.75'/%3E%3Ccircle cx='246' cy='18' r='.7' opacity='.55'/%3E%3Ccircle cx='289' cy='139' r='1.1' opacity='.85'/%3E%3Ccircle cx='322' cy='61' r='.7' opacity='.5'/%3E%3Ccircle cx='48' cy='196' r='.8' opacity='.6'/%3E%3Ccircle cx='138' cy='214' r='.6' opacity='.45'/%3E%3Ccircle cx='226' cy='203' r='.9' opacity='.7'/%3E%3Ccircle cx='96' cy='70' r='.6' opacity='.5'/%3E%3Ccircle cx='268' cy='96' r='.6' opacity='.45'/%3E%3Ccircle cx='310' cy='188' r='.7' opacity='.55'/%3E%3C/g%3E%3C/svg%3E");
+  mask-image: linear-gradient(to bottom, #000 25%, transparent 76%);
+}
+.night-stars-far {
+  background-position: 170px 115px;
+  background-size: 255px 172px;
+  animation: twinkle 4.5s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 0.8;
+  }
+}

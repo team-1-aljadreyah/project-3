@@ -9,6 +9,7 @@ import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
+import { CeoHero } from "../components/ceo-hero";
 import { totals } from "../compute";
 import { canSeeReports } from "../rules";
 
@@ -55,15 +56,27 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{tr("لوحة القيادة", "Dashboard")}</h1>
-          <p className="text-sm text-muted">{tr(`الأرقام حتى ${day(o.today)}، للمشاريع التي تراها.`, `Numbers up to ${day(o.today)}, for the projects you can see.`)}</p>
+      {/* Each job opens the page its own way. The CEO: a night banner with the page's name and today's numbers. */}
+      {user.role === "ceo" ? (
+        <CeoHero
+          date={day(o.today)}
+          numbers={[
+            { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active) },
+            { label: tr("الإنجاز", "Progress"), value: pct(t.ratio) },
+            { label: tr("مهام تأخرت", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0 },
+          ]}
+        />
+      ) : (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold">{tr("لوحة القيادة", "Dashboard")}</h1>
+            <p className="text-sm text-muted">{tr(`الأرقام حتى ${day(o.today)}، للمشاريع التي تراها.`, `Numbers up to ${day(o.today)}, for the projects you can see.`)}</p>
+          </div>
+          <ButtonLink href="/reports" variant="secondary" pill>
+            {tr("كل التقارير", "All reports")}
+          </ButtonLink>
         </div>
-        <ButtonLink href="/reports" variant="secondary" pill>
-          {tr("كل التقارير", "All reports")}
-        </ButtonLink>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat

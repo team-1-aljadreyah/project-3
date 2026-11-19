@@ -19,6 +19,16 @@ test("the CEO's dashboard: totals, projects that need a decision, teams, staff, 
   }
 });
 
+test("the CEO's dashboard opens with the night banner: the page's name, today's numbers and the way to the reports", async ({ page }) => {
+  await signInAs(page, /مريم العبيدي/);
+  await page.goto("/dashboard");
+  const banner = page.getByRole("region", { name: /لوحة القيادة/ });
+  await expect(banner.getByText("في مكان واحد.")).toBeVisible();
+  await expect(banner.getByText(/مشاريع نشطة/)).toBeVisible();
+  await banner.getByRole("link", { name: "كل التقارير" }).click();
+  await expect(page).toHaveURL(/\/reports$/);
+});
+
 test("reports: by project, by team and person (filter), by sprint with velocity; each table downloads as CSV", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/reports");
