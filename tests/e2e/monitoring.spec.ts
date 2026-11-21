@@ -75,3 +75,25 @@ test("an employee sends the CEO a request instead of a message; the CEO answers 
   await page.getByRole("button", { name: /محادثة خاصة جديدة/ }).click();
   await expect(page.getByRole("dialog").getByText("مريم العبيدي")).toHaveCount(0);
 });
+
+test("the monitoring officer builds a report from the numbers, adds her comments and sends it to the CEO", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /هدى ناصر/);
+  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "المتابعة" }).click();
+  await page.getByRole("link", { name: /تقرير بالأرقام/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "صانع التقارير" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "فريق" })).toHaveAttribute("aria-checked", "true");
+  await page.getByLabel("الفريق").selectOption({ label: "فريق التطوير" });
+  await page.getByRole("button", { name: "احسب الأرقام" }).click();
+  const report = page.getByRole("article", { name: "التقرير" });
+  // One row per member, each a link to the person's performance.
+  await expect(report.getByRole("link", { name: "سارة علي" })).toHaveAttribute("href", /\/performance\/5/);
+  await expect(page.getByLabel("نص التقرير")).toHaveValue(/كان لدى فريق التطوير/);
+  await page.getByLabel("ملاحظاتي وتوصياتي").fill("أقترح توزيع المهام المتأخرة على الفريق.");
+  await page.getByRole("button", { name: "احفظ وأرسل إلى المدير التنفيذي" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "المتابعة" })).toBeVisible();
+  const card = page.getByRole("list", { name: "ما كتبته" }).getByRole("article").filter({ hasText: "تقرير فريق التطوير" });
+  await expect(card.getByText("أُرسلت، لم تُفتح بعد")).toBeVisible();
+  await expect(card.getByLabel("أرقام التقرير")).toBeVisible();
+  await expect(card.getByText("أقترح توزيع المهام المتأخرة على الفريق.")).toBeVisible();
+});

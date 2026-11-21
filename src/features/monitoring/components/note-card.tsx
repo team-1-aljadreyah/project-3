@@ -3,7 +3,7 @@ import type { StatusTone } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import { Pill } from "@/shared/ui";
-import type { MonitorNote } from "../types";
+import type { MonitorNote, ReportFacts } from "../types";
 import { KIND } from "./note-dialog";
 
 const KIND_ICON = { report: FileText, feedback: MessageSquareHeart, problem: TriangleAlert, request: HandHelping };
@@ -16,6 +16,29 @@ export function ceoStateOf(note: MonitorNote): { ar: string; en: string; tone: S
   if (note.ceo_state === "done") return { ar: "أنجزها المدير التنفيذي", en: "Done by the CEO", tone: "done" };
   if (note.ceo_state === "seen") return { ar: "اطّلع عليها", en: "Seen", tone: "review" };
   return { ar: "أُرسلت، لم تُفتح بعد", en: "Sent, not opened yet", tone: "progress" };
+}
+
+/** A report's counted numbers, small, on its card (the monitoring officer's list and the CEO's inbox). */
+function ReportFigures({ facts: f }: { facts: ReportFacts }) {
+  const { tr, num, pct, day } = useFmt();
+  const items: { k: string; v: string; bad?: boolean }[] = [
+    { k: tr("الفترة", "Period"), v: `${day(f.period.from)} – ${day(f.period.to)}` },
+    { k: tr("المنجزة", "Done"), v: `${num(f.done)}/${num(f.assigned)} (${pct(f.completion)})` },
+    { k: tr("المتأخرة", "Late"), v: num(f.late), bad: f.late > 0 },
+    { k: tr("المتوقفة", "Blocked"), v: num(f.blocked), bad: f.blocked > 0 },
+    ...(f.planned !== null ? [{ k: tr("المتوقع حسب الخطة", "Planned"), v: pct(f.planned) }] : []),
+    { k: tr("أخطاء مفتوحة", "Open bugs"), v: num(f.bugs_open) },
+  ];
+  return (
+    <dl aria-label={tr("أرقام التقرير", "The report's numbers")} className="flex flex-wrap gap-2 text-xs">
+      {items.map((i) => (
+        <div key={i.k} className="flex gap-1.5 rounded-lg bg-card-2 px-2 py-1">
+          <dt className="text-muted">{i.k}</dt>
+          <dd className={cn("num font-medium", i.bad && "text-danger")}>{i.v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 /**
@@ -82,6 +105,7 @@ export function NoteCard({
           note.title
         )}
       </h3>
+      {note.facts && <ReportFigures facts={note.facts} />}
       {open && (
         <p dir="auto" className="text-sm leading-relaxed whitespace-pre-line text-muted">
           {note.body}

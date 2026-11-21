@@ -3,9 +3,11 @@
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
+import { today } from "@/shared/lib/utils";
 import type { MonitoringApi } from "./api";
 import { canSeeNote, canSendRequests, canSendToCeo, canUseCeoInbox, canWriteNotes, NOTE_LIMITS as L } from "./rules";
-import type { MonitorNote, NoteAbout } from "./types";
+import { countReport } from "./report";
+import type { MonitorNote, NoteAbout, ReportPeriod } from "./types";
 
 const newestFirst = (a: MonitorNote, b: MonitorNote) => (b.sent_at ?? b.created_at).localeCompare(a.sent_at ?? a.created_at);
 const ceos = () => getDb().users.filter((u) => u.active && u.role === "ceo").map((u) => u.id);
@@ -26,6 +28,26 @@ function aboutOf(about: Pick<NoteAbout, "type" | "id">): NoteAbout {
     about.type === "team" ? db.teams.find((t) => t.id === about.id) : about.type === "project" ? db.projects.find((p) => p.id === about.id) : db.users.find((u) => u.id === about.id && u.active);
   if (!found) return invalid("about", "اختر ما يخصّه.", "Choose what it is about.");
   return { type: about.type, id: found.id, label: found.name, label_en: found.name_en };
+}
+
+const isDay = (s: unknown) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+/** A report's numbers, counted now (the period is checked first). */
+function factsFor(about: NoteAbout, period: ReportPeriod) {
+  if (!isDay(period?.from) || !isDay(period?.to)) invalid("period", "اختر بداية الفترة ونهايتها.", "Choose the period's start and end.");
+  if (period.from > period.to) invalid("period", "بداية الفترة بعد نهايتها.", "The period starts after it ends.");
+  if (about.type === "general") invalid("about", "اختر فريقاً أو شخصاً أو مشروعاً.", "Choose a team, a person or a project.");
+  const db = getDb();
+  return countReport({
+    about,
+    period: { from: period.from, to: period.to },
+    today: today(),
+    users: db.users.filter((u) => u.active),
+    projects: db.projects,
+    tasks: db.tasks,
+    bugs: db.bugs,
+    counted_at: nowIso(),
+  });
 }
 
 function sendNow(note: MonitorNote, actorId: number) {
@@ -65,18 +87,22 @@ export const monitoringMock: MonitoringApi = {
       if (!u) return invalid("people_ids", "أحد الأشخاص غير موجود.", "One of the people doesn't exist.");
       return { id: u.id, label: u.name, label_en: u.name_en };
     });
+    if (input.period && input.kind !== "report") invalid("period", "الفترة للتقارير فقط.", "A period is for reports only.");
+    const about = aboutOf(input.about);
+    const facts = input.period ? factsFor(about, input.period) : undefined;
     const db = getDb();
     const note: MonitorNote = {
       id: ++db.seq.note,
       kind: input.kind,
       title,
       body,
-      about: aboutOf(input.about),
+      about,
       ...(input.kind === "feedback" ? { tone: input.tone === "praise" ? "praise" : "improve" } : {}),
       ...(subject ? { subject } : {}),
       ...(people.length ? { people } : {}),
       author_id: user.id,
       created_at: nowIso(),
+      ...(facts ? { facts } : {}),
     };
     if (input.send || request) sendNow(note, user.id);
     db.monitor_notes.push(note);
@@ -97,6 +123,13 @@ export const monitoringMock: MonitoringApi = {
     const user = currentUser();
     if (!canUseCeoInbox(user)) return fail(403, "FORBIDDEN", "هذا الوارد للمدير التنفيذي.", "This inbox is the CEO's.");
     return wait(getDb().monitor_notes.filter((n) => n.sent_at).sort(newestFirst));
+  },
+
+  async reportFacts(about, period) {
+    const user = currentUser();
+    if (!canWriteNotes(user)) return fail(403, "FORBIDDEN", "التقارير لمسؤول المتابعة والتقييم.", "Reports are for the monitoring officer.");
+    if (!["team", "person", "project"].includes(about?.type)) invalid("about", "اختر فريقاً أو شخصاً أو مشروعاً.", "Choose a team, a person or a project.");
+    return wait(factsFor(aboutOf(about), period));
   },
 
   async answer(id, answer) {

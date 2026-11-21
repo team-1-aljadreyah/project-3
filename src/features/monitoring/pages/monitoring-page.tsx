@@ -1,4 +1,5 @@
-import { FileText, MessageSquareHeart, Plus, Send, TriangleAlert } from "lucide-react";
+import { Calculator, FileText, MessageSquareHeart, Plus, Send, TriangleAlert } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { adminApi } from "@/features/admin";
 import { authApi } from "@/features/auth";
@@ -100,8 +101,17 @@ export function MonitoringPage() {
         </Button>
       </div>
 
-      {/* Three quick ways to start, one per kind. */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      {/* Quick ways to start: the report builder, then one per kind. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/monitoring/report" className="flex items-center gap-3 rounded-xl border border-accent bg-accent-soft p-4 text-start hover:bg-card">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-on-accent">
+            <Calculator size={19} aria-hidden="true" />
+          </span>
+          <span className="flex flex-col">
+            <span className="text-sm font-medium">{tr("تقرير بالأرقام", "A report with the numbers")}</span>
+            <span className="text-xs text-muted">{tr("صانع التقارير", "Report builder")}</span>
+          </span>
+        </Link>
         {starts.map((s) => (
           <button key={s.kind} type="button" onClick={() => setWriting(s.kind)} className="flex items-center gap-3 rounded-xl border border-line bg-card p-4 text-start hover:border-accent">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
