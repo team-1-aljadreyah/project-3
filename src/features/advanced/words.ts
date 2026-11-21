@@ -4,6 +4,7 @@ import type { Role } from "@/shared/api/types";
 import { ROLES } from "@/shared/lib/access";
 import type { Tr } from "@/shared/lib/i18n";
 import { ACTIONS, APPROVERS, CODE_KINDS, FEATURES, SEVERITY_WORDS, WEEK } from "./rules";
+import type { CustomRole } from "./types";
 
 const PRIORITY_WORDS: Record<string, [string, string]> = { high: ["عالية", "high"], medium: ["متوسطة", "medium"], low: ["منخفضة", "low"] };
 
@@ -53,6 +54,7 @@ export function keyName(key: string, tr: Tr): string {
     const f = FEATURES.find((x) => x.key === part);
     return f ? tr(`ميزة ${f.ar}`, `${f.en} feature`) : key;
   }
+  if (group === "roles") return tr("دور مخصص", "Custom role");
   if (group === "names") {
     const k = CODE_KINDS.find((x) => x.key === part);
     return k ? tr(`بادئة رموز ${k.ar}`, `${k.en} code prefix`) : key;
@@ -64,6 +66,13 @@ const roleList = (v: unknown[], tr: Tr) => (v.length ? v.map((r) => (ROLES[r as 
 
 /** A history value in words: on/off, jobs and days by name, the banner as its text. */
 export function showValue(key: string, v: unknown, tr: Tr): string {
+  if (key.startsWith("roles.")) {
+    // A role in words: «منسق مشاريع» · like an employee · 11 actions · 6 pages.
+    if (!v) return tr("لا يوجد", "None");
+    const r = v as CustomRole;
+    const base = ROLES[r.base];
+    return tr(`«${r.name}» · مثل ${base.ar} · أعمال: ${r.actions.length} · صفحات: ${r.pages.length}`, `"${r.name_en || r.name}" · like ${base.en.toLowerCase()} · actions: ${r.actions.length} · pages: ${r.pages.length}`);
+  }
   if (v === null || v === undefined || v === "") return key === "banner" ? tr("بلا إعلان", "None") : "-";
   if (typeof v === "boolean") return key.startsWith("features.") || key === "read_only.on" ? (v ? tr("مفعّل", "On") : tr("متوقف", "Off")) : v ? tr("نعم", "Yes") : tr("لا", "No");
   if (typeof v === "number") return key === "tasks.wip_limit" && v === 0 ? tr("بلا حد", "No limit") : String(v);

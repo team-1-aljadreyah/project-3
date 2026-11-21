@@ -5,7 +5,7 @@ import type { Project } from "@/features/projects";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { aboutProject, aboutTask, notify } from "@/mock/notify";
-import { codeOf } from "@/mock/site";
+import { codeOf, requireAction } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { TasksApi } from "./api";
@@ -134,6 +134,9 @@ export const tasksMock: TasksApi = {
     const user = currentUser();
     const { task, project } = taskFor(user, id);
     if (!canManageTasks(user, project)) return fail(403, "FORBIDDEN", "لا يحق لك تعديل هذه المهمة.", "You can't edit this task.");
+    // A custom role may have giving a task to someone else, or moving its due date, switched off.
+    if (patch.assignee_id !== undefined && (patch.assignee_id ?? undefined) !== task.assignee_id) requireAction(user, "reassign_task");
+    if (patch.due !== undefined && (patch.due || undefined) !== task.due) requireAction(user, "change_due");
     const p = { ...patch };
     checkFields(project, { ...p, start: p.start ?? task.start, due: p.due ?? task.due });
     joinProject(project, p.assignee_id, user.id);

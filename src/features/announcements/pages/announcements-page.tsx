@@ -5,6 +5,7 @@ import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
+import { useMay } from "@/shared/lib/site";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { Button, Empty, ErrorBox, LoadingBlock, Pill, Skeleton } from "@/shared/ui";
@@ -17,6 +18,8 @@ export function AnnouncementsPage() {
   const { tr, lang, ago, num } = useFmt();
   usePageTitle(tr("الإعلانات", "Announcements"));
   const user = useUser();
+  // A custom role (advanced settings) may have "post an announcement" switched off.
+  const may = useMay();
   const load = useLoad(() => Promise.all([announcementsApi.announcements(), authApi.users()]));
   const [posting, setPosting] = useState(false);
 
@@ -24,7 +27,7 @@ export function AnnouncementsPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-2xl font-semibold">{tr("الإعلانات", "Announcements")}</h1>
-        {canPostAnnouncements(user) && (
+        {canPostAnnouncements(user) && may(user, "post_announcement") && (
           <Button pill onClick={() => setPosting(true)}>
             <Plus size={16} aria-hidden="true" />
             {tr("إعلان جديد", "New announcement")}

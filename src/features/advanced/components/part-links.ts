@@ -1,8 +1,8 @@
 // The parts of the page, their addresses, and which part each setting belongs to.
 
-export type PartKey = "home" | "work" | "tasks" | "permissions" | "notify" | "features" | "security" | "names" | "announce" | "history";
+export type PartKey = "home" | "work" | "tasks" | "permissions" | "roles" | "notify" | "features" | "security" | "names" | "announce" | "history";
 
-export const PART_KEYS: PartKey[] = ["home", "work", "tasks", "permissions", "notify", "features", "security", "names", "announce", "history"];
+export const PART_KEYS: PartKey[] = ["home", "work", "tasks", "permissions", "roles", "notify", "features", "security", "names", "announce", "history"];
 
 /** The address of a part: /advanced?s=work (the home has none). */
 export const partHref = (p: PartKey) => (p === "home" ? "/advanced" : `/advanced?s=${p}`);

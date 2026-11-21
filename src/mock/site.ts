@@ -7,7 +7,7 @@ import type { NotificationKind } from "@/shared/api/notification-kinds";
 import { REQUIRED_NOTIFICATIONS } from "@/shared/api/notification-kinds";
 import type { Role, User } from "@/shared/api/types";
 import { isCeo } from "@/shared/lib/access";
-import type { FeatureKey } from "@/shared/lib/site";
+import type { ActionKey, FeatureKey } from "@/shared/lib/site";
 import { getDb } from "./db";
 import { fail } from "./helpers";
 
@@ -24,6 +24,25 @@ export function requireFeature(user: Pick<User, "role">, key: FeatureKey) {
 
 /** The code of a new record: the CEO's prefix (or the default) and its number: "TSK-1042". */
 export const codeOf = (kind: CodeKind, n: number | string) => `${getDb().advanced?.names?.[kind] || DEFAULT_PREFIX[kind]}-${n}`;
+
+/** The person's custom role, if they have one that still exists. */
+export const customRoleOf = (user: Pick<User, "custom_role">) => (user.custom_role ? getDb().advanced?.roles?.find((r) => r.key === user.custom_role) : undefined);
+
+/**
+ * A custom role's tick (advanced settings, «Jobs and roles»): someone whose role has this action off is refused with
+ * 403, even when their base job may. The CEO always may; people without a custom role are left to the feature's rules.
+ */
+export function roleMay(user: Pick<User, "role" | "custom_role">, action: ActionKey) {
+  if (isCeo(user)) return true;
+  const role = customRoleOf(user);
+  return !role || role.actions.includes(action);
+}
+
+export function requireAction(user: Pick<User, "role" | "custom_role">, action: ActionKey) {
+  if (roleMay(user, action)) return;
+  const role = customRoleOf(user)!;
+  fail(403, "FORBIDDEN", `دورك «${role.name}» لا يسمح بهذا العمل.`, `Your role "${role.name_en || role.name}" doesn't allow this.`);
+}
 
 /** Does this job get this kind of notification? Required kinds always; the rest as the CEO's table says (all by default). */
 export function jobGets(role: Role, kind: NotificationKind) {

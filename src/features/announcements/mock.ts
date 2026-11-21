@@ -4,7 +4,7 @@ import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
-import { requireFeature } from "@/mock/site";
+import { requireAction, requireFeature } from "@/mock/site";
 import type { AnnouncementsApi } from "./api";
 import { ANNOUNCEMENT_LIMITS as L, canManageAnnouncement, canPostAnnouncements } from "./rules";
 import type { Announcement } from "./types";
@@ -44,6 +44,7 @@ export const announcementsMock: AnnouncementsApi = {
     const user = currentUser();
     requireFeature(user, "announcements");
     if (!canPostAnnouncements(user)) return fail(403, "FORBIDDEN", "ينشر الإعلانات المدير التنفيذي ومسؤول النظام ومسؤول المتابعة.", "Announcements are posted by the CEO, the system admin and the monitoring officer.");
+    requireAction(user, "post_announcement");
     const title = input.title.trim();
     const body = input.body.trim();
     if (!title) invalid("title", "اكتب عنوان الإعلان.", "Enter the announcement's title.");

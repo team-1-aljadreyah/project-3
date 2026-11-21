@@ -4,6 +4,7 @@ import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
+import { useMay } from "@/shared/lib/site";
 import { useLoad } from "@/shared/lib/use-load";
 import { Button, ButtonLink, Empty, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { projectsApi } from "../api";
@@ -16,6 +17,8 @@ export function ProjectsPage() {
   const { tr } = useFmt();
   usePageTitle(tr("المشاريع", "Projects"));
   const user = useUser();
+  // A custom role (advanced settings) may have "create a project" switched off.
+  const may = useMay();
   const projects = useLoad(() => Promise.all([projectsApi.projects(), authApi.users()]));
   const [creating, setCreating] = useState(false);
 
@@ -28,7 +31,7 @@ export function ProjectsPage() {
             <p className="text-sm text-muted">{tr(`عدد المشاريع: ${projects.data[0].length}`, `Projects: ${projects.data[0].length}`)}</p>
           )}
         </div>
-        {canCreateProject(user) && projects.data && (
+        {canCreateProject(user) && may(user, "create_project") && projects.data && (
           <div className="flex flex-wrap items-center gap-2">
             <ButtonLink href="/templates" variant="secondary" pill>
               <Copy size={15} aria-hidden="true" />

@@ -8,6 +8,7 @@ import { updateSessionUser, useUser } from "@/shared/lib/session";
 import { Avatar, Button, Dialog, errorText, Field, Input, Select, useToast } from "@/shared/ui";
 import { adminApi } from "../api";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
+import { useSiteLive } from "@/shared/lib/site";
 import { isLocked, ROLE_KEYS } from "../rules";
 import type { AdminUser, UserInput } from "../types";
 
@@ -21,6 +22,7 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
     email: user?.email ?? "",
     phone: user?.phone ?? "",
     role: user?.role ?? "employee",
+    custom_role: user?.custom_role ?? null,
     title: user?.title ?? "",
     team_id: user?.team_id ?? null,
   });
@@ -30,6 +32,12 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
   const self = user?.id === me;
   const actor = useUser();
   const [confirmPicture, setConfirmPicture] = useState(false);
+  // The jobs the CEO made (advanced settings): choosing one keeps its base job as the role.
+  const roles = useSiteLive().roles ?? [];
+  const pick = (value: string) => {
+    const custom = roles.find((r) => `custom:${r.key}` === value);
+    setV((o) => (custom ? { ...o, role: custom.base, custom_role: custom.key } : { ...o, role: value as Role, custom_role: null }));
+  };
 
   const run = async (job: () => Promise<unknown>, done: string) => {
     setBusy(true);
@@ -87,12 +95,23 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
           <Input id="u-phone" type="tel" dir="ltr" value={v.phone} onChange={(e) => set("phone", e.target.value)} />
         </Field>
         <Field label={tr("الدور", "Role")} htmlFor="u-role" error={errors.role}>
-          <Select id="u-role" value={v.role} disabled={self} onChange={(e) => set("role", e.target.value as Role)}>
-            {ROLE_KEYS.map((r) => (
-              <option key={r} value={r}>
-                {tr(ROLE_WORDS[r].ar, ROLE_WORDS[r].en)}
-              </option>
-            ))}
+          <Select id="u-role" value={v.custom_role ? `custom:${v.custom_role}` : v.role} disabled={self} onChange={(e) => pick(e.target.value)}>
+            <optgroup label={tr("الوظائف", "Jobs")}>
+              {ROLE_KEYS.map((r) => (
+                <option key={r} value={r}>
+                  {tr(ROLE_WORDS[r].ar, ROLE_WORDS[r].en)}
+                </option>
+              ))}
+            </optgroup>
+            {roles.length > 0 && (
+              <optgroup label={tr("أدوار المدير التنفيذي", "The CEO's roles")}>
+                {roles.map((r) => (
+                  <option key={r.key} value={`custom:${r.key}`}>
+                    {tr(`${r.name} (مثل ${ROLE_WORDS[r.base].ar})`, `${r.name_en || r.name} (like ${ROLE_WORDS[r.base].en.toLowerCase()})`)}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </Select>
         </Field>
         <Field label={tr("المسمى الوظيفي", "Job title")} htmlFor="u-title" error={errors.title}>

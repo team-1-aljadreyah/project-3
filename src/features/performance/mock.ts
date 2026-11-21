@@ -4,7 +4,7 @@ import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
-import { requireFeature } from "@/mock/site";
+import { requireAction, requireFeature, roleMay } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import { today } from "@/shared/lib/utils";
@@ -69,7 +69,7 @@ export const performanceMock: PerformanceApi = {
       perf: perfOf(user, subject, period),
       blocked: blockedTasks(userId, db.tasks, visibleProjects(user)),
       reviews,
-      can_review: canReview(user, subject, db.projects),
+      can_review: canReview(user, subject, db.projects) && roleMay(user, "write_reviews"),
     });
   },
 
@@ -114,6 +114,7 @@ export const performanceMock: PerformanceApi = {
   async saveReview(input: ReviewInput, id?: number) {
     const user = currentUser();
     requireFeature(user, "reviews");
+    requireAction(user, "write_reviews");
     const db = getDb();
     const subject = db.users.find((u) => u.id === input.user_id);
     if (!subject || !canReview(user, subject, db.projects)) return fail(403, "FORBIDDEN", "لا يحق لك تقييم هذا الشخص.", "You can't review this person.");

@@ -4,7 +4,7 @@ import { chatMembers } from "@/mock/chat";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
-import { requireFeature } from "@/mock/site";
+import { requireAction, requireFeature } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import type { ChatApi } from "./api";
 import { CHAT_LIMITS as L, canCreateGroupChat, canManageGroupChat, chatKey, mayJoinGroup, parseKey, canStartDirect, canWriteInDirect } from "./rules";
@@ -149,6 +149,7 @@ export const chatMock: ChatApi = {
     requireFeature(user, "chat");
     requireFeature(user, "group_chats");
     if (!canCreateGroupChat(user)) fail(403, "FORBIDDEN", "لا يمكنك إنشاء مجموعة محادثة.", "You can't create a group chat.");
+    requireAction(user, "create_group_chat");
     const name = checkName(input.name);
     const others = checkPeople(input.member_ids, user.id);
     const db = getDb();

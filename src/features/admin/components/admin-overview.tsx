@@ -2,7 +2,7 @@ import { History, Lock, Network, UserCheck, Users, type LucideIcon } from "lucid
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { StatusTone } from "@/shared/api/types";
-import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import { useFmt } from "@/shared/lib/i18n";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
@@ -291,7 +291,7 @@ export function AdminOverview({ me }: { me: number }) {
                     <span className="truncate text-sm font-medium">{nameOf(u)}</span>
                     {/* A taller line than usual: a cut-off line would also cut the dots under the Arabic letters. */}
                     <span className="truncate text-xs leading-5 text-muted">
-                      {tr(ROLE_WORDS[u.role].ar, ROLE_WORDS[u.role].en)}
+                      {roleName(u, lang)}
                       {at && ` · ${ago(at)}`}
                     </span>
                   </span>

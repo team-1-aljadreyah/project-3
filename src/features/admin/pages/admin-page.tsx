@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ApiError } from "@/shared/api";
 import type { Team } from "@/shared/api/types";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useQueryParam } from "@/shared/lib/query-param";
@@ -109,7 +110,7 @@ function UsersTab({ me }: { me: number }) {
                   {u.email}
                 </span>
               </span>
-              <Pill tone="todo">{tr(ROLE_WORDS[u.role].ar, ROLE_WORDS[u.role].en)}</Pill>
+              <Pill tone="todo">{roleName(u, lang)}</Pill>
               <span className="text-xs text-muted">{teamName(u.team_id)}</span>
               {!u.active && <Pill tone="blocked">{tr("موقوف", "Stopped")}</Pill>}
               {isLocked(u, now) && (

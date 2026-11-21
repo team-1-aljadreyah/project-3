@@ -5,7 +5,7 @@ import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, msg, nowIso, wait } from "@/mock/helpers";
 import type { AdvancedApi } from "./api";
-import { canUseAdvancedSettings, changedRules, checkRules, diffRules, liveFor, rulesOf } from "./rules";
+import { canUseAdvancedSettings, changedRules, checkRules, diffRules, liveFor, peopleWithRole, rulesOf } from "./rules";
 import type { AdvancedData, AdvancedRules } from "./types";
 
 const HISTORY_KEPT = 300;
@@ -29,7 +29,8 @@ function answer(): AdvancedData {
 
 /** A setting's value as short text for the audit log. */
 const short = (v: unknown) => {
-  const s = v === null || v === undefined ? "-" : typeof v === "string" ? v : JSON.stringify(v);
+  const named = v && typeof v === "object" && "name" in v && "base" in v ? String((v as { name: string }).name) : null;
+  const s = v === null || v === undefined ? "-" : named ?? (typeof v === "string" ? v : JSON.stringify(v));
   return s.length > 80 ? `${s.slice(0, 80)}…` : s;
 };
 
@@ -52,9 +53,28 @@ export const advancedMock: AdvancedApi = {
       return fail(422, "VALIDATION", "صحّح الحقول المؤشرة بالأحمر.", "Fix the fields marked in red.", errors);
     }
     const db = getDb();
-    const changes = diffRules(current(), next);
+    const before = current();
+    const changes = diffRules(before, next);
     // Nothing really changed: no history line, no audit line (Project 2 wrote one anyway).
     if (!changes.length) return wait(answer());
+
+    // Custom roles: a role keeps its base job (its people's rules come from it), and a role still given to someone
+    // can't simply go: move them first. An import or a reset may drop it: its people go back to their base job.
+    for (const r of next.roles) {
+      const was = before.roles.find((x) => x.key === r.key);
+      if (was && was.base !== r.base) return fail(422, "VALIDATION", "لا تتغير الوظيفة التي يبدأ منها الدور.", "A role's base job can't change.", { [`roles.${r.key}.base`]: msg("لا تتغير الوظيفة التي يبدأ منها الدور.", "A role's base job can't change.") });
+    }
+    const gone = before.roles.filter((r) => !next.roles.some((x) => x.key === r.key));
+    const used = gone.map((r) => ({ r, n: peopleWithRole(db.users, r.key).length })).filter((x) => x.n > 0);
+    if (used.length && !how) {
+      return fail(
+        409,
+        "BAD_STATE",
+        `لا يُحذف دور ما زال لأشخاص: ${used.map((x) => `«${x.r.name}» (${x.n})`).join("، ")}. انقلهم إلى دور آخر أولاً.`,
+        `A role still given to people can't be removed: ${used.map((x) => `"${x.r.name_en}" (${x.n})`).join(", ")}. Move them to another role first.`,
+      );
+    }
+    for (const u of db.users) if (u.custom_role && gone.some((r) => r.key === u.custom_role)) delete u.custom_role;
 
     // The security numbers live in the administration's settings (one source); the rest is kept as differences only.
     const { due_soon_days, lock_after, lock_minutes, password_min } = next.security;
@@ -78,6 +98,6 @@ export const advancedMock: AdvancedApi = {
 
   async live() {
     const user = currentUser();
-    return wait(liveFor(current(), user.role));
+    return wait({ ...liveFor(current(), user.role), me: { role: user.role, ...(user.custom_role ? { custom_role: user.custom_role } : {}) } });
   },
 };

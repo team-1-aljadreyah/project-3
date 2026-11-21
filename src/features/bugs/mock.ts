@@ -4,7 +4,7 @@ import type { Project } from "@/features/projects";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
-import { codeOf, requireFeature } from "@/mock/site";
+import { codeOf, requireAction, requireFeature } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { BugsApi } from "./api";
@@ -68,6 +68,7 @@ export const bugsMock: BugsApi = {
     requireFeature(user, "bugs");
     const project = projectFor(user, projectId);
     if (!canReportBug(user, project)) return fail(403, "FORBIDDEN", "لا يحق لك تسجيل مشكلات في هذا المشروع.", "You can't report bugs in this project.");
+    requireAction(user, "report_bugs");
     const fields = { ...input };
     if (!fields.severity) invalid("severity", "اختر درجة الخطورة.", "Choose the severity.");
     // Only the managers choose the developer and the day when reporting; for others these are left empty.

@@ -12,6 +12,11 @@ export interface User {
   email: string;
   phone?: string;
   role: Role;
+  /**
+   * A job the CEO made (advanced settings): its key. `role` then holds the job it starts like, so every rule keeps
+   * working from it; the custom role can only take away (docs/backend.md section 17).
+   */
+  custom_role?: string;
   /** Job title shown under the name, e.g. "مطورة واجهات". */
   title: string;
   team_id?: number;

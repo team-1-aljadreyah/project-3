@@ -144,13 +144,15 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   of them to the CEO. Every other job sends the CEO requests at `/requests` (nobody starts a chat with the CEO). The CEO
   answers in `/inbox`: "To handle", and "Done", the archive kept to read again.
 - **Quick search** (`src/features/search`, Ctrl+K or the top bar): pages, projects, tasks, bugs, announcements and
-  people, only what the person may see (docs/backend.md section 19).
+  people, only what the person may see (docs/backend.md section 18).
 - **Links everywhere:** numbers, rows and names open their pages (a person's name only when the viewer may open their
   performance: `personHref` in `src/shared/lib/access.ts`). Tabs and filters live in the address (`useQueryParam`,
   e.g. `/reports?tab=people&team=1`, `/bugs?show=late`, `/inbox?show=done`), so a link opens a page already set.
 - **Advanced settings** (`/advanced`, the CEO only, `src/features/advanced`): every company rule in one page, like
   Project 2's: a side tree with a quick find (`?s=<part>` in the address; a short list on the phone), one draft for all
-  parts with «Changed» and the default beside each setting, a save bar, and the history, file and reset. What every
+  parts with «Changed» and the default beside each setting, a save bar, and the history, file and reset. «Jobs and
+  roles» lets the CEO make new jobs that start like an existing one and take away actions and menu pages; the admin
+  gives them to accounts (`User.custom_role`), and `roleName()` in `src/shared/lib/site.ts` shows their name everywhere. What every
   page obeys (features switched off, the banner, read-only mode) reaches the frame through `src/shared/lib/site.ts`;
   docs/backend.md section 17 says what is enforced now and what is saved for later.
 - **The account menu** (`src/shared/shell/account-menu.tsx`): the avatar at the end of the top bar opens a card with the
@@ -159,7 +161,7 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
 - **Profile pictures** (`src/features/profile`): every job sets, changes and removes their own picture from "My profile":
   pick a JPEG, PNG or WebP (or drop it on the window), drag and zoom it in a round crop, and the browser sends a small
   256×256 WebP. It shows wherever the person's avatar shows (`Avatar`, `src/shared/ui/avatar.tsx`; their first letter
-  when there is none). The admin and the CEO can remove a picture that is not appropriate (docs/backend.md section 20).
+  when there is none). The admin and the CEO can remove a picture that is not appropriate (docs/backend.md section 19).
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
   short greeting with the person's first name, job and the day lifts away into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
