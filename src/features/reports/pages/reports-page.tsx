@@ -9,7 +9,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
-import { cn } from "@/shared/lib/utils";
+import { cn, today as todayIso } from "@/shared/lib/utils";
 import { Button, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { velocity } from "../compute";
@@ -88,8 +88,8 @@ export function ReportsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold">{tr("التقارير", "Reports")}</h1>
-          {/* The line is there from the start (empty while loading), so nothing under it moves when the numbers come. */}
-          <p className="min-h-5 text-sm text-muted">{o ? tr(`حتى ${day(o.today)}، للمشاريع التي تراها.`, `Up to ${day(o.today)}, for the projects you can see.`) : " "}</p>
+          {/* The whole line is there from the start (today's date until the server's comes), so nothing under it moves. */}
+          <p className="text-sm text-muted">{tr(`حتى ${day(o?.today ?? todayIso())}، للمشاريع التي تراها.`, `Up to ${day(o?.today ?? todayIso())}, for the projects you can see.`)}</p>
         </div>
         <Button variant="secondary" pill onClick={csv} disabled={!o || (tab === "sprints" && !chosen)}>
           <Download size={15} aria-hidden="true" />
