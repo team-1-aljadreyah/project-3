@@ -43,9 +43,12 @@ const CHECKS: Record<string, () => boolean> = {
   canManageBugs: () => bugs.canManageBugs(ceo, project),
   // chat
   canCreateGroupChat: () => chat.canCreateGroupChat(ceo),
+  canStartDirect: () => chat.canStartDirect(ceo, someone),
+  canWriteInDirect: () => chat.canWriteInDirect(ceo, someone, false),
   canManageGroupChat: () => chat.canManageGroupChat(ceo, { created_by: 7 }),
   // monitoring
   canWriteNotes: () => monitoring.canWriteNotes(ceo),
+  canSendRequests: () => monitoring.canSendRequests(ceo),
   canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3 }),
   canSendToCeo: () => monitoring.canSendToCeo(ceo, { author_id: 3 }),
   canUseCeoInbox: () => monitoring.canUseCeoInbox(ceo),

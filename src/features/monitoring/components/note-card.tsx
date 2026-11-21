@@ -1,4 +1,4 @@
-import { FileText, FolderKanban, MessageSquareHeart, Send, TriangleAlert, User, Users } from "lucide-react";
+import { FileText, FolderKanban, HandHelping, MessageSquareHeart, Send, TriangleAlert, User, Users } from "lucide-react";
 import type { StatusTone } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -6,9 +6,9 @@ import { Pill } from "@/shared/ui";
 import type { MonitorNote } from "../types";
 import { KIND } from "./note-dialog";
 
-const KIND_ICON = { report: FileText, feedback: MessageSquareHeart, problem: TriangleAlert };
+const KIND_ICON = { report: FileText, feedback: MessageSquareHeart, problem: TriangleAlert, request: HandHelping };
 const ABOUT_ICON = { team: Users, person: User, project: FolderKanban, general: FileText };
-const KIND_TONE: Record<MonitorNote["kind"], StatusTone> = { report: "testing", feedback: "done", problem: "blocked" };
+const KIND_TONE: Record<MonitorNote["kind"], StatusTone> = { report: "testing", feedback: "done", problem: "blocked", request: "todo" };
 
 /** Where a note stands with the CEO, in words and a colour. */
 export function ceoStateOf(note: MonitorNote): { ar: string; en: string; tone: StatusTone } | null {

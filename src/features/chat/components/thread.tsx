@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -5,6 +6,7 @@ import { useLoad } from "@/shared/lib/use-load";
 import { ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { chatApi } from "../api";
 import type { ChatKey, Message } from "../types";
+import { canWriteInDirect } from "../rules";
 import { Composer } from "./composer";
 import { MessageItem } from "./message-item";
 
@@ -29,6 +31,9 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
   }, [chatKey, lastId, loaded]);
 
   const byId = new Map(messages?.map((m) => [m.id, m]));
+  // A private chat between an employee and the CEO: the employee answers only once the CEO has written (they send requests).
+  const other = members.find((u) => u.id !== me.id);
+  const readOnly = !!other && members.length === 2 && chatKey.startsWith("d-") && !canWriteInDirect(me, other, !!messages?.some((m) => m.author_id === other.id));
   const nameOf = (id: number) => {
     const u = people.get(id);
     return u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-";
@@ -55,7 +60,16 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
         )}
         <div ref={bottom} />
       </div>
-      <Composer chatKey={chatKey} members={members} me={me} replyTo={replyTo} replyName={replyTo && nameOf(replyTo.author_id)} onCancelReply={() => setReplyTo(undefined)} />
+      {readOnly ? (
+        <p className="border-t border-line bg-card-2 px-4 py-3 text-sm text-muted">
+          {tr("لا تُراسَل المديرة التنفيذية مباشرة. ", "You don't message the CEO directly. ")}
+          <Link href="/requests" className="font-medium text-accent-ink underline">
+            {tr("أرسل طلباً بدلاً من ذلك", "Send a request instead")}
+          </Link>
+        </p>
+      ) : (
+        <Composer chatKey={chatKey} members={members} me={me} replyTo={replyTo} replyName={replyTo && nameOf(replyTo.author_id)} onCancelReply={() => setReplyTo(undefined)} />
+      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 // The monitoring and evaluation officer's notes: written reports about teams and people, feedback on anyone, and
 // problems she raises. Any of them can be sent to the CEO, who reads them in her inbox, answers, and marks them done.
 
-/** A written report, feedback on a person, or a problem. */
-export type NoteKind = "report" | "feedback" | "problem";
+/** A written report, feedback on a person, or a problem (monitoring); a request to the CEO (employees). */
+export type NoteKind = "report" | "feedback" | "problem" | "request";
 
 /** What a note is about. `label` is a copy of the name when it was written (it stays right if the name changes). */
 export interface NoteAbout {

@@ -236,3 +236,18 @@ describe("group chats", () => {
     expect(g.created_by).toBe(1);
   });
 });
+
+describe("employees and the CEO", () => {
+  it("an employee can't open a private chat with the CEO; the CEO can, and then the employee may answer", async () => {
+    as(5);
+    expect((await fails(api.startDirect(1)))?.status).toBe(403);
+    as(1);
+    const c = await api.startDirect(5);
+    as(5);
+    expect((await fails(api.send(c.key, { body: "مرحباً" })))?.status).toBe(403);
+    as(1);
+    await api.send(c.key, { body: "كيف سير العمل؟" });
+    as(5);
+    expect((await api.send(c.key, { body: "جيد، شكراً." })).body).toBe("جيد، شكراً.");
+  });
+});

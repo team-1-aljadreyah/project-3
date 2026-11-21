@@ -45,6 +45,26 @@ describe("the rules", () => {
   });
 });
 
+describe("requests to the CEO", () => {
+  it("an employee sends a request about anything; it goes to the CEO at once, and her answer comes back", async () => {
+    as(5);
+    const r = await api.create({ kind: "request", subject: "إجازة", title: "إجازة يومين", body: "أحتاج إجازة يومي الأحد والإثنين.", about: { type: "general" } });
+    expect(r).toMatchObject({ kind: "request", subject: "إجازة", ceo_state: "new" });
+    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 1, kind: "note_sent", actor_id: 5 });
+    as(1);
+    expect((await api.inbox()).some((n) => n.id === r.id)).toBe(true);
+    await api.answer(r.id, { state: "done", reply: "موافقة." });
+    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 5, kind: "note_answered", data: { note_kind: "request" } });
+  });
+
+  it("a request needs a subject; other jobs don't send requests", async () => {
+    as(5);
+    expect((await fails(api.create({ kind: "request", title: "x", body: "y", about: { type: "general" } })))?.status).toBe(422);
+    as(2);
+    expect((await fails(api.create({ kind: "request", subject: "s", title: "x", body: "y", about: { type: "general" } })))?.status).toBe(403);
+  });
+});
+
 describe("the demo backend", () => {
   it("she writes a report about a team, a feedback on anyone, and a problem; each can go to the CEO, who is told", async () => {
     as(3);

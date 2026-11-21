@@ -13,12 +13,12 @@ import { canUseCeoInbox, NOTE_LIMITS as L } from "../rules";
 import type { MonitorNote } from "../types";
 
 /**
- * The CEO's inbox: everything monitoring sent (reports, feedback, problems), the new ones first. Opening one marks it
+ * The CEO's inbox: everything monitoring sent (reports, feedback, problems) and the employees' requests, the new first. Opening one marks it
  * seen; the CEO can answer (the writer is told) and mark it done.
  */
 export function CeoInboxPage() {
   const { tr, num, lang } = useFmt();
-  usePageTitle(tr("الوارد من المتابعة", "From monitoring"));
+  usePageTitle(tr("الوارد", "Inbox"));
   const user = useUser();
   const toast = useToast();
   const allowed = canUseCeoInbox(user);
@@ -80,7 +80,7 @@ export function CeoInboxPage() {
       <div className="flex flex-col gap-1">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
           <Inbox size={22} aria-hidden="true" className="text-accent-ink" />
-          {tr("الوارد من المتابعة", "From monitoring")}
+          {tr("الوارد", "Inbox")}
         </h1>
         <p className="text-sm text-muted">
           {waiting ? tr(`لم تفتحي بعد: ${num(waiting)}`, `Not opened yet: ${waiting}`) : tr("فتحتِ كل ما وصلك.", "You have opened everything.")}
@@ -88,7 +88,7 @@ export function CeoInboxPage() {
       </div>
 
       {notes.length === 0 ? (
-        <Empty title={tr("لا شيء وارد بعد", "Nothing has arrived yet")} body={tr("حين ترسل المتابعة تقريراً أو ملاحظة أو مشكلة، تظهر هنا.", "When monitoring sends a report, feedback or a problem, it shows here.")} />
+        <Empty title={tr("لا شيء وارد بعد", "Nothing has arrived yet")} body={tr("حين تُرسَل إليك تقارير المتابعة أو طلبات الموظفين، تظهر هنا.", "Monitoring's reports and the employees' requests show here.")} />
       ) : (
         <ul aria-label={tr("الوارد", "Inbox")} className="flex flex-col gap-3">
           {notes.map((n) => {

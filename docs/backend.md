@@ -124,7 +124,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 15 | `PUT` | `/projects/:projectId/github` | its pm, ceo | Save them |
 | 15 | `GET` | `/{tasks\|bugs}/:id/github` | see §2 | Linked pull requests and commits |
 | 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes (the CEO sees all) |
-| 16 | `POST` | `/monitoring/notes` | monitor, ceo | Write a report, feedback or a problem |
+| 16 | `POST` | `/monitoring/notes` | monitor, ceo; employee (requests only) | Write a report, feedback or a problem; an employee's request |
 | 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
 | 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done |
@@ -761,7 +761,16 @@ MonitorNote {
 
 - A note you may not see answers **404** (like one that doesn't exist). Validation errors are **422** with per-field
   messages (`title`, `body`, `about`, `kind`, `reply`) in Arabic and English, like every other form.
-- `note_sent` and `note_answered` are **required** notifications (nobody can turn them off).
+- `note_sent` and `note_answered` are **required** notifications (nobody can turn them off). `note_answered` carries
+  `data.note_kind` ("request" opens the Requests page).
+
+**Requests (employees):** employees don't message the CEO directly. They send a note with `kind: "request"`, a
+`subject` (required, anything) and `about: { type: "general" }`; it is sent to the CEO at once (as if `send: true`) and
+answered in `/ceo/inbox`. Other jobs: 403 for `kind: "request"`.
+
+**Private chats with the CEO:** `POST /chats/direct` with the CEO as the other person answers **403** for an `employee`.
+In a private chat between an employee and the CEO (the CEO may start one), the employee may send only after the CEO has
+written there (403 before).
 
 ## 17. Still open with the client
 

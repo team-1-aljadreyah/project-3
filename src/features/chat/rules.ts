@@ -16,6 +16,15 @@ export const chatKey = (kind: ChatKind, id: number): ChatKey => `${PREFIX[kind]}
 const GROUP_MAKERS: Role[] = ["monitor", "pm", "lead"];
 
 /** Who may make a group chat. */
+/**
+ * Start a private chat with someone. Employees don't write to the CEO directly (the client, 21 November 2026): they send
+ * a request instead (/requests), which the CEO answers in her inbox. The CEO may still start a chat with them.
+ */
+export const canStartDirect = (user: Pick<User, "role">, other: Pick<User, "role">) => isCeo(user) || !(user.role === "employee" && isCeo(other));
+
+/** Write in a private chat: always, except an employee with the CEO, who may answer only once the CEO has written. */
+export const canWriteInDirect = (user: Pick<User, "role">, other: Pick<User, "role">, otherHasWritten: boolean) => canStartDirect(user, other) || otherHasWritten;
+
 export function canCreateGroupChat(user: Pick<User, "role">) {
   return isCeo(user) || GROUP_MAKERS.includes(user.role);
 }

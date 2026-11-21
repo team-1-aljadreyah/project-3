@@ -5,6 +5,7 @@ import { useFmt } from "@/shared/lib/i18n";
 import { matches } from "@/shared/lib/utils";
 import { Avatar, Dialog, errorText, Input } from "@/shared/ui";
 import { chatApi } from "../api";
+import { canStartDirect } from "../rules";
 
 /** Choosing a colleague for a private chat. If the two already have one, it opens it; otherwise it starts one. */
 export function NewDirectDialog({ open, onClose, people, me }: { open: boolean; onClose: () => void; people: User[]; me: number }) {
@@ -13,7 +14,9 @@ export function NewDirectDialog({ open, onClose, people, me }: { open: boolean; 
   const [q, setQ] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
-  const shown = people.filter((u) => u.active && u.id !== me && matches(q, u.name, u.name_en, u.email));
+  const self = people.find((u) => u.id === me);
+  // Employees don't see the CEO here: they send her a request instead.
+  const shown = people.filter((u) => u.active && u.id !== me && (!self || canStartDirect(self, u)) && matches(q, u.name, u.name_en, u.email));
 
   const start = async (u: User) => {
     setBusy(true);

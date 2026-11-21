@@ -12,7 +12,10 @@ export const KIND: Record<NoteKind, { ar: string; en: string; hint_ar: string; h
   report: { ar: "تقرير", en: "Report", hint_ar: "عن فريق أو شخص أو مشروع", hint_en: "About a team, a person or a project" },
   feedback: { ar: "ملاحظة على شخص", en: "Feedback", hint_ar: "ثناء أو شيء يتحسن", hint_en: "Praise, or something to improve" },
   problem: { ar: "مشكلة", en: "Problem", hint_ar: "شيء يحتاج قراراً", hint_en: "Something that needs a decision" },
+  request: { ar: "طلب", en: "Request", hint_ar: "طلب إلى المدير التنفيذي", hint_en: "A request to the CEO" },
 };
+/** The kinds the monitoring officer writes (requests come from employees, on their own page). */
+const NOTE_KINDS: NoteKind[] = ["report", "feedback", "problem"];
 
 /**
  * Write a report (about a team, a person, a project or in general), feedback on anyone, or a problem. It can go to
@@ -132,7 +135,7 @@ export function NoteDialog({
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-sm font-medium">{tr("النوع", "Kind")}</legend>
           <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(KIND) as NoteKind[]).map((k) => (
+            {NOTE_KINDS.map((k) => (
               <label key={k} className={cn("flex cursor-pointer flex-col gap-0.5 rounded-xl border p-2.5 text-sm", kind === k ? "border-accent bg-accent-soft" : "border-line")}>
                 <input
                   type="radio"
