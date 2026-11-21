@@ -4,7 +4,7 @@ import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { MonitoringApi } from "./api";
-import { canSeeNote, canSendToCeo, canUseCeoInbox, canWriteNotes, NOTE_LIMITS as L } from "./rules";
+import { canSeeNote, canSendRequests, canSendToCeo, canUseCeoInbox, canWriteNotes, NOTE_LIMITS as L } from "./rules";
 import type { MonitorNote, NoteAbout } from "./types";
 
 const newestFirst = (a: MonitorNote, b: MonitorNote) => (b.sent_at ?? b.created_at).localeCompare(a.sent_at ?? a.created_at);
@@ -42,10 +42,14 @@ export const monitoringMock: MonitoringApi = {
 
   async create(input) {
     const user = currentUser();
-    if (!canWriteNotes(user)) return fail(403, "FORBIDDEN", "كتابة ملاحظات المتابعة لمسؤول المتابعة والتقييم.", "Monitoring notes are for the monitoring officer.");
+    const request = input.kind === "request";
+    if (request && !canSendRequests(user)) return fail(403, "FORBIDDEN", "الطلبات للموظفين.", "Requests are for employees.");
+    if (!request && !canWriteNotes(user)) return fail(403, "FORBIDDEN", "كتابة ملاحظات المتابعة لمسؤول المتابعة والتقييم.", "Monitoring notes are for the monitoring officer.");
     const title = input.title.trim();
     const body = input.body.trim();
-    if (!["report", "feedback", "problem"].includes(input.kind)) invalid("kind", "نوع غير معروف.", "Unknown kind.");
+    if (!["report", "feedback", "problem", "request"].includes(input.kind)) invalid("kind", "نوع غير معروف.", "Unknown kind.");
+    // A request is about anything, in the person's words: the subject is required, and it always goes to the CEO.
+    if (request && !input.subject?.trim()) invalid("subject", "اكتب عن ماذا طلبك.", "Write what your request is about.");
     if (!title) invalid("title", "اكتب عنواناً.", "Enter a title.");
     if (title.length > L.title) invalid("title", "العنوان أطول من المسموح.", "The title is too long.");
     if (!body) invalid("body", "اكتب النص.", "Enter the text.");
@@ -74,7 +78,7 @@ export const monitoringMock: MonitoringApi = {
       author_id: user.id,
       created_at: nowIso(),
     };
-    if (input.send) sendNow(note, user.id);
+    if (input.send || request) sendNow(note, user.id);
     db.monitor_notes.push(note);
     commit();
     return wait(note);
@@ -108,7 +112,7 @@ export const monitoringMock: MonitoringApi = {
     if (reply) {
       note.ceo_reply = reply;
       note.replied_at = nowIso();
-      notify([note.author_id], "note_answered", { actor_id: user.id, data: { title: note.title, note: reply } });
+      notify([note.author_id], "note_answered", { actor_id: user.id, data: { title: note.title, note: reply, note_kind: note.kind } });
     }
     commit();
     return wait(note);

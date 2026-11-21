@@ -37,8 +37,8 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   bug_status: { ar: "تغيير حالة مشكلة", en: "A bug's status changes", hint_ar: "لمن سجّلها والمطور ومدير المشروع.", hint_en: "For its reporter, developer and project manager." },
   bug_late: { ar: "تأخر إصلاح مشكلة", en: "A bug fix is late", hint_ar: "للمطور ومدير المشروع بعد الموعد المتوقع.", hint_en: "For the developer and the PM, after the expected day." },
   announcement: { ar: "إعلان جديد من الإدارة", en: "A new announcement", hint_ar: "عند نشر إعلان لكل الشركة.", hint_en: "When the management posts one for everyone." },
-  note_sent: { ar: "وارد من المتابعة", en: "Sent by monitoring", hint_ar: "للمدير التنفيذي: عند إرسال تقرير أو ملاحظة أو مشكلة إليه.", hint_en: "For the CEO: when a report, feedback or a problem is sent to you." },
-  note_answered: { ar: "رد المدير التنفيذي", en: "The CEO's answer", hint_ar: "لمسؤول المتابعة: عند رد المدير التنفيذي على ما أرسلته.", hint_en: "For monitoring: when the CEO answers what you sent." },
+  note_sent: { ar: "وارد إلى المدير التنفيذي", en: "Sent to the CEO", hint_ar: "للمدير التنفيذي: عند إرسال تقرير أو ملاحظة أو مشكلة أو طلب إليه.", hint_en: "For the CEO: when a report, feedback, a problem or a request is sent to you." },
+  note_answered: { ar: "رد المدير التنفيذي", en: "The CEO's answer", hint_ar: "عند رد المدير التنفيذي على ما أرسلته.", hint_en: "When the CEO answers what you sent." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
 };
 
@@ -127,7 +127,7 @@ export function notificationLink(n: Notification) {
   if (n.chat_key) return `/chat/${n.chat_key}`;
   if (n.kind === "review_final") return "/performance";
   if (n.kind === "note_sent") return "/inbox";
-  if (n.kind === "note_answered") return "/monitoring";
+  if (n.kind === "note_answered") return n.data.note_kind === "request" ? "/requests" : "/monitoring";
   if (n.kind === "account_locked") return "/admin";
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";

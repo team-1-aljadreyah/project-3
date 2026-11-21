@@ -6,7 +6,7 @@ import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { User } from "@/shared/api/types";
 import type { ChatApi } from "./api";
-import { CHAT_LIMITS as L, canCreateGroupChat, canManageGroupChat, chatKey, mayJoinGroup, parseKey } from "./rules";
+import { CHAT_LIMITS as L, canCreateGroupChat, canManageGroupChat, chatKey, mayJoinGroup, parseKey, canStartDirect, canWriteInDirect } from "./rules";
 import type { ChatKey, Conversation, Message } from "./types";
 
 /** The chat's members, if this person is one of them. Not a member answers like a chat that doesn't exist. */
@@ -81,6 +81,14 @@ export const chatMock: ChatApi = {
   async send(key, input) {
     const user = currentUser();
     const members = membersFor(user, key);
+    // An employee answers the CEO in a private chat only once the CEO has written there (they send requests instead).
+    if (key.startsWith("d-")) {
+      const other = getDb().users.find((u) => u.id !== user.id && members.includes(u.id));
+      const otherHasWritten = !!other && getDb().messages.some((m) => m.chat === key && m.author_id === other.id);
+      if (other && !canWriteInDirect(user, other, otherHasWritten)) {
+        return fail(403, "FORBIDDEN", "لا تُراسَل المديرة التنفيذية مباشرة: أرسل طلباً من صفحة «طلباتي».", "You don't message the CEO directly: send a request from the Requests page.");
+      }
+    }
     const body = input.body.trim();
     if (body.length > L.body) invalid("body", "الرسالة أطول من المسموح.", "The message is too long.");
     // An empty text is allowed only for a message that will carry a file (the page sends the file right after).
@@ -121,6 +129,7 @@ export const chatMock: ChatApi = {
     const db = getDb();
     const other = db.users.find((u) => u.id === userId && u.active);
     if (!other || other.id === user.id) return invalid("user_id", "اختر زميلاً آخر.", "Choose another person.");
+    if (!canStartDirect(user, other)) return fail(403, "FORBIDDEN", "لا تُراسَل المديرة التنفيذية مباشرة: أرسل طلباً من صفحة «طلباتي».", "You don't message the CEO directly: send a request from the Requests page.");
     // One private chat per pair of people: open the existing one if there is.
     let direct = db.directs.find((d) => d.member_ids.includes(user.id) && d.member_ids.includes(userId));
     if (!direct) {

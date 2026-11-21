@@ -2,4 +2,5 @@
 export { monitoringApi, type MonitoringApi } from "./api";
 export { CeoInboxPage } from "./pages/ceo-inbox-page";
 export { MonitoringPage } from "./pages/monitoring-page";
+export { RequestsPage } from "./pages/requests-page";
 export type * from "./types";

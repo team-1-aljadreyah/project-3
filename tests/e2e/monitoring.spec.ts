@@ -21,7 +21,7 @@ test("the monitoring officer writes feedback on someone and sends it to the CEO;
   await page.getByRole("button", { name: /مريم العبيدي/ }).click();
   // Signed in: the menu is there (signing in goes back to the page you were on).
   await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
-  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الوارد من المتابعة" }).click();
+  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الوارد", exact: true }).click();
   const inbox = page.getByRole("list", { name: "الوارد" });
   await inbox.getByRole("button", { name: "تعاون ممتاز مع الفريق" }).click();
   await page.getByLabel("ردك").fill("شكراً، سأشكره بنفسي.");
@@ -58,4 +58,20 @@ test("a problem can be about anything and involve any people", async ({ page }) 
   const card = page.getByRole("list", { name: "ما كتبته" }).getByRole("article").filter({ hasText: "الموافقات تتأخر" });
   await expect(card.getByText("الموافقات على الإجازات")).toBeVisible();
   await expect(card.getByText(/سارة علي، علي حسين/)).toBeVisible();
+});
+
+test("an employee sends the CEO a request instead of a message; the CEO answers it", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /سارة علي/);
+  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "طلباتي" }).click();
+  await page.getByRole("button", { name: "طلب جديد" }).click();
+  await page.getByLabel("عن ماذا").fill("جهاز العمل");
+  await page.getByLabel("العنوان").fill("حاسوب أسرع");
+  await page.getByLabel("الطلب").fill("حاسوبي بطيء في تشغيل الاختبارات.");
+  await page.getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
+  await expect(page.getByRole("list", { name: "طلباتي" }).getByText("حاسوب أسرع")).toBeVisible();
+  // The CEO is not in her list for a new private chat.
+  await page.goto("/chat");
+  await page.getByRole("button", { name: /محادثة خاصة جديدة/ }).click();
+  await expect(page.getByRole("dialog").getByText("مريم العبيدي")).toHaveCount(0);
 });
