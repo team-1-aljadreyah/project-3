@@ -3,11 +3,10 @@ import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
-import { Button, Dialog, Field, Input, errorText, useToast } from "@/shared/ui";
+import { Button, Dialog, Field, Input, errorText, useToast, PeoplePicker } from "@/shared/ui";
 import { chatApi } from "../api";
 import { CHAT_LIMITS as L, mayJoinGroup } from "../rules";
 import type { Conversation } from "../types";
-import { PeoplePicker } from "./people-picker";
 
 /**
  * Make a group chat (a name and the people in it), or, with `group`, rename one and change its members. The person

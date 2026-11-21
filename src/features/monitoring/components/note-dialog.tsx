@@ -3,7 +3,7 @@ import { ApiError } from "@/shared/api";
 import type { Team, User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
-import { Button, Dialog, Field, Input, Select, Textarea, errorText, useToast } from "@/shared/ui";
+import { Button, Dialog, Field, Input, PeoplePicker, Select, Textarea, errorText, useToast } from "@/shared/ui";
 import { monitoringApi } from "../api";
 import { NOTE_LIMITS as L } from "../rules";
 import type { MonitorNote, NoteInput, NoteKind } from "../types";
@@ -44,6 +44,8 @@ export function NoteDialog({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [tone, setTone] = useState<"praise" | "improve">("praise");
+  const [subject, setSubject] = useState("");
+  const [involved, setInvolved] = useState<number[]>([]);
   const [send, setSend] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string>();
@@ -59,6 +61,8 @@ export function NoteDialog({
       setTitle("");
       setBody("");
       setTone("praise");
+      setSubject("");
+      setInvolved([]);
       setSend(true);
       setErrors({});
       setFormError(undefined);
@@ -75,7 +79,16 @@ export function NoteDialog({
     if (!body.trim()) problems.body = tr("اكتب النص.", "Enter the text.");
     if (Object.keys(problems).length) return setErrors(problems);
     const [type, id] = about.split(":");
-    const input: NoteInput = { kind, title, body, about: { type: type as NoteInput["about"]["type"], id: id ? Number(id) : undefined }, send, ...(kind === "feedback" ? { tone } : {}) };
+    const input: NoteInput = {
+      kind,
+      title,
+      body,
+      about: { type: type as NoteInput["about"]["type"], id: id ? Number(id) : undefined },
+      send,
+      ...(kind === "feedback" ? { tone } : {}),
+      // A problem can be about anything (in her words) and involve anyone.
+      ...(kind === "problem" ? { subject, people_ids: involved } : {}),
+    };
     setBusy(true);
     setErrors({});
     setFormError(undefined);
@@ -139,7 +152,16 @@ export function NoteDialog({
           </div>
         </fieldset>
 
-        <Field label={kind === "feedback" ? tr("على من", "About whom") : tr("يخصّ", "About")} htmlFor="note-about" error={errors.about}>
+        {kind === "problem" && (
+          <Field label={tr("عن ماذا", "What it is about")} hint={tr("اكتب أي موضوع، بكلماتك.", "Any subject, in your own words.")} htmlFor="note-subject" error={errors.subject}>
+            <Input id="note-subject" dir="auto" maxLength={L.subject} value={subject} invalid={!!errors.subject} onChange={(e) => setSubject(e.target.value)} />
+          </Field>
+        )}
+        <Field
+          label={kind === "feedback" ? tr("على من", "About whom") : kind === "problem" ? tr("يخصّ فريقاً أو مشروعاً (اختياري)", "A team or project (optional)") : tr("يخصّ", "About")}
+          htmlFor="note-about"
+          error={errors.about}
+        >
           <Select id="note-about" value={about} invalid={!!errors.about} onChange={(e) => setAbout(e.target.value)}>
             {kind === "feedback" ? (
               <option value="">{tr("اختر شخصاً…", "Choose a person…")}</option>
@@ -173,6 +195,10 @@ export function NoteDialog({
             )}
           </Select>
         </Field>
+
+        {kind === "problem" && (
+          <PeoplePicker people={others} value={involved} onChange={setInvolved} error={errors.people_ids} legend={{ ar: "الأشخاص المعنيون", en: "People involved" }} />
+        )}
 
         {kind === "feedback" && (
           <fieldset className="flex gap-2">

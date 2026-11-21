@@ -6,6 +6,7 @@ export { ToastProvider } from "./toast";
 export { useToast } from "./use-toast";
 export { Pill, StatusPill, PriorityPill } from "./badges";
 export { Avatar, AvatarStack } from "./avatar";
+export { PeoplePicker } from "./people-picker";
 export { Skeleton, LoadingBlock, Empty, ErrorBox } from "./feedback";
 export { errorText } from "./error-text";
 export { ProgressBar } from "./progress";

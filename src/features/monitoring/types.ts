@@ -23,6 +23,10 @@ export interface MonitorNote {
   about: NoteAbout;
   /** Feedback only: praise or something to improve. */
   tone?: "praise" | "improve";
+  /** What it is about, in the writer's own words (problems: "about whatever she wants"). */
+  subject?: string;
+  /** The people it involves, any number, anyone in the company (names copied when written). */
+  people?: { id: number; label: string; label_en?: string }[];
   author_id: number;
   created_at: string;
   /** When it was sent to the CEO (missing: not sent). */
@@ -39,6 +43,8 @@ export interface NoteInput {
   body: string;
   about: Pick<NoteAbout, "type" | "id">;
   tone?: "praise" | "improve";
+  subject?: string;
+  people_ids?: number[];
   /** Send it to the CEO at once. */
   send?: boolean;
 }

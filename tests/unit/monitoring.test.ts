@@ -58,6 +58,15 @@ describe("the demo backend", () => {
     expect(sent.ceo_state).toBe("new");
   });
 
+  it("a problem can be about anything, in her words, and involve any people", async () => {
+    as(3);
+    const p = await api.create({ kind: "problem", title: "تأخر الموافقات", body: "نص", about: { type: "general" }, subject: "الموافقات على الإجازات", people_ids: [5, 6, 2] });
+    expect(p.subject).toBe("الموافقات على الإجازات");
+    expect(p.people?.map((x) => x.id)).toEqual([5, 6, 2]);
+    expect(p.people?.[0].label).toBe("سارة علي");
+    expect((await fails(api.create({ kind: "problem", title: "x", body: "y", about: { type: "general" }, people_ids: [999] })))?.status).toBe(422);
+  });
+
   it("feedback must be about a person other than herself; a title and a text are required", async () => {
     as(3);
     expect((await fails(api.create({ kind: "feedback", title: "x", body: "y", about: { type: "team", id: 1 } })))?.status).toBe(422);

@@ -744,6 +744,8 @@ MonitorNote {
   id, kind: "report" | "feedback" | "problem", title (≤160), body (≤5000),
   about: { type: "team" | "person" | "project" | "general", id?, label?, label_en? },   // label = a copy of the name
   tone?: "praise" | "improve",              // feedback only
+  subject? (≤120),                          // problems: what it is about, in her own words
+  people?: [{ id, label, label_en? }],      // problems: the people involved (≤30, anyone active; names copied)
   author_id, created_at,
   sent_at?, ceo_state?: "new" | "seen" | "done", ceo_reply? (≤2000), replied_at?
 }
@@ -752,7 +754,7 @@ MonitorNote {
 | Call | Who | Notes |
 |---|---|---|
 | `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers; the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
-| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, send? }`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. |
+| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. |
 | `POST /monitoring/notes/:id/send` | its writer, `ceo` | Sets `sent_at` = now and `ceo_state` = "new" (sending again brings it back to "new"). Notifies every active CEO: kind `note_sent`, `data.title`. |
 | `GET /ceo/inbox` | `ceo` | Every sent note, newest first. Others: **403**. |
 | `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again. |

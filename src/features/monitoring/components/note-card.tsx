@@ -57,6 +57,21 @@ export function NoteCard({
           {ago(note.sent_at ?? note.created_at)}
         </span>
       </header>
+      {(note.subject || note.people?.length) && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+          {note.subject && (
+            <span>
+              {tr("الموضوع", "Subject")}: <b dir="auto" className="font-medium text-text">{note.subject}</b>
+            </span>
+          )}
+          {!!note.people?.length && (
+            <span>
+              {tr("المعنيون", "Involved")}:{" "}
+              <b className="font-medium text-text">{note.people.map((p) => (lang === "en" && p.label_en ? p.label_en : p.label)).join(tr("، ", ", "))}</b>
+            </span>
+          )}
+        </p>
+      )}
       <h3 dir="auto" className="text-base font-semibold">
         {onToggle ? (
           // The button covers the whole card (click anywhere), and is what keyboards and screen readers use.
