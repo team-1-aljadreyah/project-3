@@ -1,6 +1,6 @@
 ---
 name: clean-copy-check
-description: Runs the Project 3 "clean copy" check before any push: a fresh clone of the branch with no .env, then npm ci, lint, type check, unit tests, a real build plus the no-demo check, a demo build and the browser tests, exactly like Jenkins. Use it every time a branch is about to be pushed, and whenever someone asks "is it ready", "run the checks", "will Jenkins pass", "check before PR", or wants to know why CI failed, even if they don't say "clean copy".
+description: Runs the Project 3 "clean copy" check before any push: a fresh clone of the branch with no .env, then npm ci, lint, type check, unit tests, a real build and a Cloudflare Pages build (plain files) plus the no-demo check, a demo build and the browser tests, exactly like Jenkins. Use it every time a branch is about to be pushed, and whenever someone asks "is it ready", "run the checks", "will Jenkins pass", "check before PR", or wants to know why CI failed, even if they don't say "clean copy".
 ---
 
 # Clean copy check

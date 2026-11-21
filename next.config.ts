@@ -1,8 +1,15 @@
 import type { NextConfig } from "next";
 
-// Next.js builds the site into .next/ and serves it with `npm run start` (a Node server).
+// Two ways to build the site:
+// - `npm run build` + `npm run start`: a Node server serves .next/ (Jenkins and the browser tests use this).
+// - `npm run build:static` (or STATIC_EXPORT=true): plain files in out/, for a static host such as Cloudflare Pages.
+//   The whole site runs in the browser (no server code), so nothing is lost. The pages with an id are built once and
+//   public/_redirects sends every id to them (see shared/lib/route-param.ts). docs/deploy-cloudflare.md has the steps.
 // The dev server (`npm run dev`) runs on port 3000; the browser tests serve the built site on 3100 (playwright.config.ts).
+const staticExport = process.env.STATIC_EXPORT === "true" || process.env.npm_lifecycle_event === "build:static";
+
 const nextConfig: NextConfig = {
+  ...(staticExport ? { output: "export" } : {}),
   // Don't tell visitors which framework serves the site.
   poweredByHeader: false,
   env: {

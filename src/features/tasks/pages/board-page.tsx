@@ -1,7 +1,6 @@
 import { Paperclip, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
 import { canManageProject, countTasks, currentSprint, isClosed, PROJECT_STATE, projectsApi, sprintNumbers, type Project, type Sprint } from "@/features/projects";
 import type { User } from "@/shared/api/types";
@@ -10,6 +9,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { AvatarStack, Button, ButtonLink, ErrorBox, LoadingBlock, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
 import { tasksApi } from "../api";
 import { Backlog } from "../components/backlog";
@@ -26,7 +26,7 @@ import type { Task } from "../types";
  * backlog, and all its tasks); the others get the Kanban board of all their tasks.
  */
 export function BoardPage() {
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("projects"));
   const load = useLoad(
     () => Promise.all([projectsApi.project(id), tasksApi.tasks(id), authApi.users(), projectsApi.sprints(id)]),
     [id],

@@ -1,0 +1,23 @@
+# Cloudflare Pages: the pages with an id are built once, for the id "_" (npm run build:static). These rules serve that
+# one page, and the small data files Next.js loads with it (__next.*.txt), for every id; the page reads the real id
+# from the address (src/shared/lib/route-param.ts).
+# "200" = show that file at the same address (no redirect). The first rule that matches wins.
+# Only used by the plain-files build; the Node server (npm run start) ignores this file.
+
+# A real page that would otherwise look like an id.
+/performance/criteria         /performance/criteria             200
+/performance/criteria/*       /performance/criteria/:splat      200
+
+# Everything under an id (/projects/5/settings, /projects/5/__next._tree.txt…), then the id's own page.
+/projects/:id/*               /projects/_/:splat                200
+/projects/:id                 /projects/_                       200
+/tasks/:id/*                  /tasks/_/:splat                   200
+/tasks/:id                    /tasks/_                          200
+/bugs/:id/*                   /bugs/_/:splat                    200
+/bugs/:id                     /bugs/_                           200
+/announcements/:id/*          /announcements/_/:splat           200
+/announcements/:id            /announcements/_                  200
+/performance/:id/*            /performance/_/:splat             200
+/performance/:id              /performance/_                    200
+/chat/:key/*                  /chat/_/:splat                    200
+/chat/:key                    /chat/_                           200

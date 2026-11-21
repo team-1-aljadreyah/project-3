@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useFmt } from "@/shared/lib/i18n";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { useUser } from "@/shared/lib/session";
 import { PersonView } from "../components/person-view";
 
@@ -8,7 +8,7 @@ import { PersonView } from "../components/person-view";
 export function PersonPage() {
   const { tr } = useFmt();
   const me = useUser();
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("performance"));
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
       <nav aria-label={tr("مسار الصفحة", "Breadcrumb")} className="text-[13px] text-muted">

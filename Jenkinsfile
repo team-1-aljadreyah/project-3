@@ -55,6 +55,14 @@ pipeline {
             }
         }
 
+        stage('Cloudflare Pages Build') {
+            steps {
+                // The same real site as plain files (out/), as Cloudflare Pages builds it; checked for demo data too.
+                sh 'NEXT_PUBLIC_USE_MOCK=false npm run build:static'
+                sh 'npm run check:no-demo'
+            }
+        }
+
         stage('Build') {
             steps {
                 // The demo build, for the browser tests below.

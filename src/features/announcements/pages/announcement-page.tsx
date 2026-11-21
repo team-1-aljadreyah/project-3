@@ -1,13 +1,14 @@
 import { Pin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { authApi } from "@/features/auth";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { Avatar, Button, Dialog, ErrorBox, LoadingBlock, Pill, Skeleton, errorText, useToast } from "@/shared/ui";
 import { announcementsApi } from "../api";
 import { canManageAnnouncement } from "../rules";
@@ -15,7 +16,7 @@ import type { Announcement } from "../types";
 
 /** One announcement. Opening it marks it seen. Its author and the management also see who has and hasn't seen it. */
 export function AnnouncementPage() {
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("announcements"));
   const load = useLoad(() => Promise.all([announcementsApi.announcement(id), authApi.users()]), [id]);
 
   if (load.state.status === "loading") {

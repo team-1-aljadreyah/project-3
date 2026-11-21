@@ -1,13 +1,13 @@
 import { ArrowRight, MessageSquarePlus, MessagesSquare } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { AvatarStack, Empty, ErrorBox, IconButton, LoadingBlock, Skeleton } from "@/shared/ui";
 import { chatApi } from "../api";
 import { ConversationList } from "../components/conversation-list";
@@ -22,7 +22,7 @@ import { chatTitle } from "../rules";
 export function ChatPage() {
   const { tr, lang, num } = useFmt();
   const me = useUser();
-  const { key } = useParams<{ key?: string }>();
+  const key = useRouteParam("chat");
   const load = useLoad(() => Promise.all([chatApi.conversations(), authApi.users()]));
   const [starting, setStarting] = useState(false);
 

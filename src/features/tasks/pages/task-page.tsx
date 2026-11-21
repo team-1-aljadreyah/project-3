@@ -1,7 +1,6 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { AttachmentsPanel } from "@/features/attachments";
 import { authApi } from "@/features/auth";
 import { GithubPanel } from "@/features/github";
@@ -12,6 +11,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { Avatar, Button, ErrorBox, Field, LoadingBlock, PriorityPill, Select, Skeleton, StatusPill } from "@/shared/ui";
 import { tasksApi } from "../api";
 import { ApprovalBanner } from "../components/approval-banner";
@@ -36,7 +36,7 @@ interface Loaded {
 
 /** One task: what it is, its status (with the brief's rules), the approval, the details, comments and history. */
 export function TaskPage() {
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("tasks"));
   const load = useLoad<Loaded>(async () => {
     // The task first: it says which project to load.
     const task = await tasksApi.task(id);
