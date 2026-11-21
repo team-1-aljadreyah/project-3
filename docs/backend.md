@@ -129,7 +129,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
 | 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
-| 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done |
+| 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done, or reopen |
+| 19 | `GET` | `/search?q=` | everyone | Quick search (Ctrl+K): projects, tasks, bugs, announcements, people |
 | 17 | `GET` | `/ceo/advanced` | ceo | The advanced settings in force (defaults merged in) |
 | 17 | `PUT` | `/ceo/advanced` | ceo | Save them (only what differs from the defaults; import, reset) |
 | 17 | `GET` | `/ceo/advanced/history` | ceo | Every save, from → to, newest first |
@@ -876,7 +877,25 @@ working days and hours, holidays, due days per priority, fix targets per severit
 past their target in working days), who approves a task, an employee reopening a task, the reason for a due date
 change, the in-progress limit, the whole «who may do what» table, and the shortest password.
 
-## 18. Still open with the client
+## 19. Quick search (Ctrl+K)
+
+The top bar has a search (also Ctrl+K / ⌘K, or "/"). It finds pages on its own (from the menu) and asks the server for
+the rest. `GET /search?q=` (signed in; `q` 2–80 characters, else **422** on `q`) answers:
+
+```text
+{ q, hits: [{ kind: "project" | "task" | "bug" | "announcement" | "person", id, title, title_en?, code?,
+              context?, context_en?,      // the project of a task or bug; a person's job title
+              role?, team_id? }] }        // people only: the page decides if the name opens their performance
+```
+
+- **Only what the person may see** (the same rules as the lists): the projects they may see; tasks and bugs in those
+  projects; announcements; active people. At most **8 of each kind**, best matches first.
+- Match on: project name (Arabic and English) and code; task title and code; bug title and code; announcement title and
+  text; person name (both languages), email and job title. Case and Arabic letter forms (أ إ آ ا, ة ه, ى ي) should not
+  matter, like the front end's `matches()` in `src/shared/lib/utils.ts`.
+- It is called while typing (after a 160 ms pause): keep it fast (an index on titles and codes, or Postgres full-text).
+
+## 20. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
