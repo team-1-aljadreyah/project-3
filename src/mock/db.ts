@@ -8,7 +8,7 @@ import { getToken } from "@/shared/lib/session";
 import { seed, type MockDb } from "./seed";
 
 const KEY = "p3.mock.db";
-const DB_VERSION = 18;
+const DB_VERSION = 19;
 
 let db: MockDb | null = null;
 /** The data as last saved, to drop a change the read-only mode refuses. */

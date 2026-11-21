@@ -15,6 +15,7 @@ import * as bugs from "@/features/bugs/rules";
 import * as chat from "@/features/chat/rules";
 import * as monitoring from "@/features/monitoring/rules";
 import * as performance from "@/features/performance/rules";
+import * as profile from "@/features/profile/rules";
 import * as projects from "@/features/projects/rules";
 import * as reports from "@/features/reports/rules";
 import * as tasks from "@/features/tasks/rules";
@@ -61,6 +62,8 @@ const CHECKS: Record<string, () => boolean> = {
   canReview: () => performance.canReview(ceo, someone, []),
   canSeePerson: () => performance.canSeePerson(ceo, someone, []),
   canSeeReview: () => performance.canSeeReview(ceo, { user_id: 7, reviewer_id: 4, state: "draft" }, someone, []),
+  // profile pictures (removing someone else's)
+  canRemovePicture: () => profile.canRemovePicture(ceo, someone),
   // projects
   canCreateProject: () => projects.canCreateProject(ceo),
   canManageProject: () => projects.canManageProject(ceo, project),

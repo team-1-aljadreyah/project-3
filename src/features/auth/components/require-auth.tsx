@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
-import { clearSession, useSession } from "@/shared/lib/session";
+import { clearSession, updateSessionUser, useSession } from "@/shared/lib/session";
 import { authApi } from "../api";
 
 /**
@@ -20,7 +20,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!signedIn) return;
-    authApi.me().catch((e) => {
+    // The server's copy is the fresh one (a new name, or a picture the admin removed): the top bar shows it.
+    authApi.me().then(updateSessionUser, (e) => {
       if (e instanceof ApiError && e.status === 401) clearSession();
     });
   }, [signedIn]);

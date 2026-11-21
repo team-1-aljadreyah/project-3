@@ -192,6 +192,21 @@ body {
   animation: settle 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* A small window opening from its button (the account menu): a quick fade and a slight grow. */
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.menu-pop {
+  animation: menu-pop 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 /* A section that settles when it scrolls into view (shared/ui/motion.tsx sets data-shown). Fade and slide only, no blur. */
 .reveal {
   opacity: 0;

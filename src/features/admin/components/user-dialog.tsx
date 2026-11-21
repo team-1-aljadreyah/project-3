@@ -1,8 +1,11 @@
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { canRemovePicture, profileApi } from "@/features/profile";
 import { ApiError } from "@/shared/api";
 import type { Role, Team } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
-import { Button, Dialog, errorText, Field, Input, Select, useToast } from "@/shared/ui";
+import { updateSessionUser, useUser } from "@/shared/lib/session";
+import { Avatar, Button, Dialog, errorText, Field, Input, Select, useToast } from "@/shared/ui";
 import { adminApi } from "../api";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
 import { isLocked, ROLE_KEYS } from "../rules";
@@ -25,6 +28,8 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof UserInput>(k: K, value: UserInput[K]) => setV((o) => ({ ...o, [k]: value }));
   const self = user?.id === me;
+  const actor = useUser();
+  const [confirmPicture, setConfirmPicture] = useState(false);
 
   const run = async (job: () => Promise<unknown>, done: string) => {
     setBusy(true);
@@ -104,6 +109,44 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
           </Select>
         </Field>
       </form>
+      {user?.avatar_url && canRemovePicture(actor, user) && (
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-sm">
+          <Avatar user={user} size="xl" />
+          {confirmPicture ? (
+            <div role="alert" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <p className="min-w-40 flex-1 text-danger">
+                {self
+                  ? tr("أتريد إزالة صورتك؟", "Remove your picture?")
+                  : tr(`أتريد إزالة صورة ${user.name}؟ سيظهر الحرف الأول من اسمه، ويُسجَّل ذلك في سجل العمليات.`, `Remove ${user.name_en ?? user.name}'s picture? Their initial shows instead, and the audit log records it.`)}
+              </p>
+              <Button size="sm" variant="secondary" disabled={busy} onClick={() => setConfirmPicture(false)}>
+                {tr("أبقِها", "Keep it")}
+              </Button>
+              <Button
+                size="sm"
+                className="bg-danger text-card hover:bg-danger hover:opacity-90"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    if (self) updateSessionUser(await profileApi.removeMyPicture());
+                    else await profileApi.removePictureOf(user.id);
+                  }, tr("أُزيلت الصورة.", "Picture removed."))
+                }
+              >
+                {tr("نعم، أزِلها", "Yes, remove it")}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Button size="sm" variant="secondary" className="text-danger" disabled={busy} onClick={() => setConfirmPicture(true)}>
+                <Trash2 size={15} aria-hidden="true" />
+                {tr("أزل الصورة", "Remove picture")}
+              </Button>
+              <span className="min-w-40 flex-1 text-xs text-muted">{tr("لصورة غير لائقة. يستطيع صاحبها وضع صورة جديدة.", "For a picture that is not appropriate. The person can set a new one.")}</span>
+            </>
+          )}
+        </div>
+      )}
       {user && (
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4 text-sm">
           {isLocked(user, new Date().toISOString()) && (

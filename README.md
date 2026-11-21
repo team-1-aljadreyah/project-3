@@ -77,6 +77,7 @@ src/
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
 │   ├── chat/         project, team, private and group chats: replies, @mentions, files, unread counts
 │   ├── performance/  per person and team over a period, review criteria (CEO), reviews and their trend
+│   ├── profile/      my profile and my picture: pick, crop, the small square the browser sends
 │   ├── reports/      the CEO dashboard and the reports (by project, team and person, sprint), CSV download
 │   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), sprint rules, templates, counts
 │   ├── bugs/         the bug tracker: report, the fix flow, reports
@@ -101,7 +102,7 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth`; `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
+Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth` and `profile` (`profile` uses no feature); `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
 `notifications` and `announcements` use `auth`. Never the other way, so there is no loop.
 
 **How data flows:**
@@ -152,6 +153,13 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   parts with «Changed» and the default beside each setting, a save bar, and the history, file and reset. What every
   page obeys (features switched off, the banner, read-only mode) reaches the frame through `src/shared/lib/site.ts`;
   docs/backend.md section 17 says what is enforced now and what is saved for later.
+- **The account menu** (`src/shared/shell/account-menu.tsx`): the avatar at the end of the top bar opens a card with the
+  person's picture (its camera changes it), name, job and email, two small switches for day/night and the language,
+  "My profile", "My performance" (not for the CEO and the admin), and signing out. It opens with a short fade and grow.
+- **Profile pictures** (`src/features/profile`): every job sets, changes and removes their own picture from "My profile":
+  pick a JPEG, PNG or WebP (or drop it on the window), drag and zoom it in a round crop, and the browser sends a small
+  256×256 WebP. It shows wherever the person's avatar shows (`Avatar`, `src/shared/ui/avatar.tsx`; their first letter
+  when there is none). The admin and the CEO can remove a picture that is not appropriate (docs/backend.md section 20).
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
   short greeting with the person's first name, job and the day lifts away into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
