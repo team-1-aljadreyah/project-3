@@ -65,8 +65,11 @@ describe("users", () => {
     expect((await fails(authMock.login("employee@demo.test", DEMO_PASSWORD)))?.status).toBe(403);
   });
 
-  it("only the admin runs this (403 for the CEO)", async () => {
+  it("the admin and the CEO run this (the CEO rule); other jobs get 403", async () => {
     as(1);
+    expect((await api.users()).length).toBeGreaterThan(0);
+    expect(await api.saveSettings({ due_soon_days: 2, lock_after: 5, lock_minutes: 15 })).toMatchObject({ due_soon_days: 2 });
+    as(2);
     expect((await fails(api.users()))?.status).toBe(403);
     expect((await fails(api.saveSettings({ due_soon_days: 2, lock_after: 5, lock_minutes: 15 })))?.status).toBe(403);
   });

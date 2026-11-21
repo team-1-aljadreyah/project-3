@@ -8,11 +8,11 @@ const booking = db.projects.find((p) => p.id === 1)!; // PM 2, members 2 4 5 6 7
 const task = (code: string) => db.tasks.find((t) => t.code === code)!;
 
 describe("who may do what with tasks", () => {
-  it("the project's PM and its team leaders manage tasks; others don't", () => {
+  it("the project's PM, its team leaders and the CEO manage tasks; others don't", () => {
     expect(canManageTasks(user(2), booking)).toBe(true); // PM
     expect(canManageTasks(user(4), booking)).toBe(true); // team leader, member
     expect(canManageTasks(user(5), booking)).toBe(false); // employee
-    expect(canManageTasks(user(1), booking)).toBe(false); // CEO: sees and approves, doesn't manage
+    expect(canManageTasks(user(1), booking)).toBe(true); // CEO: may do everything any job can (the CEO rule)
   });
 
   it("the CEO may approve; an employee may not", () => {

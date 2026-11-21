@@ -2,6 +2,14 @@
 // the judge: it must refuse what a job may not see (the brief: each person sees only their part).
 import type { Role, User } from "../api/types";
 
+/**
+ * THE CEO RULE (the client, 21 November 2026): the CEO may see and do everything any other job can, today and for
+ * everything added later, including the system admin's work. So every permission rule starts with `isCeo(user) ||`,
+ * and the menu shows the CEO every item (navFor). tests/unit/ceo-rule.test.ts fails when a new `can…` rule in a
+ * feature's rules.ts forgets the CEO. The one thing it does not open: other people's private one-to-one chats.
+ */
+export const isCeo = (user: Pick<User, "role">) => user.role === "ceo";
+
 /** The part of a project these rules need (any project-like object fits). */
 type Members = { pm_id: number; member_ids: number[] };
 
@@ -11,7 +19,7 @@ export const isMember = (user: Pick<User, "id">, project: Members) =>
 
 /** The brief: the CEO, M&E and the admin see every project; a PM the ones they run; others the ones they're in. */
 export function canSeeProject(user: Pick<User, "id" | "role">, project: Members) {
-  if (user.role === "ceo" || user.role === "monitor" || user.role === "admin") return true;
+  if (isCeo(user) || user.role === "monitor" || user.role === "admin") return true;
   return isMember(user, project);
 }
 
@@ -20,7 +28,7 @@ export function canSeeProject(user: Pick<User, "id" | "role">, project: Members)
  * in the projects feature) because the GitHub feature needs it too, and features may not import each other in a loop.
  */
 export function canManageProjectSetup(user: Pick<User, "id" | "role">, project: { pm_id: number }) {
-  return user.role === "ceo" || project.pm_id === user.id;
+  return isCeo(user) || project.pm_id === user.id;
 }
 
 /**
@@ -29,7 +37,7 @@ export function canManageProjectSetup(user: Pick<User, "id" | "role">, project: 
  */
 export function canTakePart(user: Pick<User, "id" | "role">, project: Members) {
   if (user.role === "admin") return false;
-  return user.role === "ceo" || user.role === "monitor" || isMember(user, project);
+  return isCeo(user) || user.role === "monitor" || isMember(user, project);
 }
 
 export const ROLES: Record<Role, { ar: string; en: string }> = {
@@ -68,8 +76,9 @@ export const NAV: NavItem[] = [
   { key: "audit", ar: "سجل العمليات", en: "Audit log", href: "/audit", roles: ["ceo", "admin"], ready: true },
 ];
 
+/** The menu of a job. The CEO sees every item, also the ones added later (the CEO rule above). */
 export function navFor(role: Role) {
-  return NAV.filter((n) => n.roles.includes(role));
+  return role === "ceo" ? NAV : NAV.filter((n) => n.roles.includes(role));
 }
 
 /** Which menu item a page belongs to: "/projects/3" → "projects". */
