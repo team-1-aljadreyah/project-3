@@ -150,3 +150,14 @@ test("the PM changes the due date with a reason; it shows in the history", async
   await expect(page.getByRole("tabpanel").getByText(/غيّر موعد التسليم/)).toBeVisible();
   await expect(page.getByRole("tabpanel").getByText("«أُضيف تقرير الفرق»")).toBeVisible();
 });
+
+test("a new task can be given to anyone in the company; someone outside the project joins it", async ({ page }) => {
+  await signInAs(page, /أحمد كريم/);
+  await page.getByRole("link", { name: /تطبيق المبيعات/ }).first().click();
+  await page.getByRole("button", { name: /مهمة جديدة/ }).click();
+  await page.getByLabel("العنوان").fill("مراجعة تصميم شاشة الطلبات");
+  await page.getByLabel("المسؤول عنها").selectOption({ label: "هدى ناصر" });
+  await expect(page.getByText("سيُضاف إلى أعضاء المشروع ويُبلَّغ.")).toBeVisible();
+  await page.getByRole("button", { name: /أضف|احفظ/ }).last().click();
+  await expect(page.getByText("مراجعة تصميم شاشة الطلبات").first()).toBeVisible();
+});

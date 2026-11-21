@@ -212,7 +212,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
           reload();
         }}
         project={project}
-        members={members}
+        members={users}
         sprints={sprints}
       />
     </div>
