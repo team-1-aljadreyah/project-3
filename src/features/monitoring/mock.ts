@@ -1,5 +1,5 @@
 // The demo backend for monitoring notes and the CEO's inbox, with the rules the real server must keep
-// (docs/backend.md, section 17). Only the demo build loads it (see ./api.ts).
+// (docs/backend.md, section 16). Only the demo build loads it (see ./api.ts).
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";

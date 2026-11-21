@@ -1,5 +1,5 @@
 // Who may write monitoring notes, send them to the CEO, and use the CEO's inbox. Pure functions: the pages use them to
-// show only what a person may do; the demo backend uses the SAME functions to refuse the rest (docs/backend.md, 17).
+// show only what a person may do; the demo backend uses the SAME functions to refuse the rest (docs/backend.md, 16).
 import type { User } from "@/shared/api/types";
 import { isCeo } from "@/shared/lib/access";
 import type { MonitorNote } from "./types";
