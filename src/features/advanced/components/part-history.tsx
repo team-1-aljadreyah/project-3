@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { useFmt } from "@/shared/lib/i18n";
 import { useLoad } from "@/shared/lib/use-load";
 import { Button, Dialog, Empty, ErrorBox, errorText, LoadingBlock, Pill, Skeleton, useToast } from "@/shared/ui";
+import { adminApi } from "@/features/admin";
 import { advancedApi } from "../api";
 import { changedRules, checkRules, DEFAULT_RULES, diffRules, rulesOf } from "../rules";
 import type { AdvancedRules, SaveHow, SettingsChange, SettingsFile } from "../types";
@@ -35,6 +36,7 @@ export function HistoryPart({ saved, dirty }: { saved: AdvancedRules; dirty: boo
   const { tr, lang, dateTime, ago } = useFmt();
   const toast = useToast();
   const h = useLoad(() => advancedApi.history());
+  const users = useLoad(() => adminApi.users());
   const file = useRef<HTMLInputElement>(null);
   const [incoming, setIncoming] = useState<{ name: string; rules: AdvancedRules } | null>(null);
   const [resetting, setResetting] = useState(false);
@@ -84,6 +86,15 @@ export function HistoryPart({ saved, dirty }: { saved: AdvancedRules; dirty: boo
 
   const incomingChanges = incoming ? diffRules(saved, incoming.rules) : [];
   const resetChanges = diffRules(saved, DEFAULT_RULES);
+  // Accounts whose custom role would go (a reset drops every role; an import drops the ones not in the file):
+  // they keep their base job.
+  const losing = (keep: { key: string }[]) => (users.data ?? []).filter((u) => u.active && u.custom_role && !keep.some((r) => r.key === u.custom_role));
+  const roleWarning = (n: number) =>
+    n > 0 ? (
+      <p role="alert" className="rounded-lg bg-(--st-review) px-3 py-2 text-[13px] text-(--st-review-ink)">
+        {tr(`تنبيه: ${n} من الحسابات لها أدوار ستُحذف، فتعود إلى وظيفتها الأساسية.`, `Heads-up: ${n} accounts have roles that will go; they go back to their base job.`)}
+      </p>
+    ) : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -169,6 +180,7 @@ export function HistoryPart({ saved, dirty }: { saved: AdvancedRules; dirty: boo
                 ? tr(`الملف «${incoming.name}» يغيّر إعدادات عددها ${incomingChanges.length}. يحلّ محل الإعدادات الحالية كلها، ويُكتب في السجل:`, `"${incoming.name}" changes ${incomingChanges.length} settings. It replaces all the current settings, and goes in the history:`)
                 : tr(`الملف «${incoming.name}» مطابق للإعدادات الحالية، فلا شيء يتغير.`, `"${incoming.name}" matches the current settings: nothing changes.`)}
             </p>
+            {roleWarning(losing(incoming.rules.roles).length)}
             {incomingChanges.length > 0 && (
               <div className="max-h-64 overflow-y-auto rounded-xl border border-line bg-card-2 px-4 py-2">
                 <ChangeLines changes={incomingChanges} />
@@ -200,6 +212,7 @@ export function HistoryPart({ saved, dirty }: { saved: AdvancedRules; dirty: boo
               `${resetChanges.length} settings return to how they first were, with the sign-in numbers of the administration; the banner goes and read-only mode stops. Download the settings file first to keep them.`,
             )}
           </p>
+          {roleWarning(losing([]).length)}
           <div className="max-h-56 overflow-y-auto rounded-xl border border-line bg-card-2 px-4 py-2">
             <ChangeLines changes={resetChanges} />
           </div>

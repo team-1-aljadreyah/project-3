@@ -2,7 +2,7 @@ import { Bug, Clock3, FolderKanban, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { User } from "@/shared/api/types";
-import { ROLES } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, ButtonLink, Input, Pill, ProgressBar, Select } from "@/shared/ui";
@@ -58,7 +58,7 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
             <Link href={`/performance/${user.id}`} className="truncate font-bold hover:underline">
               {lang === "en" && user.name_en ? user.name_en : user.name}
             </Link>
-            <span className="truncate text-sm text-muted">{tr(ROLES[user.role].ar, ROLES[user.role].en)}</span>
+            <span className="truncate text-sm text-muted">{roleName(user, lang)}</span>
           </div>
           <ButtonLink href="/reports" variant="secondary" pill>
             {tr("كل التقارير", "All reports")}

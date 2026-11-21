@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/shared/ui";
-import { ROLES } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import { resetDemoData } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { clearSession } from "@/shared/lib/session";
@@ -126,7 +126,7 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
   };
 
   const name = lang === "en" && user.name_en ? user.name_en : user.name;
-  const role = tr(ROLES[user.role].ar, ROLES[user.role].en);
+  const role = roleName(user, lang);
   // "My performance": the jobs whose own work is counted (not the CEO, not the system admin).
   const hasOwnPerformance = user.role !== "ceo" && user.role !== "admin";
 

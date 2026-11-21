@@ -16,6 +16,8 @@ export interface UserInput {
   email: string;
   phone?: string;
   role: Role;
+  /** A job the CEO made (its key): `role` then becomes the job it starts like. null = none. */
+  custom_role?: string | null;
   title: string;
   /** null = no team. */
   team_id?: number | null;

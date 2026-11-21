@@ -36,7 +36,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 7 | Administration, the audit log, sign-in locking | 14 | run the platform |
 | 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
 | 9 | The CEO's advanced settings and what they switch | 17 | let the CEO run the rules without a developer |
-| 10 | Profile pictures | 20 | let everyone put a face to their name |
+| 10 | Profile pictures | 19 | let everyone put a face to their name |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -52,9 +52,9 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 1 | `POST` | `/auth/login` | anyone | Sign in → `{ token, user }` |
 | 1 | `GET` | `/me` | signed in | The signed-in person |
 | 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`) for pickers and avatars |
-| 20 | `PUT` | `/me/avatar` | signed in (only yourself) | Set or replace my picture (`multipart/form-data`, field `file`) → the updated `User` |
-| 20 | `DELETE` | `/me/avatar` | signed in (only yourself) | Remove my picture → the updated `User` |
-| 20 | `DELETE` | `/users/:id/avatar` | admin, ceo | Remove someone's picture that is not appropriate → that `User` |
+| 19 | `PUT` | `/me/avatar` | signed in (only yourself) | Set or replace my picture (`multipart/form-data`, field `file`) → the updated `User` |
+| 19 | `DELETE` | `/me/avatar` | signed in (only yourself) | Remove my picture → the updated `User` |
+| 19 | `DELETE` | `/users/:id/avatar` | admin, ceo | Remove someone's picture that is not appropriate → that `User` |
 | 5 | `GET` | `/projects` | see §2 | Projects this person may see, with counts |
 | 5 | `GET` | `/projects/:id` | see §2 | One project with its statuses, phases, members |
 | 6 | `POST` | `/projects` | ceo, pm | Create a project (a pm becomes its manager) |
@@ -117,7 +117,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 13 | `POST` | `/reviews/:id/finalize` | its reviewer, ceo | Make it final (the person is told) |
 | 14 | `GET` | `/admin/users` | admin, ceo | Accounts with their sign-in state |
 | 14 | `POST` | `/admin/users` | admin, ceo | Add an account |
-| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock |
+| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock; give or clear a custom role (`custom_role`, §17.1) |
 | 14 | `GET` | `/teams` | signed in | Teams |
 | 14 | `POST` | `/admin/teams` | admin, ceo | Add a team |
 | 14 | `PATCH` | `/admin/teams/:id` | admin, ceo | Change a team |
@@ -134,11 +134,12 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
 | 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done, or reopen |
-| 19 | `GET` | `/search?q=` | everyone | Quick search (Ctrl+K): projects, tasks, bugs, announcements, people |
+| 18 | `GET` | `/search?q=` | everyone | Quick search (Ctrl+K): projects, tasks, bugs, announcements, people |
 | 17 | `GET` | `/ceo/advanced` | ceo | The advanced settings in force (defaults merged in) |
 | 17 | `PUT` | `/ceo/advanced` | ceo | Save them (only what differs from the defaults; import, reset) |
 | 17 | `GET` | `/ceo/advanced/history` | ceo | Every save, from → to, newest first |
-| 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode |
+| 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode, the custom roles, their own job (`me`) |
+| 17.1 | `PUT` | `/ceo/advanced` (`rules.roles`) | ceo | Make, change, copy or remove the CEO's custom roles (a role in use can't be removed: 409) |
 
 ### Who may do what (summary)
 
@@ -272,7 +273,7 @@ Every change updates the task's `updated_at`.
 | `POST /auth/login` | anyone | `Session` |
 | `GET /me` | signed in | `User` |
 | `GET /users` | signed in | `User[]` |
-| `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | yourself; removing someone's: `admin`, `ceo` | `User` (section 20) |
+| `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | yourself; removing someone's: `admin`, `ceo` | `User` (section 19) |
 | `GET /projects` | signed in (filtered) | `ProjectSummary[]`, with `tasks_total`, `tasks_done`, `tasks_late`, `tasks_blocked` |
 | `GET /projects/:id` | can see it | `Project` |
 | `GET /projects/:id/tasks` | can see it | `Task[]` |
@@ -727,7 +728,7 @@ changes or removes a line** (the brief: normal users can't hide it); keep it in 
 `user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
 `team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
-`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 20). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
 
 ## 15. GitHub
 
@@ -855,6 +856,7 @@ settings switch in the other demo backends: `src/mock/site.ts`, `src/mock/notify
 | `names.{task,project,bug}` | `TSK`, `PRJ`, `BUG` | 2–5 capital letters A–Z, all different; new records only |
 | `banner` | `null` | `{text 1–300, text_en? ≤ 300, roles: Role[] (none = everyone), tone: "info"\|"warning", until?: ISO}` |
 | `read_only` | `{on: false, message: ""}` | `message` required when on, ≤ 300; `message_en?` ≤ 300 |
+| `roles` | `[]` | the CEO's own jobs, at most 20 (section 17.1) |
 
 The actions and their defaults (today's rules in the features' `rules.ts`): `create_project` pm · `close_project` pm ·
 `delete_task` pm, lead (no delete in the platform yet) · `reassign_task`, `change_due`, `approve_done` pm, lead ·
@@ -884,7 +886,58 @@ working days and hours, holidays, due days per priority, fix targets per severit
 past their target in working days), who approves a task, an employee reopening a task, the reason for a due date
 change, the in-progress limit, the whole «who may do what» table, and the shortest password.
 
-## 19. Quick search (Ctrl+K)
+### 17.1 Jobs the CEO makes (custom roles)
+
+The CEO makes new jobs in the advanced settings («الوظائف والأدوار / Jobs and roles»). They travel in the same
+calls: `rules.roles` in `GET/PUT /ceo/advanced` (so they are in the history, the settings file and the reset), and
+`roles` in `GET /site/live` (everyone signed in gets them: names, colours, what each may do and see; nothing secret).
+
+```text
+CustomRole {
+  key: "role-…" (2–40 of a–z 0–9 -, unique; what User.custom_role holds),
+  name (1–40), name_en (1–40): unique among the roles, and never the name of one of the six jobs,
+  description? (≤ 200), color: "todo" | "progress" | "review" | "testing" | "done" | "new",
+  base: "pm" | "monitor" | "lead" | "employee"   (never "ceo" or "admin"; can't change after it is made),
+  actions: ActionKey[]   (the actions of «who may do what» it may do; only ones its base job does today),
+  pages: string[]        (the menu items it sees; only ones its base job sees: NAV keys in src/shared/lib/access.ts)
+}
+User { …, role: <the base job>, custom_role?: <the role's key> }
+```
+
+- At most **20** roles. Every check is in `checkRoles` (`src/features/advanced/rules.ts`); a problem → **422** keyed
+  `roles.<key>.<field>` (`name`, `name_en`, `description`, `color`, `base`, `actions`, `pages`) or `roles` (too many).
+- A save that changes an existing role's `base` → **422** on `roles.<key>.base`.
+- A save that removes a role still given to an **active** account → **409 `BAD_STATE`** naming the role and how many
+  people have it ("move them first"). An import or a reset may remove it: then clear `custom_role` from its people
+  (they keep their base job). Stopped accounts with a removed role are cleared too.
+- History: one line per role made, changed or removed, key `roles.<key>`, from the role (or null) to the role (or null).
+- `GET /site/live` also answers `me: {role, custom_role?}`, the person's job as the server has it now, so a page open
+  since before an admin changed it catches up.
+
+**Giving a role** (`POST /admin/users`, `PATCH /admin/users/:id`, the admin and the `ceo`): body `custom_role: <key> |
+null`. The role must exist (**422** on `role`); the account's `role` becomes the role's `base` whatever was sent; `null`
+clears it. Nobody changes their own (409, like the role). A changed `role` that no longer fits the custom role's base
+clears it. Audit: a `custom_role` change line with the role's name.
+
+**What the server must enforce now.** A request from someone with a custom role is checked against the base job's
+rules first (everything above, unchanged), **and then against the role**: these actions answer **403 `FORBIDDEN`**
+("دورك «…» لا يسمح بهذا العمل.") when the role's tick is off:
+
+| Action | Calls |
+|---|---|
+| `create_project` | `POST /projects` |
+| `reassign_task` | `PATCH /tasks/:id` changing `assignee_id` |
+| `change_due` | `PATCH /tasks/:id` changing `due` |
+| `post_announcement` | `POST /announcements` |
+| `create_group_chat` | creating a group chat |
+| `write_reviews` | `POST /reviews`, `PATCH /reviews/:id`, `POST /reviews/:id/finalize`; and `can_review: false` in `GET /performance/people/:id` |
+| `report_bugs` | `POST /projects/:projectId/bugs` |
+
+The pages hide the matching buttons. **The CEO is never limited** (the CEO rule), and people without a custom role are
+unaffected. The menu hides the pages the role doesn't see (now). **Later:** refusing those pages' calls for the role
+(today a direct link still opens what the base job may open), and the other seven actions.
+
+## 18. Quick search (Ctrl+K)
 
 The top bar has a search (also Ctrl+K / ⌘K, or "/"). It finds pages on its own (from the menu) and asks the server for
 the rest. `GET /search?q=` (signed in; `q` 2–80 characters, else **422** on `q`) answers:
@@ -902,7 +955,7 @@ the rest. `GET /search?q=` (signed in; `q` 2–80 characters, else **422** on `q
   matter, like the front end's `matches()` in `src/shared/lib/utils.ts`.
 - It is called while typing (after a 160 ms pause): keep it fast (an index on titles and codes, or Postgres full-text).
 
-## 20. Profile pictures
+## 19. Profile pictures
 
 Rules and limits: `src/features/profile/rules.ts`; the calls: `src/features/profile/api.ts`; the demo backend (the reference):
 `src/features/profile/mock.ts`; the tests: `tests/unit/profile.test.ts`. Every job may set, change and remove **their own**
@@ -937,7 +990,7 @@ is not appropriate (the admin's user window has "Remove picture"). Anyone else �
 yourself this way is allowed too. Log **`picture_removed`** in the audit log (`target: {type: "user", id, label: name}`)
 when it is someone else's. The person can set a new one. *(Not decided with the client: whether the person is told.)*
 
-## 21. Still open with the client
+## 20. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),

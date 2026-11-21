@@ -9,6 +9,7 @@ import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
+import { useMay } from "@/shared/lib/site";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
 import { Button, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, PriorityPill, Select, Skeleton, Stat } from "@/shared/ui";
@@ -58,7 +59,9 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
     const p = projectOf.get(id);
     return p ? (lang === "en" && p.name_en ? p.name_en : p.name) : "";
   };
-  const reportable = projects.filter((p) => canReportBug(user, p));
+  // A custom role (advanced settings) may have "report a bug" switched off.
+  const may = useMay();
+  const reportable = may(user, "report_bugs") ? projects.filter((p) => canReportBug(user, p)) : [];
 
   const late = (b: Bug) => bugLateDays(b, day) > 0;
   const counts = { open: bugs.filter(isOpen).length, late: bugs.filter(late).length, closed: bugs.filter((b) => !isOpen(b)).length };

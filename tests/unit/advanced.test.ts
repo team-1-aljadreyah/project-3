@@ -153,8 +153,8 @@ describe("the rules: what each person gets, working days", () => {
     expect(liveFor(r, "pm").banner).toBeNull();
     const ended = withRules({ banner: { text: "x", roles: [], tone: "info", until: "2020-01-01T00:00:00Z" } });
     expect(liveFor(ended, "pm").banner).toBeNull();
-    expect(hiddenNavKeys(liveFor(r, "employee"), "employee")).toEqual(["chat"]);
-    expect(hiddenNavKeys(liveFor(r, "ceo"), "ceo")).toEqual([]);
+    expect(hiddenNavKeys(liveFor(r, "employee"), { role: "employee" })).toEqual(["chat"]);
+    expect(hiddenNavKeys(liveFor(r, "ceo"), { role: "ceo" })).toEqual([]);
   });
 
   it("counts working days: Friday, Saturday and holidays don't count", () => {

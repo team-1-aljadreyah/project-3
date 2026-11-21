@@ -7,9 +7,10 @@ import type { Role } from "@/shared/api/types";
 import { ROLES } from "@/shared/lib/access";
 import { cn } from "@/shared/lib/utils";
 import { Pill } from "@/shared/ui";
-import { ACTION_GROUPS, ACTIONS, ALL_ROLES, DEFAULT_RULES as D, STAFF_ROLES, type ActionGroup } from "../rules";
+import { ACTION_GROUPS, ACTIONS, ALL_ROLES, baseDoes, DEFAULT_RULES as D, STAFF_ROLES, type ActionGroup } from "../rules";
 import type { ActionKey, StaffRole } from "../types";
 import { type Ctx, Note, Part, same } from "./controls";
+import { RoleBadge } from "./part-roles";
 import { Later, Live } from "./parts-rules";
 
 const sorted = <T,>(a: T[]) => [...a].sort();
@@ -45,6 +46,10 @@ export function PermissionsPart(c: Ctx) {
   const changed = ACTIONS.filter((a) => !same(sorted(r.permissions[a.key]), sorted(D.permissions[a.key])));
   const setAction = (key: ActionKey, roles: StaffRole[]) => c.set({ permissions: { ...r.permissions, [key]: STAFF_ROLES.filter((x) => roles.includes(x)) } });
   const groups = Object.keys(ACTION_GROUPS) as ActionGroup[];
+  // The CEO's own roles get a column each after the jobs (part «Jobs and roles»).
+  const setRoleAction = (key: string, action: ActionKey, on: boolean) =>
+    c.set({ roles: r.roles.map((x) => (x.key === key ? { ...x, actions: on ? [...x.actions, action] : x.actions.filter((y) => y !== action) } : x)) });
+  const minWidth = 680 + r.roles.length * 110;
 
   return (
     <div className="flex flex-col gap-5">
@@ -63,7 +68,7 @@ export function PermissionsPart(c: Ctx) {
       {groups.map((g) => (
         <Part key={g} title={tr(ACTION_GROUPS[g].ar, ACTION_GROUPS[g].en)} icon={<UserCheck size={17} aria-hidden="true" className="text-accent" />} action={<Later />}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px] text-sm">
+            <table className="w-full text-sm" style={{ minWidth }}>
               <caption className="sr-only">{tr(`من يحق له ماذا: ${ACTION_GROUPS[g].ar}`, `Who may do what: ${ACTION_GROUPS[g].en}`)}</caption>
               <thead>
                 <tr className="border-b border-line text-xs text-muted">
@@ -73,6 +78,11 @@ export function PermissionsPart(c: Ctx) {
                   {ALL_ROLES.map((role) => (
                     <th key={role} scope="col" className="px-2 py-2.5 text-center font-medium">
                       {roleName(role, tr)}
+                    </th>
+                  ))}
+                  {r.roles.map((role) => (
+                    <th key={role.key} scope="col" className="border-s border-line px-2 py-2 text-center font-medium">
+                      <RoleBadge role={role} className="max-w-32 justify-center text-center whitespace-normal" />
                     </th>
                   ))}
                 </tr>
@@ -104,6 +114,17 @@ export function PermissionsPart(c: Ctx) {
                           )}
                         </td>
                       ))}
+                      {r.roles.map((role) => {
+                        const able = baseDoes(role.base, a.key);
+                        const name = tr(role.name, role.name_en || role.name);
+                        return (
+                          <td key={role.key} className="border-s border-line px-2 py-3 text-center">
+                            <span title={able ? undefined : tr("وظيفته الأساسية لا تقوم بهذا", "Its base job doesn't do this")}>
+                              <Tick checked={able && role.actions.includes(a.key)} disabled={!able} onChange={(on) => setRoleAction(role.key, a.key, on)} label={`${tr(a.ar, a.en)}: ${name}`} />
+                            </span>
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
@@ -112,6 +133,14 @@ export function PermissionsPart(c: Ctx) {
           </div>
         </Part>
       ))}
+      {r.roles.length > 0 && (
+        <p className="text-xs text-muted">
+          {tr(
+            "أعمدة الأدوار التي أنشأتها: «إنشاء مشروع» و«إسناد مهمة» و«تغيير الموعد» و«نشر إعلان» و«إنشاء مجموعة» و«كتابة التقييمات» و«تسجيل مشكلة» يرفضها الخادم الآن حين تزيل علامتها، والباقي يُطبَّق لاحقاً. الخانة الرمادية: وظيفته الأساسية لا تقوم بهذا.",
+            "Columns of the roles you made: «create a project», «give a task», «change a due date», «post an announcement», «create a group», «write reviews» and «report a bug» are refused by the server now when unticked; the rest applies later. A grey box: its base job doesn't do this.",
+          )}
+        </p>
+      )}
     </div>
   );
 }

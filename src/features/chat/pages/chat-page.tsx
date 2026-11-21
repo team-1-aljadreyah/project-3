@@ -5,7 +5,7 @@ import { authApi } from "@/features/auth";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
-import { featureOn, useSiteLive } from "@/shared/lib/site";
+import { featureOn, roleAllows, useSiteLive } from "@/shared/lib/site";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
@@ -61,7 +61,7 @@ export function ChatPage() {
           <nav aria-label={tr("قائمة المحادثات", "Chat list")} className={cn("flex min-h-0 flex-col border-line md:border-e", key && "max-md:hidden")}>
             <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
               <span className="flex-1 text-sm font-medium text-muted">{list ? tr(`${num(list.length)} محادثة`, `${num(list.length)} chats`) : " "}</span>
-              {canCreateGroupChat(me) && featureOn(live, "group_chats", me.role) && (
+              {canCreateGroupChat(me) && featureOn(live, "group_chats", me.role) && roleAllows(live, me, "create_group_chat") && (
                 <IconButton label={tr("مجموعة جديدة", "New group")} onClick={() => setGrouping(true)} className="bg-transparent">
                   <UsersRound size={18} aria-hidden="true" />
                 </IconButton>

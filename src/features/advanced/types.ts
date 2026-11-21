@@ -3,9 +3,9 @@
 import type { Severity } from "@/features/bugs";
 import type { NotificationKind } from "@/shared/api/notification-kinds";
 import type { Priority, Role } from "@/shared/api/types";
-import type { Banner, FeatureKey, ReadOnlyMode } from "@/shared/lib/site";
+import type { ActionKey, Banner, CustomRole, FeatureKey, ReadOnlyMode } from "@/shared/lib/site";
 
-export type { Banner, FeatureKey, ReadOnlyMode, SiteLive } from "@/shared/lib/site";
+export type { ActionKey, Banner, BaseJob, CustomRole, FeatureKey, ReadOnlyMode, RoleColor, SiteLive } from "@/shared/lib/site";
 
 /** A day off for the whole company. */
 export interface Holiday {
@@ -17,23 +17,6 @@ export interface Holiday {
 
 /** Who approves a task as done: the project's manager, a team leader in the project, or either of them (today). */
 export type Approver = "pm" | "lead" | "either";
-
-/** The actions of «who may do what». The CEO may always do all of them (the CEO rule). */
-export type ActionKey =
-  | "create_project"
-  | "close_project"
-  | "delete_task"
-  | "reassign_task"
-  | "change_due"
-  | "approve_done"
-  | "post_announcement"
-  | "create_group_chat"
-  | "see_scores"
-  | "write_reviews"
-  | "see_reports"
-  | "export_csv"
-  | "report_bugs"
-  | "bug_severity";
 
 /** The jobs the table can tick (everyone but the CEO). */
 export type StaffRole = Exclude<Role, "ceo">;
@@ -75,6 +58,8 @@ export interface AdvancedRules {
   names: Record<CodeKind, string>;
   banner: Banner | null;
   read_only: ReadOnlyMode;
+  /** The jobs the CEO made (at most 20). */
+  roles: CustomRole[];
 }
 
 /** The answer of GET /ceo/advanced: the rules in force (defaults merged), and when and by whom they last changed. */

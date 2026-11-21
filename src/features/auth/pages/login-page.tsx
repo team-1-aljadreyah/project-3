@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
-import { ROLES } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import { setLang, useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { setSession, useSession } from "@/shared/lib/session";
@@ -170,7 +170,7 @@ export function LoginPage() {
                         <Avatar user={d} />
                         <span className="flex min-w-0 flex-col">
                           <span className="truncate text-sm font-medium">{d.name}</span>
-                          <span className="truncate text-xs text-muted">{tr(ROLES[d.role].ar, ROLES[d.role].en)}</span>
+                          <span className="truncate text-xs text-muted">{roleName(d, lang)}</span>
                         </span>
                       </button>
                     </li>

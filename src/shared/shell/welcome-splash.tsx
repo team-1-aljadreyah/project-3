@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ROLES } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import { BRAND } from "@/shared/lib/brand";
 import { useFmt } from "@/shared/lib/i18n";
 import { useSession, useUser } from "@/shared/lib/session";
@@ -73,7 +73,7 @@ export function WelcomeSplash() {
           {tr(`${hello.ar}، ${firstName(name)}`, `${hello.en}, ${firstName(name)}`)}
         </p>
         <p className="welcome-line text-sm text-[#e6d3da]" style={{ animationDelay: "0.35s" }}>
-          {tr(ROLES[user.role].ar, ROLES[user.role].en)} · {day(today())}
+          {roleName(user, lang)} · {day(today())}
         </p>
         <span className="welcome-bar mt-2 h-1 w-24 overflow-hidden rounded-full bg-white/15">
           <span className="block h-full rounded-full bg-[#d49a9a]" />

@@ -16,6 +16,8 @@ function admin() {
 }
 
 const teamName = (id?: number) => getDb().teams.find((t) => t.id === id)?.name;
+/** A custom role's name, for the audit log. */
+const roleLabel = (key?: string) => (key ? (getDb().advanced?.roles?.find((r) => r.key === key)?.name ?? key) : undefined);
 
 /** Checks a user's fields (all of them when creating, the given ones when changing). */
 function checkUser(input: Partial<UserInput>, selfId?: number) {
@@ -29,6 +31,17 @@ function checkUser(input: Partial<UserInput>, selfId?: number) {
   if (input.role !== undefined && !ROLE_KEYS.includes(input.role)) invalid("role", "دور غير معروف.", "Unknown role.");
   if (input.title !== undefined && input.title.length > L.title) invalid("title", "المسمى أطول من المسموح.", "The title is too long.");
   if (input.team_id !== undefined && input.team_id !== null && !db.teams.some((t) => t.id === input.team_id)) invalid("team_id", "الفريق غير موجود.", "The team doesn't exist.");
+}
+
+/**
+ * A job the CEO made: it must exist, and the account's base job becomes the one the role starts like (every rule of
+ * the platform keeps working from it). null clears it. Returns the base job to use, if a role was chosen.
+ */
+function customRole(input: Partial<UserInput>) {
+  if (input.custom_role === undefined || input.custom_role === null) return undefined;
+  const role = getDb().advanced?.roles?.find((r) => r.key === input.custom_role);
+  if (!role) return invalid("role", "هذا الدور غير موجود.", "That role doesn't exist.");
+  return role.base;
 }
 
 /** A person who manages projects that aren't done can't stop being a PM (or be stopped) before they get a new PM. */
@@ -72,9 +85,12 @@ export const adminMock: AdminApi = {
 
   async createUser(input) {
     const actor = admin();
+    const base = customRole(input);
+    if (base) input = { ...input, role: base };
     checkUser({ ...input, name: input.name ?? "", email: input.email ?? "", role: input.role ?? ("" as never) });
     const db = getDb();
     const user: User = {
+      ...(base && input.custom_role ? { custom_role: input.custom_role } : {}),
       id: Math.max(...db.users.map((u) => u.id)) + 1,
       name: input.name.trim(),
       name_en: input.name_en?.trim() || undefined,
@@ -88,6 +104,7 @@ export const adminMock: AdminApi = {
     db.users.push(user);
     audit(actor.id, "user_created", { type: "user", id: user.id, label: user.name }, [
       { field: "role", to: user.role },
+      ...(user.custom_role ? [{ field: "custom_role", to: roleLabel(user.custom_role) }] : []),
       ...(user.team_id ? [{ field: "team", to: teamName(user.team_id) }] : []),
     ]);
     if (user.team_id) notify([user.id], "team_joined", { actor_id: actor.id, data: { note: teamName(user.team_id) } });
@@ -100,9 +117,12 @@ export const adminMock: AdminApi = {
     const db = getDb();
     const user = db.users.find((u) => u.id === id);
     if (!user) return fail(404, "NOT_FOUND", "لم يُعثر على المستخدم.", "User not found.");
+    const base = customRole(patch);
+    if (base) patch = { ...patch, role: base };
     checkUser(patch, id);
     const self = id === actor.id;
-    if (self && ((patch.role !== undefined && patch.role !== user.role) || patch.active === false)) {
+    const roleChanges = (patch.role !== undefined && patch.role !== user.role) || (patch.custom_role !== undefined && (patch.custom_role ?? undefined) !== user.custom_role);
+    if (self && (roleChanges || patch.active === false)) {
       return fail(409, "BAD_STATE", "لا تغيّر دورك ولا توقف حسابك بنفسك: يفعل ذلك مسؤول آخر.", "Don't change your own role or stop your own account: another admin does.");
     }
     const losesAdmin = user.role === "admin" && ((patch.role !== undefined && patch.role !== "admin") || patch.active === false);
@@ -127,6 +147,15 @@ export const adminMock: AdminApi = {
     set("phone", patch.phone?.trim());
     set("title", patch.title?.trim());
     set("role", patch.role);
+    // The CEO's custom role: set or cleared; a role that no longer fits the base job is cleared too.
+    const nextCustom = patch.custom_role !== undefined ? (patch.custom_role ?? undefined) : user.custom_role;
+    const fits = !nextCustom || db.advanced?.roles?.find((r) => r.key === nextCustom)?.base === user.role;
+    const custom = fits ? nextCustom : undefined;
+    if (custom !== user.custom_role) {
+      changes.push({ field: "custom_role", from: roleLabel(user.custom_role), to: roleLabel(custom) });
+      if (custom) user.custom_role = custom;
+      else delete user.custom_role;
+    }
     if (patch.team_id !== undefined && (patch.team_id ?? undefined) !== user.team_id) {
       changes.push({ field: "team", from: teamName(user.team_id), to: teamName(patch.team_id ?? undefined) });
       user.team_id = patch.team_id ?? undefined;

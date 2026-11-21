@@ -2,7 +2,7 @@
 // on the side with a quick find (it finds a part by the names of the settings inside it too), the chosen part on the
 // other side (?s=work in the address), and ONE draft for all parts with a bar at the bottom to save or undo it.
 // On a phone the tree is a short list to choose from, so the part itself is on the first screen.
-import { AlertTriangle, BellRing, CalendarDays, ChevronDown, FileClock, Hash, Home, KeyRound, ListChecks, Megaphone, Save, Search, ScrollText, ToggleRight, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, BellRing, CalendarDays, ChevronDown, FileClock, Hash, Home, KeyRound, ListChecks, Megaphone, Save, Search, ScrollText, ToggleRight, UserCheck, UserCog, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -20,6 +20,7 @@ import { AnnouncePart } from "../components/part-announce";
 import { HistoryPart } from "../components/part-history";
 import { HomePart } from "../components/part-home";
 import { PART_KEYS, partHref, partOf, type PartKey } from "../components/part-links";
+import { RolesPart } from "../components/part-roles";
 import { NotifyPart, PermissionsPart } from "../components/parts-tables";
 import { FeaturesPart, NamesPart, SecurityPart, TasksPart, WorkPart } from "../components/parts-rules";
 import { canUseAdvancedSettings, changedRules, checkRules, diffRules, PART_WORDS } from "../rules";
@@ -49,6 +50,7 @@ const TREE: { ar: string; en: string; leaves: Leaf[] }[] = [
     en: "Rights and notifications",
     leaves: [
       { key: "permissions", ar: "من يحق له ماذا", en: "Who may do what", icon: UserCheck },
+      { key: "roles", ar: "الوظائف والأدوار", en: "Jobs and roles", icon: UserCog },
       { key: "notify", ar: "من يصله كل إشعار", en: "Who gets which notification", icon: BellRing },
     ],
   },
@@ -156,6 +158,7 @@ function Setup() {
     part === "work" ? <WorkPart {...c} /> :
     part === "tasks" ? <TasksPart {...c} /> :
     part === "permissions" ? <PermissionsPart {...c} /> :
+    part === "roles" ? <RolesPart {...c} /> :
     part === "notify" ? <NotifyPart {...c} /> :
     part === "features" ? <FeaturesPart {...c} /> :
     part === "security" ? <SecurityPart {...c} /> :

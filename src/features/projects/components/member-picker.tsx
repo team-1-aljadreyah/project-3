@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { ROLES } from "@/shared/lib/access";
+import { roleName } from "@/shared/lib/site";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { matches } from "@/shared/lib/utils";
@@ -51,7 +51,7 @@ export function MemberPicker({
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">{nameOf(u)}</span>
                   <span className="truncate text-xs text-muted">
-                    {u.title} · {tr(ROLES[u.role].ar, ROLES[u.role].en)}
+                    {u.title} · {roleName(u, lang)}
                     {isLocked && ` · ${tr("مدير المشروع", "Project manager")}`}
                   </span>
                 </span>

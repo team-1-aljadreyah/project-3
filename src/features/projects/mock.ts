@@ -4,7 +4,7 @@ import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { aboutProject, notify } from "@/mock/notify";
-import { codeOf } from "@/mock/site";
+import { codeOf, requireAction } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
@@ -89,6 +89,7 @@ export const projectsMock: ProjectsApi = {
   async createProject(input) {
     const user = currentUser();
     if (!canCreateProject(user)) return fail(403, "FORBIDDEN", "لا يحق لك إنشاء المشاريع.", "You can't create projects.");
+    requireAction(user, "create_project");
     // A project manager creates projects they manage; the CEO picks the manager.
     const fields = { ...input, pm_id: user.role === "pm" ? user.id : input.pm_id };
     if (!fields.start) invalid("start", "اختر تاريخ البدء.", "Choose the start date.");

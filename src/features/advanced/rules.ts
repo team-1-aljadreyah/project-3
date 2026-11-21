@@ -5,9 +5,9 @@ import { DEFAULT_SETTINGS, SETTING_RANGE } from "@/features/admin";
 import type { Severity } from "@/features/bugs";
 import { NOTIFICATION_KINDS, REQUIRED_NOTIFICATIONS, type NotificationKind } from "@/shared/api/notification-kinds";
 import type { Priority, Role, User } from "@/shared/api/types";
-import { isCeo } from "@/shared/lib/access";
-import { ALL_FEATURES_ON, FEATURE_KEYS, type FeatureKey, type SiteLive } from "@/shared/lib/site";
-import type { ActionKey, AdvancedRules, Approver, CodeKind, StaffRole } from "./types";
+import { isCeo, navFor, ROLES } from "@/shared/lib/access";
+import { ALL_FEATURES_ON, BASE_JOBS, FEATURE_KEYS, ROLE_COLORS, type BaseJob, type FeatureKey, type SiteLive } from "@/shared/lib/site";
+import type { ActionKey, AdvancedRules, Approver, CodeKind, CustomRole, StaffRole } from "./types";
 
 /** The advanced settings are the CEO's alone (page and server). */
 export const canUseAdvancedSettings = (user: Pick<User, "role">) => isCeo(user);
@@ -114,6 +114,9 @@ export const LIMITS = {
   holidayName: 60,
   banner: 300,
   readOnly: 300,
+  roles: 20,
+  roleName: 40,
+  roleDescription: 200,
 };
 
 /** What the platform did before any of this was a setting. */
@@ -129,6 +132,7 @@ export const DEFAULT_RULES: AdvancedRules = {
   names: { task: "TSK", project: "PRJ", bug: "BUG" },
   banner: null,
   read_only: { on: false, message: "" },
+  roles: [],
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -152,6 +156,7 @@ export function rulesOf(stored?: Partial<AdvancedRules> | null, admin?: Partial<
     names: { ...D.names, ...s.names },
     banner: s.banner === undefined ? D.banner : s.banner,
     read_only: { ...D.read_only, ...s.read_only },
+    roles: Array.isArray(s.roles) ? s.roles : D.roles,
   };
 }
 
@@ -179,7 +184,16 @@ export function diffRules(before: AdvancedRules, after: AdvancedRules): { key: s
   for (const k of Object.keys(DEFAULT_RULES) as (keyof AdvancedRules)[]) {
     const a = before[k] as unknown;
     const b = after[k] as unknown;
-    if (isObj(a) && isObj(b)) {
+    if (k === "roles") {
+      // One line per role made, changed or removed: "roles.<key>", from the role (or null) to the role (or null).
+      const was = new Map(before.roles.map((x) => [x.key, x]));
+      const now = new Map(after.roles.map((x) => [x.key, x]));
+      for (const key of new Set([...was.keys(), ...now.keys()])) {
+        const x = was.get(key);
+        const y = now.get(key);
+        if (!same(x && normRole(x), y && normRole(y))) out.push({ key: `roles.${key}`, from: x ?? null, to: y ?? null });
+      }
+    } else if (isObj(a) && isObj(b)) {
       for (const sub of new Set([...Object.keys(a), ...Object.keys(b)])) {
         if (!same(norm(a[sub]), norm(b[sub]))) out.push({ key: `${k}.${sub}`, from: a[sub] ?? null, to: b[sub] ?? null });
       }
@@ -187,6 +201,9 @@ export function diffRules(before: AdvancedRules, after: AdvancedRules): { key: s
   }
   return out;
 }
+
+/** A role with its ticks in a fixed order, to compare two of them. */
+const normRole = (r: CustomRole) => ({ ...r, actions: [...r.actions].sort(), pages: [...r.pages].sort() });
 
 /** How many settings differ from the defaults (the home's count). */
 export const changedCount = (r: AdvancedRules) => diffRules(DEFAULT_RULES, r).length;
@@ -281,6 +298,81 @@ export function checkRules(r: AdvancedRules): Problems {
   if (typeof ro.on !== "boolean") e["read_only.on"] = { ar: "تشغيل أو إيقاف", en: "On or off" };
   if (ro.on && !ro.message?.trim()) e["read_only.message"] = { ar: "اكتب رسالة للموظفين", en: "Write a message for the staff" };
   if ((ro.message?.length ?? 0) > LIMITS.readOnly || (ro.message_en?.length ?? 0) > LIMITS.readOnly) e["read_only.message"] = { ar: `حتى ${LIMITS.readOnly} حرف`, en: `Up to ${LIMITS.readOnly} letters` };
+  Object.assign(e, checkRoles(r.roles));
+  return e;
+}
+
+// ---------- jobs the CEO makes (custom roles) ----------
+
+/** Does the base job do this action today? A custom role can never do more than its base job. */
+export const baseDoes = (base: BaseJob, action: ActionKey) => !!ACTIONS.find((a) => a.key === action)?.def.includes(base);
+
+/** The menu items (NAV keys) the base job sees: the pages a custom role may keep. */
+export const basePages = (base: BaseJob) => navFor(base).map((n) => n.key);
+
+/** A new, unique key for a role ("role-mf3k2a1"). */
+export const makeRoleKey = () => `role-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+
+/**
+ * A new role that starts like `base`: the base job's column of «who may do what» (never more than the job does
+ * today), and every page the base job sees.
+ */
+export function newRole(base: BaseJob, rules: Pick<AdvancedRules, "permissions">, fields: Partial<CustomRole> = {}): CustomRole {
+  return {
+    key: makeRoleKey(),
+    name: "",
+    name_en: "",
+    color: "todo",
+    base,
+    actions: ACTIONS.filter((a) => baseDoes(base, a.key) && rules.permissions[a.key].includes(base)).map((a) => a.key),
+    pages: basePages(base),
+    ...fields,
+  };
+}
+
+/** A copy of a role with a new key and a name nobody uses yet ("نسخة من …", "Copy of …"). */
+export function duplicateRole(role: CustomRole, all: CustomRole[]): CustomRole {
+  const taken = (n: string) => all.some((r) => r.name === n || r.name_en === n);
+  let i = 1;
+  const name = () => (i === 1 ? `نسخة من ${role.name}` : `نسخة ${i} من ${role.name}`).slice(0, LIMITS.roleName);
+  const nameEn = () => (i === 1 ? `Copy of ${role.name_en}` : `Copy ${i} of ${role.name_en}`).slice(0, LIMITS.roleName);
+  while (taken(name()) || taken(nameEn())) i++;
+  return { ...role, key: makeRoleKey(), name: name(), name_en: nameEn(), actions: [...role.actions], pages: [...role.pages] };
+}
+
+/** The active accounts that have this role. */
+export const peopleWithRole = <T extends Pick<User, "active" | "custom_role">>(users: T[], key: string) => users.filter((u) => u.active && u.custom_role === key);
+
+const fold = (s: string) => s.trim().toLowerCase();
+
+/** What is wrong with the custom roles (part of checkRules). */
+export function checkRoles(roles: CustomRole[]): Problems {
+  const e: Problems = {};
+  if (!Array.isArray(roles)) return { roles: { ar: "أدوار غير صحيحة", en: "Wrong roles" } };
+  if (roles.length > LIMITS.roles) e.roles = { ar: `حتى ${LIMITS.roles} دوراً`, en: `Up to ${LIMITS.roles} roles` };
+  const jobNames = Object.values(ROLES).flatMap((w) => [fold(w.ar), fold(w.en)]);
+  const keys = new Set<string>();
+  const names = new Map<string, string>();
+  for (const r of roles) {
+    const at = (f: string) => `roles.${r.key}.${f}`;
+    if (typeof r.key !== "string" || !/^[a-z0-9-]{2,40}$/.test(r.key) || keys.has(r.key)) e[`roles.${r.key}.key`] = { ar: "مفتاح غير صحيح", en: "Wrong key" };
+    keys.add(r.key);
+    for (const [f, v] of [["name", r.name], ["name_en", r.name_en]] as const) {
+      const n = typeof v === "string" ? v.trim() : "";
+      if (!n || n.length > LIMITS.roleName) e[at(f)] = { ar: `اكتب الاسم (حتى ${LIMITS.roleName} حرفاً)`, en: `Write the name (up to ${LIMITS.roleName} letters)` };
+      else if (jobNames.includes(fold(n))) e[at(f)] = { ar: "اسم وظيفة موجودة", en: "That's the name of an existing job" };
+      else if (names.has(fold(n)) && names.get(fold(n)) !== r.key) e[at(f)] = { ar: "مستعمل لدور آخر", en: "Used by another role" };
+      else names.set(fold(n), r.key);
+    }
+    if ((r.description?.length ?? 0) > LIMITS.roleDescription) e[at("description")] = { ar: `حتى ${LIMITS.roleDescription} حرف`, en: `Up to ${LIMITS.roleDescription} letters` };
+    if (!ROLE_COLORS.includes(r.color)) e[at("color")] = { ar: "اختر لوناً", en: "Choose a colour" };
+    if (!BASE_JOBS.includes(r.base)) {
+      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو متابعة أو قائد فريق أو موظف", en: "Starts like: a PM, monitoring, a team leader or an employee" };
+      continue;
+    }
+    if (!Array.isArray(r.actions) || r.actions.some((a) => !baseDoes(r.base, a))) e[at("actions")] = { ar: "لا يأخذ أكثر مما لوظيفته الأساسية", en: "Never more than its base job" };
+    if (!Array.isArray(r.pages) || r.pages.some((p) => !basePages(r.base).includes(p))) e[at("pages")] = { ar: "صفحات لا تراها وظيفته الأساسية", en: "Pages its base job doesn't see" };
+  }
   return e;
 }
 
@@ -291,7 +383,7 @@ export function checkRules(r: AdvancedRules): Problems {
 export function liveFor(r: AdvancedRules, role: Role, now = new Date()): SiteLive {
   const b = r.banner;
   const forMe = !!b && (!b.roles.length || b.roles.includes(role)) && (!b.until || Date.parse(b.until) > now.getTime());
-  return { features: r.features, banner: forMe ? b : null, read_only: r.read_only };
+  return { features: r.features, banner: forMe ? b : null, read_only: r.read_only, roles: r.roles };
 }
 
 /** The words the quick find knows each part by (the names of the settings inside it), Arabic and English. */
@@ -301,6 +393,7 @@ export const PART_WORDS: Record<string, string> = {
   tasks: "اعتماد إكمال إعادة فتح سبب موعد حد مهام قيد التنفيذ approve done reopen reason due limit progress wip",
   permissions: "صلاحيات من يحق إنشاء إغلاق حذف إسناد موعد اعتماد إعلان مجموعة درجات تقييم تقارير تنزيل CSV خطورة rights who may create close delete assign approve scores reviews reports export severity",
   notify: "إشعارات من يصله إشعار notifications who gets",
+  roles: "وظائف أدوار دور جديد مخصص مسمى صفحات قائمة jobs roles custom new role pages menu",
   features: "تشغيل إيقاف ميزات محادثات مجموعات مشكلات تقييمات إعلانات طلبات GitHub ترحيب features switch chat groups bugs reviews announcements requests welcome",
   security: "دخول كلمة مرور قفل محاولات تذكير أمان sign in password lock attempts security reminder",
   names: "بادئة أرقام رموز TSK PRJ BUG prefix codes numbers",
