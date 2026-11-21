@@ -541,6 +541,8 @@ export function LightThreads({ start = true, className }: { start?: boolean; cla
       clearTimeout(waiting);
       waiting = window.setTimeout(() => {
         sizeLive();
+        // A hidden page (0 wide or 0 tall, e.g. while it closes) has nothing to draw: wait until it has a size again.
+        if (!w || !host.offsetHeight) return;
         const k = key();
         if (k === lastKey) return;
         lastKey = k;

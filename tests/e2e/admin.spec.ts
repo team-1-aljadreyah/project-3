@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { signInAs } from "./helpers";
 
 test("the admin adds a user, stops another, makes a team; the CEO reads it all in the audit log", async ({ page }) => {
+  // Two sign-ins and many steps in one test: more time than the usual 30 s, like the other tests that sign in twice.
+  test.setTimeout(60_000);
   await signInAs(page, /حسن رعد/);
   await page.goto("/admin");
   await page.getByRole("button", { name: "مستخدم جديد" }).click();
