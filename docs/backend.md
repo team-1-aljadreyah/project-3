@@ -11,6 +11,143 @@ clear, the matching function there is the exact behaviour the pages expect. The 
 
 Switching the site to the backend: `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC_API_URL=https://api…`, then rebuild.
 
+## 0. Start here
+
+**What the front end is:** a Next.js site built as plain files and hosted on **Cloudflare Pages**
+(`docs/deploy-cloudflare.md`). It runs entirely in the browser and talks to the backend only through the calls
+below, with a Bearer token. So the API must allow the site's addresses (CORS): `https://follow.ama8.uk` and the
+Cloudflare Pages preview address.
+
+**See every screen working before you build:** `npm ci`, then `NEXT_PUBLIC_USE_MOCK=true npm run dev`, open
+http://localhost:3000 and sign in with any one-tap demo account (password `123456`). Each screen there is exactly
+what your answers must make possible. The demo backend of a feature is `src/features/<feature>/mock.ts`: when this
+document and the code disagree, the code is what the pages expect (and tell us, so we fix this document).
+
+**Build it in this order** (each step makes a part of the site usable on the real server):
+
+| Step | What | Sections | Then the site can… |
+|---|---|---|---|
+| 1 | Sign-in, `/me`, `/users`, the answer and error format, CORS | 1, 2 | sign people in |
+| 2 | Projects, tasks, statuses, comments, history, the task rules | 3, 4, 5 | run the boards (the heart of the product) |
+| 3 | Project setup: members, statuses, phases, sprints, templates | 6 | set projects up |
+| 4 | Notifications, made by the server on each action | 7 | tell people what happened |
+| 5 | Files, announcements, bugs, chat | 8 to 11 | do the rest of the daily work |
+| 6 | Dashboard and reports, performance | 12, 13 | give the management its numbers |
+| 7 | Administration, the audit log, sign-in locking | 14 | run the platform |
+| 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
+
+**Rules that apply to everything:**
+- **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
+  answer **404** for anything a person may not see (as if it didn't exist).
+- **The CEO rule** (§2): the `ceo` may see and do everything any other job can, today and in every call added later.
+- Every list comes already filtered for the person. Every form's errors come per field, in Arabic and English.
+- Notifications are made **by the server** as part of the action (§7). The front end never creates them.
+
+### Every call, in one table
+
+| § | Method | Path | Who (the `ceo` always may too) | What |
+|---|---|---|---|---|
+| 1 | `POST` | `/auth/login` | anyone | Sign in → `{ token, user }` |
+| 1 | `GET` | `/me` | signed in | The signed-in person |
+| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams) for pickers and avatars |
+| 5 | `GET` | `/projects` | see §2 | Projects this person may see, with counts |
+| 5 | `GET` | `/projects/:id` | see §2 | One project with its statuses, phases, members |
+| 6 | `POST` | `/projects` | ceo, pm | Create a project (a pm becomes its manager) |
+| 6 | `PATCH` | `/projects/:id` | its pm, ceo | Details, members, dates (changing `pm_id`: ceo only) |
+| 6 | `PUT` | `/projects/:id/statuses` | its pm, ceo | The project's statuses, in board order |
+| 6 | `PUT` | `/projects/:id/phases` | its pm, ceo | The project's phases |
+| 6 | `GET` | `/projects/:projectId/sprints` | see §2 | Sprints |
+| 6 | `POST` | `/projects/:projectId/sprints` | its pm, ceo | Add a sprint |
+| 6 | `PATCH` | `/sprints/:id` | its pm, ceo | Change a sprint |
+| 6 | `DELETE` | `/sprints/:id` | its pm, ceo | Remove an empty sprint |
+| 6 | `POST` | `/sprints/:id/close` | its pm, ceo | End a sprint, move what is left |
+| 6 | `GET` | `/projects/:projectId/history` | see §2 | The project's setup history |
+| 6 | `GET` | `/templates` | ceo, pm | Project templates |
+| 6 | `POST` | `/projects/:projectId/template` | its pm, ceo | Save a project as a template |
+| 6 | `DELETE` | `/templates/:id` | its maker, ceo | Remove a template |
+| 5 | `GET` | `/projects/:projectId/tasks` | see §2 | The board's tasks |
+| 5 | `GET` | `/me/tasks` | signed in | My tasks in every project |
+| 5 | `GET` | `/tasks/:id` | see §2 | One task |
+| 5 | `POST` | `/projects/:projectId/tasks` | managers (§2) | Create a task |
+| 5 | `PATCH` | `/tasks/:id` | managers (§2) | Change a task |
+| 5 | `PUT` | `/tasks/:id/dependencies` | managers (§2) | The tasks it waits for (no loops) |
+| 4 | `POST` | `/tasks/:id/status` | managers, assignee | Move a task (may become an approval request) |
+| 4 | `POST` | `/tasks/:id/approval` | approvers (§2) | Approve or send back a completion |
+| 5 | `GET` | `/tasks/:taskId/comments` | see §2 | Comments |
+| 5 | `POST` | `/tasks/:taskId/comments` | takes part (§2) | Add a comment |
+| 5 | `GET` | `/tasks/:taskId/history` | see §2 | The task's history |
+| 8 | `GET` | `/{tasks\|bugs\|projects\|messages}/:id/attachments` | sees the owner | Files |
+| 8 | `POST` | `/{tasks\|bugs\|projects\|messages}/:id/attachments` | takes part | Upload one file (multipart) |
+| 8 | `DELETE` | `/attachments/:id` | uploader, its pm, ceo | Remove a file |
+| 7 | `GET` | `/notifications` | signed in | My notifications |
+| 7 | `POST` | `/notifications/:id/read` | its owner | Mark one read |
+| 7 | `POST` | `/notifications/read-all` | signed in | Mark all read |
+| 7 | `GET` | `/notifications/preferences` | signed in | My notification choices |
+| 7 | `PUT` | `/notifications/preferences` | signed in | Save them (required kinds stay on) |
+| 9 | `GET` | `/announcements` | signed in | Announcements, important first |
+| 9 | `GET` | `/announcements/:id` | signed in | One announcement |
+| 9 | `POST` | `/announcements` | ceo, admin | Post one (everyone is told) |
+| 9 | `DELETE` | `/announcements/:id` | its author, ceo, admin | Remove one |
+| 9 | `POST` | `/announcements/:id/seen` | signed in | I have seen it |
+| 9 | `GET` | `/announcements/:id/reads` | its author, ceo, admin | Who has and hasn't seen it |
+| 10 | `GET` | `/bugs` | see §2 | Bugs of the projects I see |
+| 10 | `GET` | `/bugs/:id` | see §2 | One bug |
+| 10 | `POST` | `/projects/:projectId/bugs` | takes part | Report a bug |
+| 10 | `PATCH` | `/bugs/:id` | managers (§2) | Assign, severity, priority, day |
+| 10 | `POST` | `/bugs/:id/status` | see §10 | Move a bug |
+| 10 | `GET` | `/bugs/:id/history` | see §2 | The bug's history |
+| 11 | `GET` | `/chats` | signed in | My chats (project, team, private; group chats: §11) |
+| 11 | `GET` | `/chats/:key/messages` | its members | Messages |
+| 11 | `POST` | `/chats/:key/messages` | its members | Send (with @mentions) |
+| 11 | `POST` | `/chats/:key/read` | its members | Read up to here |
+| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone |
+| 12 | `GET` | `/reports/overview` | ceo, pm, monitor, lead | Every number of the dashboard and the reports |
+| 13 | `GET` | `/performance` | ceo, pm, monitor, lead | People and teams' numbers for a period |
+| 13 | `GET` | `/performance/people/:userId` | see §13 | One person's numbers and reviews |
+| 13 | `GET` | `/performance/criteria` | signed in | The review criteria |
+| 13 | `PUT` | `/performance/criteria` | ceo | Change them |
+| 13 | `POST` | `/performance/criteria/approve` | ceo | Approve them |
+| 13 | `POST` | `/reviews` | see §13 | Write a review (draft) |
+| 13 | `PATCH` | `/reviews/:id` | its reviewer, ceo | Change a draft |
+| 13 | `POST` | `/reviews/:id/finalize` | its reviewer, ceo | Make it final (the person is told) |
+| 14 | `GET` | `/admin/users` | admin, ceo | Accounts with their sign-in state |
+| 14 | `POST` | `/admin/users` | admin, ceo | Add an account |
+| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock |
+| 14 | `GET` | `/teams` | signed in | Teams |
+| 14 | `POST` | `/admin/teams` | admin, ceo | Add a team |
+| 14 | `PATCH` | `/admin/teams/:id` | admin, ceo | Change a team |
+| 14 | `GET` | `/admin/settings` | admin, ceo | Platform settings |
+| 14 | `PUT` | `/admin/settings` | admin, ceo | Save them |
+| 14 | `GET` | `/admin/health` | admin, ceo | Data checks |
+| 14 | `GET` | `/audit` | admin, ceo | The audit log (with filters) |
+| 15 | `GET` | `/projects/:projectId/github` | its pm, ceo | GitHub settings |
+| 15 | `PUT` | `/projects/:projectId/github` | its pm, ceo | Save them |
+| 15 | `GET` | `/{tasks\|bugs}/:id/github` | see §2 | Linked pull requests and commits |
+| 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes (the CEO sees all) |
+| 16 | `POST` | `/monitoring/notes` | monitor, ceo | Write a report, feedback or a problem |
+| 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
+| 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
+| 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done |
+
+### Who may do what (summary)
+
+| | ceo | pm | monitor | lead | employee | admin |
+|---|---|---|---|---|---|---|
+| See projects | all | the ones they run or are in | all | the ones they're in | the ones they're in | all |
+| Manage a project's tasks | ✓ | their projects | | projects they're in | | |
+| Approve a completion | ✓ | their projects | | projects they're in | | |
+| Comment, add files, report bugs | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| Create projects and templates | ✓ | ✓ | | | | |
+| Change a project's manager | ✓ | | | | | |
+| Dashboard, reports, performance | ✓ | ✓ | ✓ | ✓ | their own page | |
+| Review criteria | ✓ | | | | | |
+| Post announcements | ✓ | | | | | ✓ |
+| Accounts, teams, settings, audit log | ✓ | | | | | ✓ |
+| Monitoring notes | ✓ | | ✓ | | | |
+| The CEO's inbox | ✓ | | | | | |
+
+---
+
 ---
 
 ## 1. The basics (every call)
@@ -567,7 +704,7 @@ Shapes: `src/features/github/types.ts`; rules: `src/features/github/rules.ts`; t
 - When a linked pull request is **merged**, notify the task's assignee `github_pr_merged` (data: `note` = "repo #n").
   *(Assumption, BRIEF question 10: one way. The platform shows GitHub; it doesn't move a task by itself.)*
 
-## 17. Monitoring notes and the CEO's inbox
+## 16. Monitoring notes and the CEO's inbox
 
 The monitoring and evaluation officer writes **reports** (about a team, a person, a project, or general), **feedback**
 on any person (praise or something to improve), and **problems**. She keeps them, and sends any of them to the CEO
@@ -595,7 +732,7 @@ MonitorNote {
   messages (`title`, `body`, `about`, `kind`, `reply`) in Arabic and English, like every other form.
 - `note_sent` and `note_answered` are **required** notifications (nobody can turn them off).
 
-## 16. Still open with the client
+## 17. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
