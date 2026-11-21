@@ -1,6 +1,6 @@
-// Signing out tells the server first (POST /auth/logout cancels the token), and never keeps anyone signed in: a server
-// that fails or doesn't answer still ends the session in this browser.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// Signing out ends the session in this browser at once, and tells the server in the background (POST /auth/logout,
+// with the token that was used), so the token stops working there too. A server that fails changes nothing here.
+import { beforeEach, describe, expect, it } from "vitest";
 
 const store = new Map<string, string>();
 globalThis.localStorage = {
@@ -21,27 +21,29 @@ beforeEach(() => {
 });
 
 describe("signing out", () => {
-  it("tells the server with the token still there, then forgets the token", async () => {
-    const seen: (string | null)[] = [];
-    onSignOut(async () => void seen.push(getToken()));
-    await signOut();
-    expect(seen).toEqual(["t-123"]);
+  it("forgets the token at once and tells the server which token to cancel", async () => {
+    const told: string[] = [];
+    onSignOut(async (token) => void told.push(token));
+    signOut();
     expect(getToken()).toBeNull();
+    expect(told).toEqual(["t-123"]);
   });
 
-  it("still signs out when the server fails", async () => {
+  it("a server that fails or never answers changes nothing", async () => {
     onSignOut(() => Promise.reject(new Error("offline")));
-    await signOut();
+    signOut();
+    expect(getToken()).toBeNull();
+    setSession({ token: "t-456", user });
+    onSignOut(() => new Promise(() => {}));
+    signOut();
     expect(getToken()).toBeNull();
   });
 
-  it("doesn't wait more than 3 seconds for a server that doesn't answer", async () => {
-    vi.useFakeTimers();
-    onSignOut(() => new Promise(() => {}));
-    const done = signOut();
-    await vi.advanceTimersByTimeAsync(3000);
-    await done;
-    expect(getToken()).toBeNull();
-    vi.useRealTimers();
+  it("with nobody signed in, nothing is sent", () => {
+    const told: string[] = [];
+    onSignOut(async (token) => void told.push(token));
+    store.clear();
+    signOut();
+    expect(told).toEqual([]);
   });
 });

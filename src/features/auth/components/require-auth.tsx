@@ -15,7 +15,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const signedIn = !!session;
 
   // Signing out (the account menu) first tells the server to cancel the token.
-  useEffect(() => onSignOut(() => authApi.logout()), []);
+  useEffect(() => onSignOut((token) => authApi.logout(token)), []);
 
   useEffect(() => {
     if (!signedIn) router.replace(`/login?next=${encodeURIComponent(path)}`);

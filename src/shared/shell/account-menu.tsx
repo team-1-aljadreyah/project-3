@@ -108,9 +108,9 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
     items[(go[e.key] + items.length) % items.length].focus();
   };
 
-  const signOut = async () => {
+  const signOut = () => {
     setOpen(false);
-    await endSession();
+    endSession();
     router.replace("/login");
   };
 

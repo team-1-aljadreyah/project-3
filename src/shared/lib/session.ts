@@ -68,23 +68,20 @@ export function clearSession() {
   emit();
 }
 
-/** What signing out tells the server first (the auth feature registers it: POST /auth/logout cancels the token). */
-let tellServer: (() => Promise<unknown>) | null = null;
-export function onSignOut(fn: () => Promise<unknown>) {
+/** What signing out tells the server (the auth feature registers it: POST /auth/logout cancels the token). */
+let tellServer: ((token: string) => Promise<unknown>) | null = null;
+export function onSignOut(fn: (token: string) => Promise<unknown>) {
   tellServer = fn;
 }
 
 /**
- * Sign out: the server cancels the token first (so a copied token stops working), then this browser forgets it. A
- * server that doesn't answer within 3 seconds, or answers an error, never keeps anyone signed in.
+ * Sign out: this browser forgets the token at once (nobody waits on the server), and the server is told in the
+ * background to cancel that token, so a copied token stops working too. A server that is down changes nothing here.
  */
-export async function signOut() {
-  if (tellServer) {
-    try {
-      await Promise.race([tellServer(), new Promise((done) => setTimeout(done, 3000))]);
-    } catch {}
-  }
+export function signOut() {
+  const token = getToken();
   clearSession();
+  if (token && tellServer) tellServer(token).catch(() => {});
 }
 
 /** The session, or `null` when nobody is signed in. The page redraws when it changes (in this tab or another). */
