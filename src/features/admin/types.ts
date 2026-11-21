@@ -77,16 +77,35 @@ export type AuditAction =
   | "review_finalized"
   | "picture_removed";
 
-/** One line of the audit log: who did what, to what, what changed, and when. Nobody can change or remove it. */
+/** The part of the platform an action is about (the audit log shows it as a small label and filters by it). */
+export type AuditKind = "account" | "team" | "settings" | "signin" | "project" | "announcement" | "review";
+
+/** One line of the audit log: who did what, to what, what changed, when, and from where. Nobody can change or remove it. */
 export interface AuditEntry {
   id: number;
-  /** Who did it. None for a failed sign-in with an unknown email. */
+  /** Who did it. None for a failed sign-in (nobody is signed in yet). */
   actor_id?: number;
   action: AuditAction;
   target: { type: "user" | "team" | "settings" | "project" | "sprint" | "template" | "announcement" | "criteria" | "review" | "login"; id?: number; label: string };
   /** What data changed: field, old and new value as text. */
   changes?: { field: string; from?: string; to?: string }[];
   at: string;
+  /** The client's address as the server saw it (CF-Connecting-IP behind Cloudflare; docs/backend.md section 14). */
+  ip?: string;
+  /** The browser's User-Agent header, cut to 300 characters. */
+  user_agent?: string;
+  /** The sign-in session the action was made in (short id). None for a failed sign-in. */
+  session_id?: string;
+  /** The request that wrote the line, to find it in the server's own logs. */
+  request_id?: string;
+}
+
+/** `GET /audit/:id`: one line, with the same person's other lines that day and the other lines about the same subject. */
+export interface AuditDetail extends AuditEntry {
+  /** The same person's other actions on the same day, newest first (at most 20). */
+  related_by_actor: AuditEntry[];
+  /** The other lines about the same subject, newest first (at most 20). */
+  related_by_target: AuditEntry[];
 }
 
 export interface AuditFilter {
@@ -94,4 +113,9 @@ export interface AuditFilter {
   actor_id?: number;
   from?: string;
   to?: string;
+  /** Search: who (name in either language, email), the subject, the action in words, and what changed. */
+  q?: string;
+  /** An address: exact ("192.0.2.14") or a prefix ending with "." or "*" ("192.0.2." or "192.0.2.*"). */
+  ip?: string;
+  kind?: AuditKind;
 }

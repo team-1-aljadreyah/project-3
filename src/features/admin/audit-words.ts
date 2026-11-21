@@ -1,6 +1,8 @@
 // The audit log's actions in words (Arabic first, English second), and the kind each action is.
 import type { StatusTone } from "@/shared/api/types";
-import type { AuditAction } from "./types";
+import type { AuditAction, AuditKind } from "./types";
+
+export type { AuditKind };
 
 export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
   user_created: { ar: "أضاف مستخدماً", en: "added a user" },
@@ -25,8 +27,6 @@ export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
 };
 
 /** The kind of an action: the part of the platform it is about. The admin page shows it as a small coloured label. */
-export type AuditKind = "account" | "team" | "settings" | "signin" | "project" | "announcement" | "review";
-
 export const ACTION_KIND: Record<AuditAction, AuditKind> = {
   user_created: "account",
   user_changed: "account",

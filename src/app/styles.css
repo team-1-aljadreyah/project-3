@@ -863,3 +863,22 @@ body {
     animation: none !important;
   }
 }
+
+/* ── A side panel (the audit log's detail drawer): it slides in from the end side, a short way. ── */
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    translate: var(--drawer-from, 24px) 0;
+  }
+}
+.drawer-in[open] {
+  animation: drawer-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[dir="rtl"] .drawer-in {
+  --drawer-from: -24px;
+}
+@media (max-width: 639px) {
+  .drawer-in {
+    --drawer-from: 0 !important;
+  }
+}

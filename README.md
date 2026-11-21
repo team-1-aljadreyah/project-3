@@ -148,6 +148,11 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
 - **Links everywhere:** numbers, rows and names open their pages (a person's name only when the viewer may open their
   performance: `personHref` in `src/shared/lib/access.ts`). Tabs and filters live in the address (`useQueryParam`,
   e.g. `/reports?tab=people&team=1`, `/bugs?show=late`, `/inbox?show=done`), so a link opens a page already set.
+- **The audit log** (`/audit`, the admin and the CEO, `src/features/admin`): a search box and filters (action, kind,
+  person, IP, days) kept in the address, each line with its IP and device, failed sign-ins marked in red. Pressing a line
+  opens a side panel (the whole screen on a phone; `?entry=<id>` in the address, Back or Escape closes it): who, what,
+  when to the second, from where (IP, browser and system, session), what changed before → after, the same person's other
+  actions that day and the subject's history, and "Copy details"; ↑/↓ step through the list.
 - **Advanced settings** (`/advanced`, the CEO only, `src/features/advanced`): every company rule in one page, like
   Project 2's: a side tree with a quick find (`?s=<part>` in the address; a short list on the phone), one draft for all
   parts with «Changed» and the default beside each setting, a save bar, and the history, file and reset. «Jobs and
