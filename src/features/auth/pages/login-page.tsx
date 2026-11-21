@@ -153,9 +153,21 @@ export function LoginPage() {
               </form>
             </div>
 
+            {/* While the demo accounts load (the demo build only, dropped from the real one), six empty places of the
+                same size hold their room, so the card under them doesn't jump when they arrive. */}
+            {!demo && process.env.NEXT_PUBLIC_USE_MOCK === "true" && (
+              <div aria-hidden="true">
+                <div className="mb-3 h-5" />
+                <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <li key={i} className="h-15 rounded-xl border border-line bg-card/60" />
+                  ))}
+                </ul>
+              </div>
+            )}
             {demo && (
               <section aria-labelledby="demo-title">
-                <h3 id="demo-title" className="mb-3 text-sm font-medium text-muted">
+                <h3 id="demo-title" className="mb-3 h-5 text-sm font-medium text-muted">
                   {tr("نسخة تجريبية: سجّل الدخول بأي وظيفة بضغطة واحدة", "Demo: sign in as any job with one tap")}
                 </h3>
                 <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -165,7 +177,7 @@ export function LoginPage() {
                         type="button"
                         disabled={busy}
                         onClick={() => signIn(d.email, demo.password)}
-                        className="flex w-full items-center gap-3 rounded-xl border border-line bg-card px-3 py-2.5 text-start transition-colors hover:border-accent"
+                        className="flex h-15 w-full items-center gap-3 rounded-xl border border-line bg-card px-3 text-start transition-colors hover:border-accent"
                       >
                         <Avatar user={d} />
                         <span className="flex min-w-0 flex-col">
