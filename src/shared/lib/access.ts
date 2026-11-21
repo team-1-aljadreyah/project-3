@@ -34,7 +34,7 @@ export function canTakePart(user: Pick<User, "id" | "role">, project: Members) {
 
 export const ROLES: Record<Role, { ar: string; en: string }> = {
   ceo: { ar: "المدير التنفيذي", en: "CEO" },
-  pm: { ar: "مدير المشروع", en: "Project manager" },
+  pm: { ar: "مدير القسم", en: "Project manager" },
   monitor: { ar: "مسؤول المتابعة والتقييم", en: "Monitoring & evaluation" },
   lead: { ar: "قائد الفريق", en: "Team leader" },
   employee: { ar: "موظف", en: "Employee" },
