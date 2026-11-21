@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 
 /** Every layer of the drawing uses the same frame, so the layers sit exactly on top of each other. */
@@ -18,11 +18,13 @@ const RIM = { fill: "#FFE1E8", opacity: 0.75 };
 const LINE = { fill: "none", strokeLinecap: "round" } as const;
 
 /**
- * The monitoring officer's little character in her dashboard banner (monitor-summary.tsx): a young woman with a dark
- * ponytail, square glasses, a blush top and a wine scarf, holding a tablet with a small chart on it. She is drawn here
+ * The monitoring officer's little character in her dashboard banner (monitor-summary.tsx): a young woman with a blonde
+ * ponytail, a blush top and a wine scarf, holding a tablet with a small chart on it (the client, 21 November 2026:
+ * "make it blonde with no glasses, make the eyes follow the mouse, improve the hand waving, especially the arm"). She is drawn here
  * in code (shapes and soft gradients, no picture files) and the styles at the end of app/styles.css bring her to life:
- * she breathes, tilts her head, blinks, swipes the tablet, her glasses catch the light and her ponytail sways. When the
- * mouse goes over her she waves once. She is only decoration: hidden from screen readers, and only her own shape takes
+ * she breathes, tilts her head, blinks, swipes the tablet and her ponytail sways. Her eyes (and a little her head)
+ * follow the mouse anywhere on the page. When the mouse goes over her she waves once: the arm lifts at the shoulder,
+ * waves at the elbow, and the hand follows a moment later at the wrist. She is only decoration: hidden from screen readers, and only her own shape takes
  * the mouse. The drawing faces the page from the right; in Arabic the styles mirror her to the left side.
  *
  * Each moving part is its own layer, and only whole layers move (turn, slide, fade), so the graphics card moves them
@@ -30,10 +32,45 @@ const LINE = { fill: "none", strokeLinecap: "round" } as const;
  */
 export function MonitorCharacter({ className }: { className?: string }) {
   const [waving, setWaving] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  // Her eyes follow the mouse: where it is, as a direction from her eyes (-1 to 1 each way), written into two CSS
+  // variables at most once a frame; the irises and the head move by them (styles.css: .mc-look, .mc-gaze). No React
+  // update, so it costs nothing. In Arabic she is mirrored, so left and right swap. "Reduce motion": she stays still.
+  useEffect(() => {
+    const el = box.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frame = 0;
+    let px = 0;
+    let py = 0;
+    const look = () => {
+      frame = 0;
+      const r = el.getBoundingClientRect();
+      const dx = px - (r.left + r.width / 2);
+      const dy = py - (r.top + r.height * 0.42);
+      const far = Math.hypot(dx, dy) || 1;
+      // Close to her face she looks only a little; from about her own height away, all the way.
+      const k = Math.min(1, far / Math.max(80, r.height));
+      const mirrored = el.closest("[dir]")?.getAttribute("dir") === "rtl";
+      el.style.setProperty("--look-x", ((dx / far) * k * (mirrored ? -1 : 1)).toFixed(3));
+      el.style.setProperty("--look-y", ((dy / far) * k).toFixed(3));
+    };
+    const onMove = (e: PointerEvent) => {
+      px = e.clientX;
+      py = e.clientY;
+      if (!frame) frame = requestAnimationFrame(look);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
     // The mouse over her starts one wave; it plays to its end even if the mouse leaves, then she goes back to idle.
     <div
+      ref={box}
       aria-hidden="true"
       className={cn("mc", waving && "is-waving", className)}
       onPointerEnter={() => setWaving(true)}
@@ -56,15 +93,16 @@ export function MonitorCharacter({ className }: { className?: string }) {
             <stop offset="0" stopColor="#D8957E" />
             <stop offset="0.7" stopColor="#F3C8B3" />
           </linearGradient>
+          {/* Blonde: pale gold where the light falls, honey toward the edges. */}
           <radialGradient id="mc-hair" cx="0.36" cy="0.2" r="0.9">
-            <stop offset="0" stopColor="#6B3E4D" />
-            <stop offset="0.45" stopColor="#351C27" />
-            <stop offset="1" stopColor="#1C0E15" />
+            <stop offset="0" stopColor="#FCEBB8" />
+            <stop offset="0.45" stopColor="#E6BF6C" />
+            <stop offset="1" stopColor="#B4843A" />
           </radialGradient>
           <linearGradient id="mc-pony" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#4D2B39" />
-            <stop offset="0.6" stopColor="#2A1520" />
-            <stop offset="1" stopColor="#1A0C13" />
+            <stop offset="0" stopColor="#F4D690" />
+            <stop offset="0.6" stopColor="#D6A856" />
+            <stop offset="1" stopColor="#A6752E" />
           </linearGradient>
           {/* The blush top: almost white in the light, dusty rose in the folds. */}
           <radialGradient id="mc-top" cx="0.38" cy="0.12" r="0.95">
@@ -75,6 +113,11 @@ export function MonitorCharacter({ className }: { className?: string }) {
           <linearGradient id="mc-sleeve" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#F8E6DD" />
             <stop offset="1" stopColor="#D7A6A0" />
+          </linearGradient>
+          {/* The waving arm's sleeve, shaded along the arm (in the drawing's own units, so a straight stroke gets it). */}
+          <linearGradient id="mc-sleeve-arm" gradientUnits="userSpaceOnUse" x1="30" y1="120" x2="62" y2="150">
+            <stop offset="0" stopColor="#FBEDE6" />
+            <stop offset="1" stopColor="#E2B5AE" />
           </linearGradient>
           <linearGradient id="mc-scarf" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#A8396E" />
@@ -90,11 +133,6 @@ export function MonitorCharacter({ className }: { className?: string }) {
             <stop offset="0.55" stopColor="#4A2230" />
             <stop offset="1" stopColor="#8A4C5C" />
           </linearGradient>
-          <linearGradient id="mc-lens" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.28" />
-            <stop offset="0.5" stopColor="#FFFFFF" stopOpacity="0.06" />
-            <stop offset="1" stopColor="#FFFFFF" stopOpacity="0.14" />
-          </linearGradient>
           <linearGradient id="mc-tablet" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#5A3046" />
             <stop offset="1" stopColor="#2A1420" />
@@ -108,12 +146,12 @@ export function MonitorCharacter({ className }: { className?: string }) {
             <stop offset="0.6" stopColor="#D49A9A" stopOpacity="0.12" />
             <stop offset="1" stopColor="#D49A9A" stopOpacity="0" />
           </radialGradient>
+          <clipPath id="mc-eye-clip">
+            <ellipse cx="76" cy="78.4" rx="7.2" ry="8" />
+            <ellipse cx="104" cy="78.4" rx="7.2" ry="8" />
+          </clipPath>
           <clipPath id="mc-face-clip">
             <path d="M56 70C56 46 72 36 90 36C108 36 124 46 124 70C124 88 114 104 96 108Q90 110 84 108C66 104 56 88 56 70Z" />
-          </clipPath>
-          <clipPath id="mc-lens-clip">
-            <rect x="63" y="66.5" width="25" height="20.5" rx="6.5" />
-            <rect x="92" y="66.5" width="25" height="20.5" rx="6.5" />
           </clipPath>
           {/* Shapes used twice: once as a pale rim (the light behind her) and once in colour on top. */}
           <path id="mc-pony-shape" d="M117 30C138 19 159 34 155 61C152 84 141 99 149 123C135 115 126 95 129 74C131 58 128 45 115 38Z" />
@@ -172,15 +210,17 @@ export function MonitorCharacter({ className }: { className?: string }) {
           </g>
         </Layer>
 
-        {/* The head tilts a little from side to side. */}
+        {/* The head turns a touch toward the mouse (mc-gaze) and tilts a little from side to side (mc-head). */}
+        <div className="mc-stack mc-gaze">
         <div className="mc-stack mc-head">
           {/* The ponytail swings from its tie at the back of the head. */}
           <Layer className="mc-pony">
             <g className="mc-hit">
               <use href="#mc-pony-shape" {...RIM} transform="translate(1.6 -1.2)" />
               <use href="#mc-pony-shape" fill="url(#mc-pony)" />
-              <path d="M124 37C142 45 147 63 140 86" {...LINE} stroke="#6B3E4D" strokeOpacity="0.7" strokeWidth="1.2" />
-              <path d="M137 29C149 35 152 48 150 59" {...LINE} stroke="#8C5A6A" strokeOpacity="0.55" strokeWidth="2.2" />
+              <path d="M124 37C142 45 147 63 140 86" {...LINE} stroke="#B98A3C" strokeOpacity="0.8" strokeWidth="1.2" />
+              <path d="M137 29C149 35 152 48 150 59" {...LINE} stroke="#FFF3C9" strokeOpacity="0.7" strokeWidth="2.2" />
+              <path d="M131 52C136 70 134 90 141 108" {...LINE} stroke="#C9963F" strokeOpacity="0.55" strokeWidth="1" />
             </g>
           </Layer>
 
@@ -203,28 +243,44 @@ export function MonitorCharacter({ className }: { className?: string }) {
               <ellipse cx="74" cy="58" rx="12" ry="6" fill="#fff" opacity="0.22" transform="rotate(-18 74 58)" />
               <ellipse cx="70" cy="93" rx="8.5" ry="5.5" fill="url(#mc-cheek)" />
               <ellipse cx="110" cy="93" rx="8.5" ry="5.5" fill="url(#mc-cheek)" />
-              <path d="M68 62Q76 58 84 61" {...LINE} stroke="#3A1F28" strokeWidth="2" />
-              <path d="M96 61Q104 58 112 62" {...LINE} stroke="#3A1F28" strokeWidth="2" />
+              <path d="M68 62Q76 58 84 61" {...LINE} stroke="#9C6B32" strokeWidth="2.2" />
+              <path d="M96 61Q104 58 112 62" {...LINE} stroke="#9C6B32" strokeWidth="2.2" />
               <path d="M90 86q1.6 2 0 3.6" {...LINE} stroke="#D38D78" strokeWidth="1.3" />
             </g>
           </Layer>
 
           {/* Her usual face: open eyes (they blink) and a small smile. It steps aside while she waves. */}
           <div className="mc-stack mc-idle-face">
-            <Layer className="mc-eyes">
-              <ellipse cx="76" cy="78" rx="6" ry="7.4" fill="url(#mc-iris)" />
-              <ellipse cx="76" cy="78.5" rx="2.8" ry="3.8" fill="#14060B" />
-              <circle cx="78.3" cy="74.8" r="2.2" fill="#fff" />
-              <circle cx="74" cy="81.6" r="0.9" fill="#fff" opacity="0.85" />
-              <path d="M68.5 74Q76 67.5 83.5 73.5" {...LINE} stroke="#22101A" strokeWidth="2.4" />
-              <path d="M68.8 74L66.4 72.4" {...LINE} stroke="#22101A" strokeWidth="1.6" />
-              <ellipse cx="104" cy="78" rx="6" ry="7.4" fill="url(#mc-iris)" />
-              <ellipse cx="104" cy="78.5" rx="2.8" ry="3.8" fill="#14060B" />
-              <circle cx="106.3" cy="74.8" r="2.2" fill="#fff" />
-              <circle cx="102" cy="81.6" r="0.9" fill="#fff" opacity="0.85" />
-              <path d="M96.5 73.5Q104 67.5 111.5 74" {...LINE} stroke="#22101A" strokeWidth="2.4" />
-              <path d="M111.2 74L113.6 72.4" {...LINE} stroke="#22101A" strokeWidth="1.6" />
-            </Layer>
+            {/* The eyes blink together; inside them the irises look toward the mouse (--look-x/-y, set above). */}
+            <div className="mc-stack mc-eyes">
+              <Layer>
+                {/* The whites, clipped to the eye shape, so the irises have room to move. */}
+                <ellipse cx="76" cy="78.4" rx="7.2" ry="8" fill="#FFFDFB" />
+                <ellipse cx="104" cy="78.4" rx="7.2" ry="8" fill="#FFFDFB" />
+              </Layer>
+              <Layer>
+                {/* The irises move inside the whites (clipped to them), so looking aside hides part of the iris. */}
+                <g clipPath="url(#mc-eye-clip)">
+                  <g className="mc-look">
+                    <ellipse cx="76" cy="78.6" rx="5.4" ry="6.6" fill="url(#mc-iris)" />
+                    <ellipse cx="76" cy="79" rx="2.6" ry="3.4" fill="#14060B" />
+                    <circle cx="78" cy="75.6" r="1.9" fill="#fff" />
+                    <circle cx="74.2" cy="81.8" r="0.8" fill="#fff" opacity="0.85" />
+                    <ellipse cx="104" cy="78.6" rx="5.4" ry="6.6" fill="url(#mc-iris)" />
+                    <ellipse cx="104" cy="79" rx="2.6" ry="3.4" fill="#14060B" />
+                    <circle cx="106" cy="75.6" r="1.9" fill="#fff" />
+                    <circle cx="102.2" cy="81.8" r="0.8" fill="#fff" opacity="0.85" />
+                  </g>
+                </g>
+              </Layer>
+              <Layer>
+                {/* The upper lids and lashes, on top of the irises: they stay put while the irises move. */}
+                <path d="M68.5 74Q76 67.5 83.5 73.5" {...LINE} stroke="#3B2316" strokeWidth="2.4" />
+                <path d="M68.8 74L66.4 72.4" {...LINE} stroke="#3B2316" strokeWidth="1.6" />
+                <path d="M96.5 73.5Q104 67.5 111.5 74" {...LINE} stroke="#3B2316" strokeWidth="2.4" />
+                <path d="M111.2 74L113.6 72.4" {...LINE} stroke="#3B2316" strokeWidth="1.6" />
+              </Layer>
+            </div>
             <Layer>
               <path d="M85 96Q90 100.5 95 96" {...LINE} stroke="#A23A50" strokeWidth="1.8" />
             </Layer>
@@ -232,43 +288,24 @@ export function MonitorCharacter({ className }: { className?: string }) {
 
           {/* Her happy face while she waves: smiling eyes and an open smile. */}
           <Layer className="mc-happy-face">
-            <path d="M70 80Q76 72 82 80" {...LINE} stroke="#22101A" strokeWidth="2.4" />
-            <path d="M98 80Q104 72 110 80" {...LINE} stroke="#22101A" strokeWidth="2.4" />
+            <path d="M70 80Q76 72 82 80" {...LINE} stroke="#3B2316" strokeWidth="2.4" />
+            <path d="M98 80Q104 72 110 80" {...LINE} stroke="#3B2316" strokeWidth="2.4" />
             <path d="M84.5 95Q90 104.5 95.5 95Q90 97 84.5 95Z" fill="#8E2B44" />
             <ellipse cx="90" cy="100.2" rx="2.6" ry="1.3" fill="#E58597" />
           </Layer>
 
-          {/* A glint of light on each lens now and then: first the near lens, then the far one. */}
-          <Layer className="mc-glint">
-            <g clipPath="url(#mc-lens-clip)" fill="#fff">
-              <path d="M66 87H71.5L81.5 66.5H76Z" opacity="0.8" />
-              <path d="M73.5 87H75.5L85.5 66.5H83.5Z" opacity="0.6" />
-            </g>
-          </Layer>
-          <Layer className="mc-glint mc-glint-far">
-            <g clipPath="url(#mc-lens-clip)" fill="#fff">
-              <path d="M95 87H100.5L110.5 66.5H105Z" opacity="0.8" />
-              <path d="M102.5 87H104.5L114.5 66.5H112.5Z" opacity="0.6" />
-            </g>
-          </Layer>
-
-          {/* The square glasses, then the fringe swept to one side, with a shine on top. */}
+          {/* The fringe swept to one side, its strands, and a shine on top. */}
           <Layer>
             <g className="mc-hit">
-              <g fill="none" stroke="#5B1F3A" strokeWidth="1.7" strokeLinecap="round">
-                <rect x="63" y="66.5" width="25" height="20.5" rx="6.5" fill="url(#mc-lens)" />
-                <rect x="92" y="66.5" width="25" height="20.5" rx="6.5" fill="url(#mc-lens)" />
-                <path d="M88 75Q90 72.5 92 75" />
-                <path d="M64 73L57.5 75" />
-                <path d="M116 73L122.5 75" />
-              </g>
               <use href="#mc-fringe" fill="url(#mc-hair)" />
-              <path d="M78 45C86 40 98 40 108 44" {...LINE} stroke="#1C0E15" strokeOpacity="0.6" strokeWidth="1.2" />
-              <path d="M93 47C104 50 114 56 120 64" {...LINE} stroke="#5A3240" strokeOpacity="0.8" strokeWidth="1.1" />
-              <path d="M67 37C73 31 81 28.5 89 28" {...LINE} stroke="#A87485" strokeOpacity="0.55" strokeWidth="3.2" />
-              <path d="M95 28C101 28 107 30 111 33" {...LINE} stroke="#A87485" strokeOpacity="0.4" strokeWidth="2.4" />
+              <path d="M78 45C86 40 98 40 108 44" {...LINE} stroke="#B98A3C" strokeOpacity="0.7" strokeWidth="1.2" />
+              <path d="M93 47C104 50 114 56 120 64" {...LINE} stroke="#C9963F" strokeOpacity="0.85" strokeWidth="1.1" />
+              <path d="M72 52C76 47 82 45 88 45" {...LINE} stroke="#C9963F" strokeOpacity="0.6" strokeWidth="1" />
+              <path d="M67 37C73 31 81 28.5 89 28" {...LINE} stroke="#FFF6D6" strokeOpacity="0.8" strokeWidth="3.2" />
+              <path d="M95 28C101 28 107 30 111 33" {...LINE} stroke="#FFF6D6" strokeOpacity="0.6" strokeWidth="2.4" />
             </g>
           </Layer>
+        </div>
         </div>
 
         {/* The hand that swipes the tablet (it steps aside while she waves). */}
@@ -281,22 +318,56 @@ export function MonitorCharacter({ className }: { className?: string }) {
           </g>
         </Layer>
 
-        {/* The waving arm: hidden until the mouse comes over her. The forearm turns at the elbow. */}
+        {/*
+          The waving arm, hidden until the mouse comes over her. Three joints, each its own layer turning on its own
+          point: the shoulder lifts the whole arm, the elbow waves the forearm, and the wrist follows a moment later, so
+          the hand flaps like a real wave instead of the arm swinging like a stick.
+        */}
         <div className="mc-stack mc-wave-arm">
           <Layer>
-            <path d="M60 130C49 136 41 142 36 152L46 158C50 150 56 144 66 140Z" {...SLEEVE} />
+            {/* The upper arm: a soft sleeve from the shoulder to the elbow, outlined like the top. */}
+            <path d="M64 133L42 154" {...LINE} stroke="#D49A9A" strokeOpacity="0.75" strokeWidth="14" />
+            <path d="M64 133L42 154" {...LINE} stroke="url(#mc-sleeve-arm)" strokeWidth="12.4" />
+            <path d="M58 132Q52 138 47 145" {...LINE} stroke="#FFF6F1" strokeOpacity="0.55" strokeWidth="2" />
           </Layer>
-          <Layer className="mc-forearm">
-            <path d="M36 155C32 141 30 129 31 118H41C41 128 43 140 47 152Z" {...SLEEVE} />
-            <g stroke="#F4C9B4" strokeWidth="3.4" strokeLinecap="round">
-              <path d="M31.5 105L29.5 97" />
-              <path d="M35 104L34.6 95" />
-              <path d="M38.8 104.4L39.6 96" />
-              <path d="M42 106.5L43.8 100" />
-              <path d="M30.5 111.5L26 107.5" />
-            </g>
-            <ellipse cx="36" cy="110.5" rx="6.5" ry="7.5" fill="url(#mc-skin-hand)" />
-          </Layer>
+          <div className="mc-stack mc-forearm">
+            <Layer>
+              {/* The forearm in its sleeve, up to a cuff at the wrist. */}
+              <path d="M42 154L37 123" {...LINE} stroke="#D49A9A" strokeOpacity="0.75" strokeWidth="12" />
+              <path d="M42 154L37 123" {...LINE} stroke="url(#mc-sleeve-arm)" strokeWidth="10.4" />
+              <path d="M37.6 126L36.6 119.5" stroke="#E7BBB4" strokeWidth="11.6" strokeLinecap="round" />
+              <path d="M32 124.5Q37 126.5 42.4 124" {...LINE} stroke="#C98C8C" strokeOpacity="0.7" strokeWidth="1" />
+            </Layer>
+            <div className="mc-stack mc-hand">
+              <Layer>
+                {/* The hand, palm out: four fingers a little apart, the thumb toward her face, soft lines. */}
+                <g strokeLinecap="round">
+                  <g stroke="#E2A78F" strokeWidth="4.4">
+                    <path d="M31 108.5L28.6 99.5" />
+                    <path d="M34.6 106.5L33.8 96.2" />
+                    <path d="M38.4 106.6L39.2 96.6" />
+                    <path d="M41.6 108.4L43.6 100.6" />
+                    <path d="M42.6 113.2L47.4 110" />
+                  </g>
+                  <g stroke="#F8D6C4" strokeWidth="3.3">
+                    <path d="M31 108.5L28.6 99.5" />
+                    <path d="M34.6 106.5L33.8 96.2" />
+                    <path d="M38.4 106.6L39.2 96.6" />
+                    <path d="M41.6 108.4L43.6 100.6" />
+                    <path d="M42.6 113.2L47.4 110" />
+                  </g>
+                </g>
+                <path
+                  d="M30.4 110C30 104.6 33 103.4 36.4 103.4C40.6 103.4 43.6 105 43.2 110.6C42.9 115.4 40 118 36.6 118C33 118 30.6 115.2 30.4 110Z"
+                  fill="url(#mc-skin-hand)"
+                  stroke="#E2A78F"
+                  strokeWidth="0.6"
+                />
+                <path d="M33.4 112.6Q36.6 114.6 40 112.2" {...LINE} stroke="#DCA088" strokeOpacity="0.8" strokeWidth="0.8" />
+                <ellipse cx="34.6" cy="107.6" rx="2.4" ry="1.5" fill="#FFF1E8" opacity="0.6" />
+              </Layer>
+            </div>
+          </div>
         </div>
       </div>
     </div>

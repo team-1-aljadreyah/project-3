@@ -138,7 +138,8 @@ export function Kanban({
       onDragCancel={() => setDragging(null)}
       onDragEnd={onDragEnd}
     >
-      <div className="-mx-3 overflow-x-auto px-3 pb-2 sm:-mx-7 sm:px-7">
+      {/* Room above the columns (pulled back up by -mt-1) so a column's drop ring isn't cut by the scroll area. */}
+      <div className="-mx-3 -mt-1 overflow-x-auto px-3 pt-1 pb-2 sm:-mx-7 sm:px-7">
         <div className="flex min-w-max gap-3">
           {columns.map(({ status, tasks: list }) => (
             <Column key={status.key} status={status} count={list.length}>
