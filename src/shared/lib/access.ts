@@ -72,6 +72,8 @@ export const NAV: NavItem[] = [
   { key: "announcements", ar: "الإعلانات", en: "Announcements", href: "/announcements", roles: ALL, ready: true },
   { key: "performance", ar: "الأداء", en: "Performance", href: "/performance", roles: WORK, ready: true },
   { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
+  { key: "monitoring", ar: "المتابعة", en: "Monitoring", href: "/monitoring", roles: ["monitor"], ready: true },
+  { key: "inbox", ar: "الوارد من المتابعة", en: "From monitoring", href: "/inbox", roles: ["ceo"], ready: true },
   { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },
   { key: "audit", ar: "سجل العمليات", en: "Audit log", href: "/audit", roles: ["ceo", "admin"], ready: true },
 ];

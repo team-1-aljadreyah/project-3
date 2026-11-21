@@ -135,6 +135,8 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   clears to show the team's tasks as smaller spheres, with the four shares beside it (`LeadSphere`); monitoring and
   evaluation gets a banner with who is signed in, summary cards, and every project against its plan with a filter and a
   search (`MonitorSummary`).
+- **Monitoring** (`src/features/monitoring`): the monitoring officer writes reports about teams and people, feedback
+  on anyone and problems at `/monitoring`, and sends any of them to the CEO, who answers in `/inbox` ("From monitoring").
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
   short greeting with the person's first name, job and the day lifts away into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.

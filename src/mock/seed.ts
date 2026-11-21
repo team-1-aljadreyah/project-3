@@ -7,6 +7,7 @@ import type { Message } from "@/features/chat";
 import type { Criteria, Review } from "@/features/performance";
 import type { AuditEntry, Settings } from "@/features/admin";
 import type { GithubItem, GithubSettings } from "@/features/github";
+import type { MonitorNote } from "@/features/monitoring";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
@@ -58,12 +59,15 @@ export interface MockDb {
   github_items: GithubItem[];
   /** Who has seen which announcement, and when. */
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
+  /** The monitoring officer's reports, feedback and problems, and what was sent to the CEO. */
+  monitor_notes: MonitorNote[];
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
     attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number; review: number; audit: number; team: number;
+    note: number;
   };
 }
 
@@ -434,7 +438,29 @@ export function seed(now = new Date()): MockDb {
     created_by: 2, created_at: at(10),
   }];
 
+  // The monitoring officer's notes: a team report the CEO answered, feedback on Sara not sent yet, and a problem she
+  // sent this morning that the CEO has not opened.
+  const monitor_notes: MonitorNote[] = [
+    {
+      id: 1, kind: "report", title: "تقرير متابعة فريق التطوير: الأسبوع الثالث", author_id: 3, created_at: at(2, 13), sent_at: at(2, 14), ceo_state: "seen",
+      about: { type: "team", id: 1, label: "فريق التطوير", label_en: "Development team" },
+      body: "أنجز الفريق ثلاث مهام من عشر في منصة الحجز. التأخير في مهمتين سببه انتظار صلاحيات الوصول من جهة العميل. أقترح متابعة الصلاحيات يومياً حتى تُحل.",
+      ceo_reply: "شكراً هدى. سأكلم العميل اليوم بشأن الصلاحيات، ولنراجع الوضع في اجتماع الخميس.", replied_at: at(1, 10),
+    },
+    {
+      id: 2, kind: "feedback", tone: "praise", title: "عمل مرتب في صفحة الإعلانات", author_id: 3, created_at: at(1, 12),
+      about: { type: "person", id: 5, label: "سارة علي", label_en: "Sara Ali" },
+      body: "سارة سلّمت أجزاء صفحة الإعلانات بترتيب واضح وكتبت ملاحظات مفيدة للمراجعة. تستحق الشكر.",
+    },
+    {
+      id: 3, kind: "problem", title: "منصة الحجز متأخرة عن خطتها", author_id: 3, created_at: at(0, 9), sent_at: at(0, 9), ceo_state: "new",
+      about: { type: "project", id: 1, label: "منصة الحجز الإلكتروني", label_en: "Online booking platform" },
+      body: "الإنجاز 20% والخطة 62%. مهمتان متأخرتان وواحدة متوقفة. تحتاج قراراً: تمديد الموعد أو إضافة مطور.",
+    },
+  ];
+
   return {
+    monitor_notes,
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
     announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
     github, github_items,
@@ -442,6 +468,7 @@ export function seed(now = new Date()): MockDb {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
       bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length, review: reviews.length, audit: audit.length, team: teams.length,
+      note: monitor_notes.length,
     },
   };
 }
