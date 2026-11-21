@@ -19,7 +19,7 @@ test("the monitoring officer writes feedback on someone and sends it to the CEO;
   await page.getByRole("button", { name: /مريم العبيدي/ }).click();
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الوارد من المتابعة" }).click();
   const inbox = page.getByRole("list", { name: "الوارد" });
-  await inbox.getByRole("button", { name: /تعاون ممتاز مع الفريق/ }).click();
+  await inbox.getByRole("button", { name: "تعاون ممتاز مع الفريق" }).click();
   await page.getByLabel("ردك").fill("شكراً، سأشكره بنفسي.");
   await page.getByRole("button", { name: "أرسل الرد" }).click();
   await expect(inbox.getByText("شكراً، سأشكره بنفسي.")).toBeVisible();

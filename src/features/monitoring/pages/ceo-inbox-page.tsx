@@ -95,10 +95,8 @@ export function CeoInboxPage() {
             const isOpen = openId === n.id;
             return (
               <li key={n.id} className={cn("rounded-xl", n.ceo_state === "new" && "ring-2 ring-accent/40")}>
-                {/* The whole card opens it (click anywhere); opening marks it seen. */}
-                <button type="button" aria-expanded={isOpen} onClick={() => open(n)} className="block w-full rounded-xl text-start">
-                  <NoteCard note={n} author={nameOf(n.author_id)} open={isOpen} />
-                </button>
+                {/* A click anywhere on the card opens it; opening marks it seen. */}
+                <NoteCard note={n} author={nameOf(n.author_id)} open={isOpen} onToggle={() => open(n)} />
                 {isOpen && (
                   <form
                     noValidate

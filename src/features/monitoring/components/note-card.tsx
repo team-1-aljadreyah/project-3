@@ -18,15 +18,30 @@ export function ceoStateOf(note: MonitorNote): { ar: string; en: string; tone: S
   return { ar: "أُرسلت، لم تُفتح بعد", en: "Sent, not opened yet", tone: "progress" };
 }
 
-/** One note: its kind, what it is about, its text, where it stands with the CEO, and the CEO's answer. */
-export function NoteCard({ note, author, actions, open = true }: { note: MonitorNote; author?: string; actions?: React.ReactNode; open?: boolean }) {
+/**
+ * One note: its kind, what it is about, its text, where it stands with the CEO, and the CEO's answer. With `onToggle`,
+ * the title is a button that opens and closes the text, and a click anywhere on the card does the same.
+ */
+export function NoteCard({
+  note,
+  author,
+  actions,
+  open = true,
+  onToggle,
+}: {
+  note: MonitorNote;
+  author?: string;
+  actions?: React.ReactNode;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
   const { tr, lang, ago } = useFmt();
   const Icon = KIND_ICON[note.kind];
   const AboutIcon = ABOUT_ICON[note.about.type];
   const about = note.about.type === "general" ? tr("عام", "General") : lang === "en" && note.about.label_en ? note.about.label_en : note.about.label;
   const state = ceoStateOf(note);
   return (
-    <article className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4">
+    <article className={cn("relative flex flex-col gap-3 rounded-xl border border-line bg-card p-4", onToggle && "hover:border-accent")}>
       <header className="flex flex-wrap items-center gap-2 text-xs text-muted">
         <span className={cn("flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-ink")}>
           <Icon size={16} aria-hidden="true" />
@@ -43,7 +58,14 @@ export function NoteCard({ note, author, actions, open = true }: { note: Monitor
         </span>
       </header>
       <h3 dir="auto" className="text-base font-semibold">
-        {note.title}
+        {onToggle ? (
+          // The button covers the whole card (click anywhere), and is what keyboards and screen readers use.
+          <button type="button" aria-expanded={open} onClick={onToggle} className="text-start after:absolute after:inset-0 after:rounded-xl">
+            {note.title}
+          </button>
+        ) : (
+          note.title
+        )}
       </h3>
       {open && (
         <p dir="auto" className="text-sm leading-relaxed whitespace-pre-line text-muted">
@@ -59,7 +81,7 @@ export function NoteCard({ note, author, actions, open = true }: { note: Monitor
         </div>
       )}
       {(state || actions) && (
-        <footer className="flex flex-wrap items-center gap-2 border-t border-line pt-3 text-xs">
+        <footer className="relative flex flex-wrap items-center gap-2 border-t border-line pt-3 text-xs">
           {state ? (
             <span className="inline-flex items-center gap-1.5">
               <Send size={13} aria-hidden="true" className="text-muted" />
