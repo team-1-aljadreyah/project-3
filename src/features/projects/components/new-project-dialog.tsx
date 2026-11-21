@@ -21,7 +21,9 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
   const toast = useToast();
   const router = useRouter();
   // A project manager creates projects they manage; the CEO picks the manager.
-  const pickPm = canChangePm(user);
+  // A project manager runs what they create; anyone else who may create one (the CEO, the monitoring officer) picks
+  // the project manager.
+  const pickPm = canChangePm(user) || user.role !== "pm";
   const fresh = () => valuesOf(undefined, pickPm ? undefined : user.id);
   const [v, setV] = useState<ProjectValues>(fresh);
   const [members, setMembers] = useState<number[]>([]);

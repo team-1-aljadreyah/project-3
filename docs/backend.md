@@ -57,7 +57,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 19 | `DELETE` | `/users/:id/avatar` | admin, ceo | Remove someone's picture that is not appropriate → that `User` |
 | 5 | `GET` | `/projects` | see §2 | Projects this person may see, with counts |
 | 5 | `GET` | `/projects/:id` | see §2 | One project with its statuses, phases, members |
-| 6 | `POST` | `/projects` | ceo, pm | Create a project (a pm becomes its manager) |
+| 6 | `POST` | `/projects` | ceo, pm, monitor | Create a project (a pm becomes its manager; the ceo and the monitor pick one) |
 | 6 | `PATCH` | `/projects/:id` | its pm, ceo | Details, members, dates (changing `pm_id`: ceo only) |
 | 6 | `PUT` | `/projects/:id/statuses` | its pm, ceo | The project's statuses, in board order |
 | 6 | `PUT` | `/projects/:id/phases` | its pm, ceo | The project's phases |
@@ -196,7 +196,7 @@ The server must filter, not only the pages:
 - **Move a task:** the managers above, or the task's assignee if they are a member.
 - **Approve completion:** the managers above, and the `ceo`. *(Not confirmed by the client yet: BRIEF question 5.)*
 - **Comment:** everyone who can see the project, except `admin`.
-- **Create a project:** `ceo` and `pm`. A `pm` always becomes the new project's manager (`pm_id` = themselves, whatever was sent). *(Assumption, to confirm with the client.)*
+- **Create a project:** `ceo`, `pm` and `monitor` (the client, 21 November 2026: the monitoring officer creates projects too). A `pm` always becomes the new project's manager (`pm_id` = themselves, whatever was sent); the `ceo` and the `monitor` must send `pm_id`, an active `pm` (422 on `pm_id` otherwise). The monitor sees every project already; she doesn't manage the one she creates (its `pm_id` does).
 - **Change a project's setup** (details, members, statuses, phases, sprints): the project's PM and the `ceo`. **Change the PM:** `ceo` only. *(Assumptions, to confirm with the client.)*
 
 ## 3. Task statuses

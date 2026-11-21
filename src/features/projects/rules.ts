@@ -8,8 +8,13 @@ import type { User } from "@/shared/api/types";
 import { canManageProjectSetup, isCeo } from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
 
+/**
+ * Create a project: the CEO, project managers, and the monitoring officer (the client, 21 November 2026: "make the
+ * monitor also can create a project"). A project manager runs what they create; the CEO and the monitoring officer pick
+ * the project manager who will run it.
+ */
 export function canCreateProject(user: Pick<User, "role">) {
-  return isCeo(user) || user.role === "pm";
+  return isCeo(user) || user.role === "pm" || user.role === "monitor";
 }
 
 /** Change a project's details, members, statuses, phases, sprints and GitHub (the rule lives in shared/lib/access.ts). */

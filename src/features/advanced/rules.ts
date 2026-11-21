@@ -57,7 +57,7 @@ export interface ActionDef {
  * reports bugs (bugs/rules.ts canReportBug).
  */
 export const ACTIONS: ActionDef[] = [
-  { key: "create_project", group: "work", ar: "إنشاء مشروع", en: "Create a project", def: ["pm"] },
+  { key: "create_project", group: "work", ar: "إنشاء مشروع", en: "Create a project", def: ["pm", "monitor"] },
   { key: "close_project", group: "work", ar: "إغلاق مشروع", en: "Close a project", def: ["pm"] },
   { key: "delete_task", group: "work", ar: "حذف مهمة", en: "Delete a task", def: ["pm", "lead"], later: true },
   { key: "reassign_task", group: "work", ar: "إسناد مهمة إلى شخص آخر", en: "Give a task to someone else", def: ["pm", "lead"] },
