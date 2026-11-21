@@ -8,6 +8,8 @@ export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
+  // Many tests run at once: give a page up to 10 s to show what a test waits for (the default is 5 s).
+  expect: { timeout: 10_000 },
   reporter: process.env.CI ? "line" : "list",
   use: {
     baseURL: `http://localhost:${PORT}`,
