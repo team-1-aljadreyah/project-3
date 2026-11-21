@@ -139,7 +139,14 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   glasses and a tablet, `MonitorCharacter`) breathes, blinks and swipes her tablet, and waves when the mouse goes over
   her; she stands behind the profile card, so she never covers it.
 - **Monitoring** (`src/features/monitoring`): the monitoring officer writes reports about teams and people, feedback
-  on anyone and problems at `/monitoring`, and sends any of them to the CEO, who answers in `/inbox` ("From monitoring").
+  on anyone and problems at `/monitoring` (or builds a report from the numbers at `/monitoring/report`), and sends any
+  of them to the CEO. Every other job sends the CEO requests at `/requests` (nobody starts a chat with the CEO). The CEO
+  answers in `/inbox`: "To handle", and "Done", the archive kept to read again.
+- **Quick search** (`src/features/search`, Ctrl+K or the top bar): pages, projects, tasks, bugs, announcements and
+  people, only what the person may see (docs/backend.md section 19).
+- **Links everywhere:** numbers, rows and names open their pages (a person's name only when the viewer may open their
+  performance: `personHref` in `src/shared/lib/access.ts`). Tabs and filters live in the address (`useQueryParam`,
+  e.g. `/reports?tab=people&team=1`, `/bugs?show=late`, `/inbox?show=done`), so a link opens a page already set.
 - **Advanced settings** (`/advanced`, the CEO only, `src/features/advanced`): every company rule in one page, like
   Project 2's: a side tree with a quick find (`?s=<part>` in the address; a short list on the phone), one draft for all
   parts with «Changed» and the default beside each setting, a save bar, and the history, file and reset. What every

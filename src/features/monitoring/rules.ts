@@ -7,8 +7,12 @@ import type { MonitorNote } from "./types";
 /** Write reports about teams and people, feedback on anyone, and problems: the monitoring officer (and the CEO). */
 export const canWriteNotes = (user: Pick<User, "role">) => isCeo(user) || user.role === "monitor";
 
-/** Send the CEO a request about anything (employees don't message the CEO directly). */
-export const canSendRequests = (user: Pick<User, "role">) => isCeo(user) || user.role === "employee";
+/**
+ * Send the CEO a request about anything: every job (the client, 21 November 2026: "all the roles should be able to send
+ * a request to the CEO"), since nobody messages the CEO directly. The one exception to THE CEO RULE: the CEO doesn't
+ * send requests (the client: "who will he request?"); tests/unit/ceo-rule.test.ts lists it as the exception.
+ */
+export const canSendRequests = (user: Pick<User, "role">) => !isCeo(user);
 
 /** See a note: its writer, and the CEO (who sees them all). */
 export const canSeeNote = (user: Pick<User, "id" | "role">, note: Pick<MonitorNote, "author_id">) => isCeo(user) || note.author_id === user.id;

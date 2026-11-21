@@ -48,3 +48,14 @@ test("an employee opens their own performance from the account menu, but other p
   await page.getByRole("link", { name: /TSK-118/ }).first().click();
   await expect(page.getByRole("link", { name: "أحمد كريم" })).toHaveCount(0);
 });
+
+test("quick search: Ctrl+K, type a task code, Enter opens the task", async ({ page }) => {
+  await signInAs(page, /مريم العبيدي/);
+  await page.keyboard.press("Control+K");
+  const box = page.getByRole("combobox", { name: /ابحث عن صفحة/ });
+  await box.fill("TSK-118");
+  await expect(page.getByRole("option", { name: /تصميم شاشة تسجيل الدخول/ })).toBeVisible();
+  await box.press("Enter");
+  await expect(page).toHaveURL(/\/tasks\/\d+/);
+  await expect(page.getByRole("heading", { level: 1, name: "تصميم شاشة تسجيل الدخول" })).toBeVisible();
+});

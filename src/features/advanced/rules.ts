@@ -87,7 +87,7 @@ export const FEATURES: { key: FeatureKey; ar: string; en: string; hint_ar: strin
   { key: "bugs", ar: "المشكلات البرمجية", en: "Bugs", hint_ar: "صفحة المشكلات وتسجيل مشكلة جديدة.", hint_en: "The bugs page and reporting a new bug." },
   { key: "reviews", ar: "تقييمات الأداء", en: "Performance reviews", hint_ar: "صفحة الأداء وكتابة التقييمات.", hint_en: "The performance page and writing reviews." },
   { key: "announcements", ar: "الإعلانات", en: "Announcements", hint_ar: "صفحة الإعلانات ونشر إعلان جديد.", hint_en: "The announcements page and posting a new one." },
-  { key: "requests", ar: "طلبات الموظفين", en: "Employees' requests", hint_ar: "صفحة «طلباتي» وإرسال طلب إلى المدير التنفيذي.", hint_en: "The «My requests» page and sending a request to the CEO." },
+  { key: "requests", ar: "الطلبات إلى المدير التنفيذي", en: "Requests to the CEO", hint_ar: "صفحة «طلباتي» وإرسال طلب إلى المدير التنفيذي.", hint_en: "The «My requests» page and sending a request to the CEO." },
   { key: "github", ar: "ربط GitHub", en: "GitHub links", hint_ar: "طلبات السحب والإيداعات على المهام، وإعداد الربط في المشاريع.", hint_en: "Pull requests and commits on tasks, and the link's setup in projects." },
   { key: "welcome", ar: "شاشة الترحيب", en: "The welcome splash", hint_ar: "التحية القصيرة عند فتح المنصة.", hint_en: "The short greeting when the platform opens." },
 ];

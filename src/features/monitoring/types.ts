@@ -106,4 +106,6 @@ export interface NoteInput {
 export interface NoteAnswer {
   reply?: string;
   state: "seen" | "done";
+  /** With state "seen": take a done note back to "To handle" (opening a done note doesn't, on its own). */
+  reopen?: boolean;
 }

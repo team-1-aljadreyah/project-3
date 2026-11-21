@@ -89,7 +89,7 @@ export const chatMock: ChatApi = {
       const other = getDb().users.find((u) => u.id !== user.id && members.includes(u.id));
       const otherHasWritten = !!other && getDb().messages.some((m) => m.chat === key && m.author_id === other.id);
       if (other && !canWriteInDirect(user, other, otherHasWritten)) {
-        return fail(403, "FORBIDDEN", "لا تُراسَل المديرة التنفيذية مباشرة: أرسل طلباً من صفحة «طلباتي».", "You don't message the CEO directly: send a request from the Requests page.");
+        return fail(403, "FORBIDDEN", "لا تُبدأ محادثة مع المدير التنفيذي: أرسل طلباً من صفحة «طلباتي»، أو انتظر حتى يكتب إليك.", "You can't start a chat with the CEO: send a request from My requests, or wait until the CEO writes to you.");
       }
     }
     const body = input.body.trim();
@@ -133,7 +133,7 @@ export const chatMock: ChatApi = {
     const db = getDb();
     const other = db.users.find((u) => u.id === userId && u.active);
     if (!other || other.id === user.id) return invalid("user_id", "اختر زميلاً آخر.", "Choose another person.");
-    if (!canStartDirect(user, other)) return fail(403, "FORBIDDEN", "لا تُراسَل المديرة التنفيذية مباشرة: أرسل طلباً من صفحة «طلباتي».", "You don't message the CEO directly: send a request from the Requests page.");
+    if (!canStartDirect(user, other)) return fail(403, "FORBIDDEN", "لا تُبدأ محادثة مع المدير التنفيذي: أرسل طلباً من صفحة «طلباتي»، أو انتظر حتى يكتب إليك.", "You can't start a chat with the CEO: send a request from My requests, or wait until the CEO writes to you.");
     // One private chat per pair of people: open the existing one if there is.
     let direct = db.directs.find((d) => d.member_ids.includes(user.id) && d.member_ids.includes(userId));
     if (!direct) {

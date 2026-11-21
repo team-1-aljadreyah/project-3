@@ -31,7 +31,7 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
   }, [chatKey, lastId, loaded]);
 
   const byId = new Map(messages?.map((m) => [m.id, m]));
-  // A private chat between an employee and the CEO: the employee answers only once the CEO has written (they send requests).
+  // A private chat with the CEO: you answer only once the CEO has written (otherwise you send a request).
   const other = members.find((u) => u.id !== me.id);
   const readOnly = !!other && members.length === 2 && chatKey.startsWith("d-") && !canWriteInDirect(me, other, !!messages?.some((m) => m.author_id === other.id));
   const nameOf = (id: number) => {
