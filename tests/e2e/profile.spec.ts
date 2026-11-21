@@ -92,3 +92,30 @@ test("the account menu: keyboard, Escape gives the focus back, and it fits the s
   await expect(menu).toBeHidden();
   await expect(accountButton(page)).toBeFocused();
 });
+
+test("a picture one person sets is what everyone else sees: the dashboard, the board, the task", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /سارة علي/);
+  await accountButton(page).click();
+  await page.getByRole("menuitem", { name: "غيّر صورتك الشخصية" }).click();
+  const dialog = page.getByRole("dialog", { name: "صورتي الشخصية" });
+  await dialog.locator("input[type=file]").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: makePng() });
+  await dialog.getByRole("button", { name: "احفظ الصورة" }).click();
+  await expect(page.getByText("حُفظت صورتك.")).toBeVisible();
+
+  // Someone else: the CEO.
+  await accountButton(page).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByRole("button", { name: /مريم العبيدي/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
+  await page.goto("/dashboard");
+  const staff = page.getByRole("region", { name: "ملخص الموظفين" });
+  await expect(staff.getByRole("listitem").filter({ hasText: "سارة علي" }).locator("img")).toHaveAttribute("src", /^data:image\//);
+  // Her card on the project's board, and her name on the task.
+  await page.goto("/projects/1");
+  await page.getByRole("tab", { name: "كل المهام" }).click();
+  const card = page.getByRole("link", { name: /TSK-118/ }).first();
+  await expect(card.locator("img")).toHaveAttribute("src", /^data:image\//);
+  await page.goto("/tasks/1");
+  await expect(page.locator("dd").filter({ hasText: "سارة علي" }).locator("img")).toHaveAttribute("src", /^data:image\//);
+});

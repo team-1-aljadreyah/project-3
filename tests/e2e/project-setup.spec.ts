@@ -73,3 +73,15 @@ test("an employee can't create projects or open a project's settings", async ({ 
   await page.goto("/projects/1/settings");
   await expect(page.getByText("إعدادات المشروع لمدير المشروع والمدير التنفيذي فقط.")).toBeVisible();
 });
+
+test("the monitoring officer creates a project and picks the project manager who runs it", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.getByRole("button", { name: "مشروع جديد" }).click();
+  const dialog = page.getByRole("dialog", { name: "مشروع جديد" });
+  await dialog.getByLabel("اسم المشروع").fill("مراجعة جودة الخدمات");
+  await dialog.getByLabel("مدير المشروع").selectOption({ label: "أحمد كريم" });
+  await dialog.getByLabel("تاريخ البدء").fill("2026-12-01");
+  await dialog.getByLabel("التاريخ المتوقع للإنجاز").fill("2027-02-01");
+  await dialog.getByRole("button", { name: "أنشئ المشروع" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /مراجعة جودة الخدمات/ })).toBeVisible();
+});

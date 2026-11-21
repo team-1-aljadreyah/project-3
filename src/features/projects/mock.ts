@@ -90,7 +90,7 @@ export const projectsMock: ProjectsApi = {
     const user = currentUser();
     if (!canCreateProject(user)) return fail(403, "FORBIDDEN", "لا يحق لك إنشاء المشاريع.", "You can't create projects.");
     requireAction(user, "create_project");
-    // A project manager creates projects they manage; the CEO picks the manager.
+    // A project manager creates projects they manage; the CEO and the monitoring officer pick the manager.
     const fields = { ...input, pm_id: user.role === "pm" ? user.id : input.pm_id };
     if (!fields.start) invalid("start", "اختر تاريخ البدء.", "Choose the start date.");
     if (!fields.end) invalid("end", "اختر التاريخ المتوقع للإنجاز.", "Choose the expected end date.");

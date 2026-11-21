@@ -36,8 +36,16 @@ beforeEach(() => {
 
 describe("who may set up projects (assumptions, docs/backend.md)", () => {
   const user = (id: number) => getDb().users.find((u) => u.id === id)!;
-  it("the CEO and project managers create projects; nobody else", () => {
-    expect([1, 2, 3, 4, 5, 8].map((id) => canCreateProject(user(id)))).toEqual([true, true, false, false, false, false]);
+  it("the CEO, project managers and the monitoring officer create projects; nobody else", () => {
+    expect([1, 2, 3, 4, 5, 8].map((id) => canCreateProject(user(id)))).toEqual([true, true, true, false, false, false]);
+  });
+  it("the monitoring officer creates a project for a project manager she picks; she must pick one", async () => {
+    as(3);
+    const base = { name: "متابعة الجودة", name_en: "Quality follow-up", description: "", start: "2026-12-01", end: "2027-01-31", member_ids: [] as number[], priority: "medium" as const, uses_sprints: false };
+    const p = await api.createProject({ ...base, pm_id: 2 });
+    expect(p).toMatchObject({ pm_id: 2 });
+    expect(p.member_ids).toContain(2);
+    expect(((await api.createProject({ ...base, name: "x", pm_id: 5 }).then(() => null, (e) => e)) as { status: number }).status).toBe(422);
   });
   it("a project's PM and the CEO manage it; only the CEO changes the PM", () => {
     const p = getDb().projects[0];
