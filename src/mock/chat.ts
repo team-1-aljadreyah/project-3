@@ -9,13 +9,15 @@ export function chatMembers(key: string): number[] | null {
   if (!m) return null;
   const db = getDb();
   const id = Number(m[2]);
+  // The CEO is in every project and team chat (the CEO rule, shared/lib/access.ts), but not in private chats.
+  const ceos = db.users.filter((u) => u.active && u.role === "ceo").map((u) => u.id);
   if (m[1] === "p") {
     const project = db.projects.find((p) => p.id === id);
-    return project ? [...new Set([project.pm_id, ...project.member_ids])] : null;
+    return project ? [...new Set([project.pm_id, ...project.member_ids, ...ceos])] : null;
   }
   if (m[1] === "t") {
     if (!db.teams.some((t) => t.id === id)) return null;
-    return db.users.filter((u) => u.active && u.team_id === id).map((u) => u.id);
+    return [...new Set([...db.users.filter((u) => u.active && u.team_id === id).map((u) => u.id), ...ceos])];
   }
   return db.directs.find((d) => d.id === id)?.member_ids ?? null;
 }

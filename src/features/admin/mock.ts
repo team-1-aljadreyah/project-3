@@ -11,7 +11,7 @@ import type { AuditEntry, TeamInput, UserInput, UserPatch } from "./types";
 
 function admin() {
   const user = currentUser();
-  if (!canAdminister(user)) return fail(403, "FORBIDDEN", "هذه الصفحة لمسؤول النظام.", "This page is for the system admin.");
+  if (!canAdminister(user)) return fail(403, "FORBIDDEN", "هذه الصفحة لمسؤول النظام والمدير التنفيذي.", "This page is for the system admin and the CEO.");
   return user;
 }
 

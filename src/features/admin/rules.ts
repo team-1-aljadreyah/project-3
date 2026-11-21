@@ -2,16 +2,17 @@
 // the pages (to show only what a person may do) and by the demo backend (to refuse the rest); docs/backend.md
 // section 14 lists them for the real server.
 import type { Role, User } from "@/shared/api/types";
+import { isCeo } from "@/shared/lib/access";
 import type { Settings } from "./types";
 
 /** Every job, in the order the role picker shows them (their names are in shared/lib/access.ts, ROLES). */
 export const ROLE_KEYS: Role[] = ["ceo", "pm", "monitor", "lead", "employee", "admin"];
 
 /** Users, teams, settings, data health: the system admin (the brief). */
-export const canAdminister = (user: Pick<User, "role">) => user.role === "admin";
+export const canAdminister = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
 
 /** The audit log: the admin and the CEO. Read only; nobody can change or remove a line (the brief). */
-export const canSeeAudit = (user: Pick<User, "role">) => user.role === "admin" || user.role === "ceo";
+export const canSeeAudit = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
 
 export const ADMIN_LIMITS = { name: 120, title: 80, teamName: 80 };
 

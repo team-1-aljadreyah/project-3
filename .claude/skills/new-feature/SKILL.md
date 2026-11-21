@@ -62,10 +62,13 @@ step 7, not before.
    date helpers `d(days)` and `at(days, hour)` so dates stay around today), add a counter to `seq`, and return
    them. Invented people and text only, never real customer data. Cover every state the page shows. Then
    **bump `DB_VERSION`** in `src/mock/db.ts` so browsers drop their old saved demo data.
-5. **Rules** (who may do what, counts, status changes) go in `rules.ts` as pure functions, used by both the pages
+5. **The CEO rule:** the CEO may see and do everything any other job can. Every `can…` rule starts with
+   `isCeo(user) ||` (from `@/shared/lib/access`), and gets a line in `tests/unit/ceo-rule.test.ts` (the test fails
+   until it does). A new menu item shows to the CEO by itself.
+6. **Rules** (who may do what, counts, status changes) go in `rules.ts` as pure functions, used by both the pages
    (to hide what someone can't do) and `mock.ts` (to refuse it). Hiding a button is not security; the server
    must refuse too.
-6. **Pages** in `pages/`, **parts** in `components/`, **hooks** in `hooks/`. Every page:
+7. **Pages** in `pages/`, **parts** in `components/`, **hooks** in `hooks/`. Every page:
    - sets its tab title with `usePageTitle(tr("…", "…"))`;
    - loads with `useLoad(() => xxxApi.something(), [deps])` and shows **all four states**: loading
      (`LoadingBlock` + `Skeleton`), error (`ErrorBox` with retry), empty (`Empty`), and the data;
@@ -73,25 +76,25 @@ step 7, not before.
    - when a row or card has its own page, makes the whole row or card one link (click anywhere), not only the
      underlined name (until the detail page exists, plain rows are fine);
    - works on a phone, in dark mode and in English (left to right).
-7. **`index.ts`**: export only what others need (the API, the pages, a few types or rules).
-8. **Route** (Next.js App Router): one folder per address under `src/app/(signed-in)/`, with a `page.tsx` of
+8. **`index.ts`**: export only what others need (the API, the pages, a few types or rules).
+9. **Route** (Next.js App Router): one folder per address under `src/app/(signed-in)/`, with a `page.tsx` of
    one line that shows the feature's page. `/announcements` → `src/app/(signed-in)/announcements/page.tsx`;
    `/announcements/5` → `src/app/(signed-in)/announcements/[id]/page.tsx` (the page reads it with
    `useParams()` from `next/navigation`). The `(signed-in)` group adds the sign-in check and the top bar. Next.js
    loads each page's code on its own, so nothing else is needed. Links use `Link` from `next/link` with `href`;
    moving in code uses `useRouter()` (`router.push` / `router.replace`).
-9. **Menu**: in `src/shared/lib/access.ts` set the item's `ready: true` (or add it) with the jobs that see it.
-10. **Docs, in the same pull request:**
+10. **Menu**: in `src/shared/lib/access.ts` set the item's `ready: true` (or add it) with the jobs that see it.
+11. **Docs, in the same pull request:**
     - `docs/backend.md`: every new call (path, body, answer, who may call it, errors) and the rules the server
       must keep. If the feature was listed under "Coming next", move it out of there (and renumber the sections).
       If a call changes later, the contract changes in the same PR too.
     - `README.md`: add the feature to the folder tree, and to the line that says which feature uses which.
-11. **Tests**: every feature comes with tests.
+12. **Tests**: every feature comes with tests.
     - `tests/unit/<name>.test.ts` (Vitest): the rules and the demo backend's refusals, called as different people.
     - `tests/e2e/<name>.spec.ts` (Playwright): sign in with `signInAs(page, /name/)`, open the page, do the main
       flow, check what each job sees and doesn't. The browser tests run on the **demo build**, so run
       `NEXT_PUBLIC_USE_MOCK=true npm run build` before `npm run test:e2e`.
-12. **When it is ready to push:** commit, run the `clean-copy-check` skill, then explain the change with the
+13. **When it is ready to push:** commit, run the `clean-copy-check` skill, then explain the change with the
     `pr-explanation` skill. (While still working, run the checks one by one instead.)
 
 ## Done means

@@ -23,7 +23,7 @@ export function AdminPage() {
   usePageTitle(tr("إدارة النظام", "Administration"));
   const me = useUser();
   const [tab, setTab] = useState<Tab>("users");
-  if (!canAdminister(me)) return <Empty title={tr("هذه الصفحة لمسؤول النظام", "This page is for the system admin")} />;
+  if (!canAdminister(me)) return <Empty title={tr("هذه الصفحة لمسؤول النظام والمدير التنفيذي", "This page is for the system admin and the CEO")} />;
 
   const tabs: { key: Tab; ar: string; en: string }[] = [
     { key: "users", ar: "المستخدمون والأدوار", en: "Users and roles" },

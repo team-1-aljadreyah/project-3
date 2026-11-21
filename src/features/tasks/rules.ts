@@ -6,19 +6,19 @@
 // leader in the project, and the CEO. Kept in `canApprove` only, so changing it later is one line.
 import { isDone, type Project } from "@/features/projects";
 import type { TaskStatus, User } from "@/shared/api/types";
-import { canTakePart, isMember } from "@/shared/lib/access";
+import { canTakePart, isCeo, isMember } from "@/shared/lib/access";
 import type { Task } from "./types";
 
 type P = Pick<Project, "pm_id" | "member_ids" | "statuses">;
 
-/** Create tasks, edit any task, change any task's status: the project's PM and its team leaders. */
+/** Create tasks, edit any task, change any task's status: the project's PM, its team leaders, and the CEO. */
 export function canManageTasks(user: User, project: P) {
-  return project.pm_id === user.id || (user.role === "lead" && isMember(user, project));
+  return isCeo(user) || project.pm_id === user.id || (user.role === "lead" && isMember(user, project));
 }
 
 /** Approve (or send back) a task marked done. */
 export function canApprove(user: User, project: P) {
-  return user.role === "ceo" || canManageTasks(user, project);
+  return isCeo(user) || canManageTasks(user, project);
 }
 
 /** Move a task: the managers, or the person the task is assigned to. */
