@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { signInAs } from "./helpers";
 
 test("the monitoring officer writes feedback on someone and sends it to the CEO; the CEO opens it, answers, and she sees the answer", async ({ page }) => {
+  // Three sign-ins in one test: more time than the usual 30 s.
+  test.setTimeout(60_000);
   await signInAs(page, /هدى ناصر/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "المتابعة" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "المتابعة" })).toBeVisible();
@@ -17,6 +19,8 @@ test("the monitoring officer writes feedback on someone and sends it to the CEO;
   await page.getByRole("button", { name: /حسابي/ }).click();
   await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
   await page.getByRole("button", { name: /مريم العبيدي/ }).click();
+  // Signed in: the menu is there (signing in goes back to the page you were on).
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الوارد من المتابعة" }).click();
   const inbox = page.getByRole("list", { name: "الوارد" });
   await inbox.getByRole("button", { name: "تعاون ممتاز مع الفريق" }).click();
@@ -28,6 +32,7 @@ test("the monitoring officer writes feedback on someone and sends it to the CEO;
   await page.getByRole("button", { name: /حسابي/ }).click();
   await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
   await page.getByRole("button", { name: /هدى ناصر/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
   await page.goto("/monitoring");
   await expect(page.getByRole("list", { name: "ما كتبته" }).getByText("شكراً، سأشكره بنفسي.")).toBeVisible();
 });

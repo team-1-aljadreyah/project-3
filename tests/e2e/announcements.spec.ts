@@ -7,6 +7,8 @@ async function signOut(page: Page) {
 }
 
 test("the CEO posts; Sara is notified and opens it; the CEO then sees her under 'seen'", async ({ page }) => {
+  // Three sign-ins in one test: more time than the usual 30 s.
+  test.setTimeout(60_000);
   await signInAs(page, /مريم العبيدي/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الإعلانات" }).click();
   await page.getByRole("button", { name: "إعلان جديد" }).click();
