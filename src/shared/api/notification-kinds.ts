@@ -23,7 +23,9 @@ export type NotificationKind =
   | "review_final"
   | "team_joined"
   | "account_locked"
-  | "github_pr_merged";
+  | "github_pr_merged"
+  | "note_sent"
+  | "note_answered";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -48,6 +50,8 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "team_joined",
   "account_locked",
   "github_pr_merged",
+  "note_sent",
+  "note_answered",
 ];
 
 /**
@@ -62,4 +66,7 @@ export const REQUIRED_NOTIFICATIONS = new Set<NotificationKind>([
   "project_added",
   "announcement",
   "bug_assigned",
+  // What monitoring sends the CEO, and the CEO's answer: always on (the client wants them to reach the CEO).
+  "note_sent",
+  "note_answered",
 ]);

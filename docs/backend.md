@@ -567,6 +567,34 @@ Shapes: `src/features/github/types.ts`; rules: `src/features/github/rules.ts`; t
 - When a linked pull request is **merged**, notify the task's assignee `github_pr_merged` (data: `note` = "repo #n").
   *(Assumption, BRIEF question 10: one way. The platform shows GitHub; it doesn't move a task by itself.)*
 
+## 17. Monitoring notes and the CEO's inbox
+
+The monitoring and evaluation officer writes **reports** (about a team, a person, a project, or general), **feedback**
+on any person (praise or something to improve), and **problems**. She keeps them, and sends any of them to the CEO
+whenever she wants. The CEO reads them in her inbox, answers, and marks them done.
+
+```text
+MonitorNote {
+  id, kind: "report" | "feedback" | "problem", title (≤160), body (≤5000),
+  about: { type: "team" | "person" | "project" | "general", id?, label?, label_en? },   // label = a copy of the name
+  tone?: "praise" | "improve",              // feedback only
+  author_id, created_at,
+  sent_at?, ceo_state?: "new" | "seen" | "done", ceo_reply? (≤2000), replied_at?
+}
+```
+
+| Call | Who | Notes |
+|---|---|---|
+| `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers; the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
+| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, send? }`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. |
+| `POST /monitoring/notes/:id/send` | its writer, `ceo` | Sets `sent_at` = now and `ceo_state` = "new" (sending again brings it back to "new"). Notifies every active CEO: kind `note_sent`, `data.title`. |
+| `GET /ceo/inbox` | `ceo` | Every sent note, newest first. Others: **403**. |
+| `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again. |
+
+- A note you may not see answers **404** (like one that doesn't exist). Validation errors are **422** with per-field
+  messages (`title`, `body`, `about`, `kind`, `reply`) in Arabic and English, like every other form.
+- `note_sent` and `note_answered` are **required** notifications (nobody can turn them off).
+
 ## 16. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the

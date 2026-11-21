@@ -37,6 +37,8 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   bug_status: { ar: "تغيير حالة مشكلة", en: "A bug's status changes", hint_ar: "لمن سجّلها والمطور ومدير المشروع.", hint_en: "For its reporter, developer and project manager." },
   bug_late: { ar: "تأخر إصلاح مشكلة", en: "A bug fix is late", hint_ar: "للمطور ومدير المشروع بعد الموعد المتوقع.", hint_en: "For the developer and the PM, after the expected day." },
   announcement: { ar: "إعلان جديد من الإدارة", en: "A new announcement", hint_ar: "عند نشر إعلان لكل الشركة.", hint_en: "When the management posts one for everyone." },
+  note_sent: { ar: "وارد من المتابعة", en: "Sent by monitoring", hint_ar: "للمدير التنفيذي: عند إرسال تقرير أو ملاحظة أو مشكلة إليه.", hint_en: "For the CEO: when a report, feedback or a problem is sent to you." },
+  note_answered: { ar: "رد المدير التنفيذي", en: "The CEO's answer", hint_ar: "لمسؤول المتابعة: عند رد المدير التنفيذي على ما أرسلته.", hint_en: "For monitoring: when the CEO answers what you sent." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
 };
 
@@ -103,6 +105,10 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`تأخر إصلاح ${d.bug_code ?? ""} عن موعده`, `${d.bug_code ?? ""} is past its expected fix day`);
     case "announcement":
       return tr(`${who} نشر إعلاناً: ${d.title ?? ""}`, `${who} posted an announcement: ${d.title ?? ""}`);
+    case "note_sent":
+      return tr(`${who} أرسل إليك: ${d.title ?? ""}`, `${who} sent you: ${d.title ?? ""}`);
+    case "note_answered":
+      return tr(`${who} ردّ على: ${d.title ?? ""}`, `${who} answered: ${d.title ?? ""}`);
     case "project_plan":
       return tr(`${who} غيّر خطة ${project}: الإنجاز المتوقع ${d.due ? day(d.due) : "-"}`, `${who} changed ${project}'s plan: expected end ${d.due ? day(d.due) : "-"}`);
   }
@@ -120,6 +126,8 @@ export function notificationLink(n: Notification) {
   if (n.bug_id) return `/bugs/${n.bug_id}`;
   if (n.chat_key) return `/chat/${n.chat_key}`;
   if (n.kind === "review_final") return "/performance";
+  if (n.kind === "note_sent") return "/inbox";
+  if (n.kind === "note_answered") return "/monitoring";
   if (n.kind === "account_locked") return "/admin";
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";
