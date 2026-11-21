@@ -86,7 +86,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 7 | `PUT` | `/notifications/preferences` | signed in | Save them (required kinds stay on) |
 | 9 | `GET` | `/announcements` | signed in | Announcements, important first |
 | 9 | `GET` | `/announcements/:id` | signed in | One announcement |
-| 9 | `POST` | `/announcements` | ceo, admin | Post one (everyone is told) |
+| 9 | `POST` | `/announcements` | ceo, admin, monitor | Post one (everyone is told) |
 | 9 | `DELETE` | `/announcements/:id` | its author, ceo, admin | Remove one |
 | 9 | `POST` | `/announcements/:id/seen` | signed in | I have seen it |
 | 9 | `GET` | `/announcements/:id/reads` | its author, ceo, admin | Who has and hasn't seen it |
@@ -141,7 +141,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | Change a project's manager | ✓ | | | | | |
 | Dashboard, reports, performance | ✓ | ✓ | ✓ | ✓ | their own page | |
 | Review criteria | ✓ | | | | | |
-| Post announcements | ✓ | | | | | ✓ |
+| Post announcements | ✓ | | ✓ | | | ✓ |
 | Accounts, teams, settings, audit log | ✓ | | | | | ✓ |
 | Monitoring notes | ✓ | | ✓ | | | |
 | The CEO's inbox | ✓ | | | | | |
@@ -489,7 +489,7 @@ Shapes: `src/features/announcements/types.ts`. Rules: `src/features/announcement
 `Announcement`: `{id, title, body, important, author_id, created_at, seen, seen_count, audience_count}`. `seen` is for the
 person asking; `seen_count` / `audience_count` count active people only.
 
-- **Who posts** (`POST /announcements {title, body, important}`): `ceo` and `admin` ("the management"; 403 for others).
+- **Who posts** (`POST /announcements {title, body, important}`): `ceo`, `admin` and `monitor` (403 for others). The monitoring officer posts too (the client, 21 November 2026).
   `title` required, trimmed, ≤ 160 (422 on `title`); `body` ≤ 5000. *(Assumption, to confirm with the client.)*
 - **Audience:** every active person in the company. The author counts as having seen it. Everyone else gets the
   `announcement` notification (section 7), which can't be turned off.

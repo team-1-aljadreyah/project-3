@@ -41,6 +41,11 @@ describe("posting", () => {
     expect(told.every((n) => n.kind === "announcement" && n.announcement_id === a.id)).toBe(true);
   });
 
+  it("the monitoring officer posts (the client asked)", async () => {
+    as(3);
+    expect((await api.create({ title: "زيارة متابعة", body: "", important: false })).author_id).toBe(3);
+  });
+
   it("an employee can't post (403); an empty title is refused (422)", async () => {
     as(5);
     expect((await fails(api.create({ title: "x", body: "", important: false })))?.status).toBe(403);
