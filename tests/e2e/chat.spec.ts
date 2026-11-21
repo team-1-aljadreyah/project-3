@@ -68,6 +68,45 @@ test("Sara starts a private chat with Zainab and sends a file", async ({ page })
   await expect(chatList(page).getByRole("link", { name: /زينب فاضل/ })).toBeVisible();
 });
 
+test("Huda (monitoring) makes a group with two people, writes in it, and it shows in the list", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.goto("/chat");
+  // She follows every project chat too.
+  await expect(chatList(page).getByRole("link", { name: /حملة التسويق الشتوية/ })).toBeVisible();
+  await page.getByRole("button", { name: "مجموعة جديدة" }).click();
+  const dialog = page.getByRole("dialog", { name: "مجموعة جديدة" });
+  // Too few people: the form says so and nothing is made.
+  await dialog.getByLabel("اسم المجموعة").fill("مراجعة الجودة");
+  await dialog.getByRole("button", { name: "أنشئ المجموعة" }).click();
+  await expect(dialog.getByText("اختر شخصين آخرين على الأقل.")).toBeVisible();
+  await dialog.getByLabel("ابحث عن زميل").fill("زينب");
+  await dialog.getByRole("checkbox", { name: /زينب فاضل/ }).check();
+  await dialog.getByLabel("ابحث عن زميل").fill("سارة");
+  await dialog.getByRole("checkbox", { name: /سارة علي/ }).check();
+  await dialog.getByRole("button", { name: "أنشئ المجموعة" }).click();
+  await expect(page).toHaveURL(/\/chat\/g-\d+$/);
+  await expect(page.getByText(/مجموعة · (٣|3) أعضاء/)).toBeVisible();
+
+  await page.getByLabel("اكتب رسالة").fill("أهلاً بكما، هنا نتابع ملاحظات الجودة.");
+  await page.getByRole("button", { name: "أرسل" }).click();
+  await expect(page.getByRole("list", { name: "الرسائل" }).getByText("أهلاً بكما، هنا نتابع ملاحظات الجودة.")).toBeVisible();
+  // She made it, so she may manage it; and she may leave it.
+  await expect(page.getByRole("button", { name: "إدارة المجموعة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "مغادرة المجموعة" })).toBeVisible();
+  // The group is in the list with its last message (on a phone the list shows when no chat is open).
+  await page.goto("/chat");
+  const row = chatList(page).getByRole("link", { name: /مراجعة الجودة/ });
+  await expect(row).toBeVisible();
+  await expect(row).toContainText("أهلاً بكما");
+});
+
+test("an employee doesn't see the New group button", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat");
+  await expect(page.getByRole("button", { name: "محادثة خاصة جديدة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "مجموعة جديدة" })).toHaveCount(0);
+});
+
 test("a chat you aren't in isn't shown", async ({ page }) => {
   await signInAs(page, /سارة علي/);
   await page.goto("/chat/p-3");

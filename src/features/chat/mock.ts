@@ -6,7 +6,7 @@ import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { User } from "@/shared/api/types";
 import type { ChatApi } from "./api";
-import { CHAT_LIMITS as L, chatKey, parseKey } from "./rules";
+import { CHAT_LIMITS as L, canCreateGroupChat, canManageGroupChat, chatKey, mayJoinGroup, parseKey } from "./rules";
 import type { ChatKey, Conversation, Message } from "./types";
 
 /** The chat's members, if this person is one of them. Not a member answers like a chat that doesn't exist. */
@@ -31,6 +31,7 @@ function conversation(key: ChatKey, userId: number): Conversation {
   const last = messages.at(-1);
   let title = "";
   let title_en: string | undefined;
+  let created_by: number | undefined;
   if (kind === "project") {
     const p = db.projects.find((x) => x.id === id)!;
     title = p.name;
@@ -39,6 +40,10 @@ function conversation(key: ChatKey, userId: number): Conversation {
     const t = db.teams.find((x) => x.id === id)!;
     title = t.name;
     title_en = t.name_en;
+  } else if (kind === "group") {
+    const g = db.groups.find((x) => x.id === id)!;
+    title = g.name;
+    created_by = g.created_by;
   }
   return {
     key,
@@ -46,6 +51,7 @@ function conversation(key: ChatKey, userId: number): Conversation {
     title,
     title_en,
     member_ids: members,
+    created_by,
     last_message: last && withFiles(last),
     unread: messages.filter((m) => m.id > lastRead && m.author_id !== userId).length,
   };
@@ -59,6 +65,7 @@ export const chatMock: ChatApi = {
       ...db.projects.map((p) => chatKey("project", p.id)),
       ...db.teams.map((t) => chatKey("team", t.id)),
       ...db.directs.map((d) => chatKey("direct", d.id)),
+      ...db.groups.map((g) => chatKey("group", g.id)),
     ].filter((k) => chatMembers(k)?.includes(user.id));
     const list = keys.map((k) => conversation(k, user.id));
     // The chat with the newest message first; chats with no message yet at the end.
@@ -123,4 +130,69 @@ export const chatMock: ChatApi = {
     }
     return wait(conversation(chatKey("direct", direct.id), user.id));
   },
+
+  async createGroup(input) {
+    const user = currentUser();
+    if (!canCreateGroupChat(user)) fail(403, "FORBIDDEN", "لا يمكنك إنشاء مجموعة محادثة.", "You can't create a group chat.");
+    const name = checkName(input.name);
+    const others = checkPeople(input.member_ids, user.id);
+    const db = getDb();
+    const group = { id: ++db.seq.group, name, created_by: user.id, member_ids: [user.id, ...others], created_at: nowIso() };
+    db.groups.push(group);
+    commit();
+    return wait(conversation(chatKey("group", group.id), user.id));
+  },
+
+  async updateGroup(key, change) {
+    const user = currentUser();
+    const group = groupFor(user, key);
+    if (!canManageGroupChat(user, group)) fail(403, "FORBIDDEN", "لا يغيّر المجموعة إلا من يديرها.", "Only the person who manages the group can change it.");
+    const name = change.name === undefined ? group.name : checkName(change.name);
+    // The manager always stays in; the others are checked like a new group's.
+    const others = change.member_ids === undefined ? undefined : checkPeople(change.member_ids, group.created_by);
+    group.name = name;
+    if (others) group.member_ids = [group.created_by, ...others];
+    commit();
+    return wait(conversation(key, user.id));
+  },
+
+  async leaveGroup(key) {
+    const user = currentUser();
+    const group = groupFor(user, key);
+    const db = getDb();
+    group.member_ids = group.member_ids.filter((id) => id !== user.id);
+    // If the manager leaves, the next member manages the group, so it is never left with nobody to change it.
+    if (group.created_by === user.id && group.member_ids.length) group.created_by = group.member_ids[0];
+    db.chat_reads = db.chat_reads.filter((r) => !(r.chat === key && r.user_id === user.id));
+    commit();
+    return wait(undefined);
+  },
 };
+
+/** A group this person is in. Another kind of chat, or a group they aren't in, answers like one that doesn't exist. */
+function groupFor(user: User, key: ChatKey) {
+  const parsed = parseKey(key);
+  membersFor(user, key);
+  const group = parsed?.kind === "group" ? getDb().groups.find((g) => g.id === parsed.id) : undefined;
+  if (!group) return fail(404, "NOT_FOUND", "لم يُعثر على المجموعة.", "Group not found.");
+  return group;
+}
+
+/** A group's name: required and short. */
+function checkName(raw: string) {
+  const name = (raw ?? "").trim();
+  if (!name) invalid("name", "اكتب اسم المجموعة.", "Enter the group's name.");
+  if (name.length > L.groupName) invalid("name", `الاسم أطول من ${L.groupName} حرفاً.`, `The name is longer than ${L.groupName} letters.`);
+  return name;
+}
+
+/** The people picked for a group besides `owner`: active, not the system admin, and at least two of them. */
+function checkPeople(ids: number[], owner: number) {
+  const db = getDb();
+  const others = [...new Set(ids ?? [])].filter((id) => id !== owner);
+  if (others.some((id) => !db.users.some((u) => u.id === id && mayJoinGroup(u)))) {
+    invalid("member_ids", "بعض من اخترتهم لا يمكن إضافتهم إلى مجموعة.", "Some of the people you picked can't be added to a group.");
+  }
+  if (others.length < L.groupOthers) invalid("member_ids", "اختر شخصين آخرين على الأقل.", "Pick at least two other people.");
+  return others;
+}

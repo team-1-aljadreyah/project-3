@@ -1,4 +1,4 @@
-import { ArrowRight, MessageSquarePlus, MessagesSquare } from "lucide-react";
+import { ArrowRight, MessageSquarePlus, MessagesSquare, UsersRound } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -11,9 +11,12 @@ import { cn } from "@/shared/lib/utils";
 import { AvatarStack, Empty, ErrorBox, IconButton, LoadingBlock, Skeleton } from "@/shared/ui";
 import { chatApi } from "../api";
 import { ConversationList } from "../components/conversation-list";
+import { GroupActions } from "../components/group-actions";
+import { GroupDialog } from "../components/group-dialog";
 import { NewDirectDialog } from "../components/new-direct-dialog";
 import { Thread } from "../components/thread";
-import { chatTitle } from "../rules";
+import { canCreateGroupChat, chatTitle } from "../rules";
+import type { ChatKind, Conversation } from "../types";
 
 /**
  * The internal chat (/chat and /chat/p-3). On a computer: the list of chats beside the open chat. On a phone: the list,
@@ -25,11 +28,21 @@ export function ChatPage() {
   const { key } = useParams<{ key?: string }>();
   const load = useLoad(() => Promise.all([chatApi.conversations(), authApi.users()]));
   const [starting, setStarting] = useState(false);
+  const [grouping, setGrouping] = useState(false);
+  const KIND: Record<ChatKind, string> = {
+    project: tr("محادثة المشروع", "Project chat"),
+    team: tr("محادثة الفريق", "Team chat"),
+    direct: tr("محادثة خاصة", "Private chat"),
+    group: tr("مجموعة", "Group chat"),
+  };
 
   const list = load.data?.[0];
   const users = load.data?.[1] ?? [];
   const people = new Map(users.map((u) => [u.id, u]));
-  const open = list?.find((c) => c.key === key);
+  // A group made a moment ago shows at once, before the list has loaded again with it.
+  const [made, setMade] = useState<Conversation>();
+  if (made && list?.some((c) => c.key === made.key)) setMade(undefined); // the list has it now
+  const open = list?.find((c) => c.key === key) ?? (list && made?.key === key ? made : undefined);
   const title = open ? chatTitle(open, people, me.id, lang) : undefined;
   usePageTitle(title ?? tr("المحادثات", "Chats"));
 
@@ -40,11 +53,16 @@ export function ChatPage() {
       {load.state.status === "error" && <ErrorBox error={load.state.error} onRetry={load.reload} />}
 
       {load.state.status !== "error" && (
-        <div className="grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-card md:grid-cols-[19rem_1fr]">
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-card max-md:grid-cols-1 md:grid-cols-[19rem_minmax(0,1fr)]">
           {/* The list: always on a computer; on a phone only when no chat is open. */}
           <nav aria-label={tr("قائمة المحادثات", "Chat list")} className={cn("flex min-h-0 flex-col border-line md:border-e", key && "max-md:hidden")}>
             <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
-              <span className="text-sm font-medium text-muted">{list ? tr(`${num(list.length)} محادثة`, `${num(list.length)} chats`) : " "}</span>
+              <span className="flex-1 text-sm font-medium text-muted">{list ? tr(`${num(list.length)} محادثة`, `${num(list.length)} chats`) : " "}</span>
+              {canCreateGroupChat(me) && (
+                <IconButton label={tr("مجموعة جديدة", "New group")} onClick={() => setGrouping(true)} className="bg-transparent">
+                  <UsersRound size={18} aria-hidden="true" />
+                </IconButton>
+              )}
               <IconButton label={tr("محادثة خاصة جديدة", "New private chat")} onClick={() => setStarting(true)} className="bg-transparent">
                 <MessageSquarePlus size={18} aria-hidden="true" />
               </IconButton>
@@ -66,7 +84,10 @@ export function ChatPage() {
           <section aria-label={title ?? tr("المحادثة", "Chat")} className={cn("flex min-h-0 flex-col", !key && "max-md:hidden")}>
             {!key && (
               <div className="m-auto p-6">
-                <Empty title={tr("اختر محادثة", "Choose a chat")} body={tr("محادثات مشاريعك وفريقك والمحادثات الخاصة تظهر في القائمة.", "Your projects', your team's and your private chats are in the list.")} />
+                <Empty
+                  title={tr("اختر محادثة", "Choose a chat")}
+                  body={tr("محادثات مشاريعك وفريقك ومجموعاتك والمحادثات الخاصة تظهر في القائمة.", "Your projects', your team's, your groups' and your private chats are in the list.")}
+                />
               </div>
             )}
             {key && list && !open && (
@@ -93,7 +114,7 @@ export function ChatPage() {
                       {title}
                     </span>
                     <span className="text-xs text-muted">
-                      {open.kind === "project" ? tr("محادثة المشروع", "Project chat") : open.kind === "team" ? tr("محادثة الفريق", "Team chat") : tr("محادثة خاصة", "Private chat")}
+                      {KIND[open.kind]}
                       {" · "}
                       {tr(`${num(open.member_ids.length)} أعضاء`, `${num(open.member_ids.length)} members`)}
                     </span>
@@ -101,6 +122,7 @@ export function ChatPage() {
                   <span className="max-sm:hidden">
                     <AvatarStack users={open.member_ids.flatMap((id) => people.get(id) ?? [])} max={4} />
                   </span>
+                  {open.kind === "group" && <GroupActions group={open} people={users} me={me} />}
                 </header>
                 <Thread key={open.key} chatKey={open.key} people={people} members={open.member_ids.flatMap((id) => people.get(id) ?? [])} me={me} />
               </>
@@ -115,6 +137,7 @@ export function ChatPage() {
       )}
 
       <NewDirectDialog open={starting} onClose={() => setStarting(false)} people={users} me={me.id} />
+      <GroupDialog open={grouping} onClose={() => setGrouping(false)} people={users} me={me.id} onCreated={setMade} />
     </div>
   );
 }

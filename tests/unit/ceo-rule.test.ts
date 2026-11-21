@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import * as admin from "@/features/admin/rules";
 import * as announcements from "@/features/announcements/rules";
 import * as bugs from "@/features/bugs/rules";
+import * as chat from "@/features/chat/rules";
 import * as monitoring from "@/features/monitoring/rules";
 import * as performance from "@/features/performance/rules";
 import * as projects from "@/features/projects/rules";
@@ -40,6 +41,9 @@ const CHECKS: Record<string, () => boolean> = {
   // bugs
   canReportBug: () => bugs.canReportBug(ceo, project),
   canManageBugs: () => bugs.canManageBugs(ceo, project),
+  // chat
+  canCreateGroupChat: () => chat.canCreateGroupChat(ceo),
+  canManageGroupChat: () => chat.canManageGroupChat(ceo, { created_by: 7 }),
   // monitoring
   canWriteNotes: () => monitoring.canWriteNotes(ceo),
   canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3 }),

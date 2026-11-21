@@ -1,17 +1,36 @@
-// The chat's small rules: keys, limits, and finding @mentions in a message. Pure functions, tested in Node.
-import type { User } from "@/shared/api/types";
+// The chat's small rules: keys, limits, who may make and manage group chats, and finding @mentions in a message.
+// Pure functions, tested in Node.
+import type { Role, User } from "@/shared/api/types";
+import { isCeo } from "@/shared/lib/access";
 import type { ChatKey, ChatKind, Conversation } from "./types";
 
-export const CHAT_LIMITS = { body: 4000 };
+/** `groupName`: the most letters in a group's name. `groupOthers`: the fewest people in a group besides its maker. */
+export const CHAT_LIMITS = { body: 4000, groupName: 60, groupOthers: 2 };
 
-const PREFIX: Record<ChatKind, string> = { project: "p", team: "t", direct: "d" };
+const PREFIX: Record<ChatKind, string> = { project: "p", team: "t", direct: "d", group: "g" };
 
-/** "p-3", "t-1", "d-7". */
+/** "p-3", "t-1", "d-7", "g-2". */
 export const chatKey = (kind: ChatKind, id: number): ChatKey => `${PREFIX[kind]}-${id}`;
+
+/** The jobs that may make group chats: the monitoring officer (the client asked for her), PMs and team leaders. */
+const GROUP_MAKERS: Role[] = ["monitor", "pm", "lead"];
+
+/** Who may make a group chat. */
+export function canCreateGroupChat(user: Pick<User, "role">) {
+  return isCeo(user) || GROUP_MAKERS.includes(user.role);
+}
+
+/** Who may rename a group and change its members: the person who manages it (its maker), and the CEO. */
+export function canManageGroupChat(user: Pick<User, "id" | "role">, group: { created_by?: number }) {
+  return isCeo(user) || group.created_by === user.id;
+}
+
+/** Who can be put in a group: any active person except the system admin (they manage accounts, not the work). */
+export const mayJoinGroup =(u: Pick<User, "active" | "role">) => u.active && u.role !== "admin";
 
 /** The kind and id inside a key, or null for a key that isn't one. */
 export function parseKey(key: ChatKey): { kind: ChatKind; id: number } | null {
-  const m = /^([ptd])-(\d+)$/.exec(key);
+  const m = /^([ptdg])-(\d+)$/.exec(key);
   if (!m) return null;
   const kind = (Object.keys(PREFIX) as ChatKind[]).find((k) => PREFIX[k] === m[1])!;
   return { kind, id: Number(m[2]) };
