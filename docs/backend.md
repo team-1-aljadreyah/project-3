@@ -125,7 +125,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 15 | `PUT` | `/projects/:projectId/github` | its pm, ceo | Save them |
 | 15 | `GET` | `/{tasks\|bugs}/:id/github` | see §2 | Linked pull requests and commits |
 | 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes (the CEO sees all) |
-| 16 | `POST` | `/monitoring/notes` | monitor, ceo; employee (requests only) | Write a report, feedback or a problem; an employee's request |
+| 16 | `POST` | `/monitoring/notes` | monitor, ceo; every job but the ceo (requests only) | Write a report, feedback or a problem; a request to the CEO |
 | 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
 | 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
@@ -777,20 +777,21 @@ ReportFacts {
 | `GET /monitoring/report-facts?type=&id=&from=&to=` | `monitor`, `ceo` | The report builder. `type` is `team`, `person` or `project`. A team: its members' tasks in every project, one row per member (members with no task included). A person: their tasks, one row per project they have tasks in. A project: its tasks, one row per person with tasks in it. Bugs: a project's bugs; for a team or a person, the bugs assigned to them. Bad period or unknown `id`: **422** (`period`, `about`). Others: **403**. |
 | `POST /monitoring/notes/:id/send` | its writer, `ceo` | Sets `sent_at` = now and `ceo_state` = "new" (sending again brings it back to "new"). Notifies every active CEO: kind `note_sent`, `data.title`. |
 | `GET /ceo/inbox` | `ceo` | Every sent note, newest first. Others: **403**. |
-| `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again. |
+| `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply?, reopen? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again; `reopen: true` (with "seen") takes a done note back to "seen". Done notes are never deleted: the inbox shows them under "Done" (the CEO's archive), so `GET /ceo/inbox` keeps returning them. |
 
 - A note you may not see answers **404** (like one that doesn't exist). Validation errors are **422** with per-field
   messages (`title`, `body`, `about`, `kind`, `reply`) in Arabic and English, like every other form.
 - `note_sent` and `note_answered` are **required** notifications (nobody can turn them off). `note_answered` carries
   `data.note_kind` ("request" opens the Requests page).
 
-**Requests (employees):** employees don't message the CEO directly. They send a note with `kind: "request"`, a
-`subject` (required, anything) and `about: { type: "general" }`; it is sent to the CEO at once (as if `send: true`) and
-answered in `/ceo/inbox`. Other jobs: 403 for `kind: "request"`.
+**Requests (every job but the CEO, since 21 November 2026):** nobody starts a chat with the CEO. Anyone except the
+CEO sends a note with `kind: "request"`, a `subject` (required, anything) and `about: { type: "general" }`; it is sent
+to the CEO at once (as if `send: true`) and answered in `/ceo/inbox`. The CEO: **403** for `kind: "request"` (the one
+agreed exception to the CEO rule: requests go to the CEO).
 
-**Private chats with the CEO:** `POST /chats/direct` with the CEO as the other person answers **403** for an `employee`.
-In a private chat between an employee and the CEO (the CEO may start one), the employee may send only after the CEO has
-written there (403 before).
+**Private chats with the CEO:** `POST /chats/direct` with the CEO as the other person answers **403** for **every** job
+(only the CEO starts a private chat with someone). In a private chat the CEO started, the other person may send only
+after the CEO has written there (403 before).
 
 ## 17. The CEO's advanced settings
 

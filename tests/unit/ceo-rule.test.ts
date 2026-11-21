@@ -51,7 +51,7 @@ const CHECKS: Record<string, () => boolean> = {
   canManageGroupChat: () => chat.canManageGroupChat(ceo, { created_by: 7 }),
   // monitoring
   canWriteNotes: () => monitoring.canWriteNotes(ceo),
-  canSendRequests: () => monitoring.canSendRequests(ceo),
+  // The one exception (the client: requests go TO the CEO, "who will he request?"): checked below, not here.
   canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3 }),
   canSendToCeo: () => monitoring.canSendToCeo(ceo, { author_id: 3 }),
   canUseCeoInbox: () => monitoring.canUseCeoInbox(ceo),
@@ -76,6 +76,11 @@ const CHECKS: Record<string, () => boolean> = {
   canComment: () => tasks.canComment(ceo, project),
 };
 
+/** Rules the CEO is meant to fail, each with the client's reason. Nothing else may be added here. */
+const EXCEPTIONS: Record<string, () => boolean> = {
+  canSendRequests: () => monitoring.canSendRequests(ceo),
+};
+
 /** The names of every exported `can…` rule in the features' rules.ts and in shared/lib/access.ts. */
 function allRuleNames() {
   const files = [
@@ -98,7 +103,7 @@ function allRuleNames() {
 
 describe("the CEO rule: the CEO may do everything any job can", () => {
   it("every permission rule is checked here (a new rule must be added, with the CEO allowed)", () => {
-    const missing = allRuleNames().filter((n) => !(n in CHECKS));
+    const missing = allRuleNames().filter((n) => !(n in CHECKS) && !(n in EXCEPTIONS));
     expect(missing, `Add these rules to CHECKS in tests/unit/ceo-rule.test.ts, and let the CEO pass them: ${missing.join(", ")}`).toEqual([]);
   });
 
@@ -112,7 +117,12 @@ describe("the CEO rule: the CEO may do everything any job can", () => {
     }
   });
 
-  it("the menu shows the CEO every item, also the ones added later", () => {
-    expect(access.navFor("ceo")).toEqual(access.NAV);
+  for (const [name, check] of Object.entries(EXCEPTIONS)) {
+    it(`${name} is the agreed exception: it says no to the CEO`, () => expect(check()).toBe(false));
+  }
+
+  it("the menu shows the CEO every item, also the ones added later (except \"My requests\")", () => {
+    expect(access.navFor("ceo")).toEqual(access.NAV.filter((n) => !n.notForCeo));
+    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["requests"]);
   });
 });

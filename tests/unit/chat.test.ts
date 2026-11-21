@@ -238,7 +238,11 @@ describe("group chats", () => {
 });
 
 describe("employees and the CEO", () => {
-  it("an employee can't open a private chat with the CEO; the CEO can, and then the employee may answer", async () => {
+  it("nobody opens a private chat with the CEO; the CEO can, and then the other person may answer", async () => {
+    for (const id of [2, 3, 4, 8]) {
+      as(id);
+      expect((await fails(api.startDirect(1)))?.status, `job of ${id}`).toBe(403);
+    }
     as(5);
     expect((await fails(api.startDirect(1)))?.status).toBe(403);
     as(1);

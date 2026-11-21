@@ -57,11 +57,25 @@ describe("requests to the CEO", () => {
     expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 5, kind: "note_answered", data: { note_kind: "request" } });
   });
 
-  it("a request needs a subject; other jobs don't send requests", async () => {
+  it("a request needs a subject; every job sends requests except the CEO, who receives them", async () => {
     as(5);
     expect((await fails(api.create({ kind: "request", title: "x", body: "y", about: { type: "general" } })))?.status).toBe(422);
-    as(2);
+    for (const id of [2, 3, 4, 8]) {
+      as(id);
+      expect((await api.create({ kind: "request", subject: "s", title: `from ${id}`, body: "y", about: { type: "general" } })).ceo_state).toBe("new");
+    }
+    as(1);
     expect((await fails(api.create({ kind: "request", subject: "s", title: "x", body: "y", about: { type: "general" } })))?.status).toBe(403);
+    expect(rules.canSendRequests({ role: "ceo" })).toBe(false);
+  });
+
+  it("a done note stays done when opened again, and goes back to \"to handle\" only when reopened", async () => {
+    as(5);
+    const r = await api.create({ kind: "request", subject: "s", title: "t", body: "b", about: { type: "general" } });
+    as(1);
+    expect((await api.answer(r.id, { state: "done" })).ceo_state).toBe("done");
+    expect((await api.answer(r.id, { state: "seen" })).ceo_state).toBe("done");
+    expect((await api.answer(r.id, { state: "seen", reopen: true })).ceo_state).toBe("seen");
   });
 });
 

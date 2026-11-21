@@ -97,3 +97,38 @@ test("the monitoring officer builds a report from the numbers, adds her comments
   await expect(card.getByLabel("أرقام التقرير")).toBeVisible();
   await expect(card.getByText("أقترح توزيع المهام المتأخرة على الفريق.")).toBeVisible();
 });
+
+test("a project manager sends a request; the CEO answers, marks it done, finds it in Done, and can open it again", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /أحمد كريم/);
+  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "طلباتي" }).click();
+  await page.getByRole("button", { name: "طلب جديد" }).click();
+  await page.getByLabel("عن ماذا").fill("ميزانية");
+  await page.getByLabel("العنوان").fill("زيادة ميزانية الحملة");
+  await page.getByLabel("الطلب").fill("نحتاج ميزانية إضافية للإعلانات.");
+  await page.getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
+  await expect(page.getByRole("list", { name: "طلباتي" }).getByText("زيادة ميزانية الحملة")).toBeVisible();
+
+  // The CEO: no "My requests" in the menu; the request is in "To handle".
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByRole("button", { name: /مريم العبيدي/ }).click();
+  const nav = page.getByRole("navigation", { name: "القائمة الرئيسية" });
+  await expect(nav).toBeVisible();
+  await expect(nav.getByRole("link", { name: "طلباتي" })).toHaveCount(0);
+  await nav.getByRole("link", { name: "الوارد", exact: true }).click();
+  const inbox = page.getByRole("list", { name: "الوارد" });
+  await inbox.getByRole("button", { name: "زيادة ميزانية الحملة" }).click();
+  await page.getByLabel("الرد").fill("موافق، أرسل التفاصيل.");
+  await page.getByRole("button", { name: "أرسل الرد و«تمّ الإنجاز»" }).click();
+  await expect(inbox.getByRole("button", { name: "زيادة ميزانية الحملة" })).toHaveCount(0);
+
+  // Done keeps it, to read again; it can be opened again.
+  await page.getByRole("tab", { name: /المنجزة/ }).click();
+  await expect(page).toHaveURL(/show=done/);
+  await inbox.getByRole("button", { name: "زيادة ميزانية الحملة" }).click();
+  await expect(inbox.getByText("موافق، أرسل التفاصيل.")).toBeVisible();
+  await page.getByRole("button", { name: "إعادة فتح" }).click();
+  await page.getByRole("tab", { name: /للمتابعة/ }).click();
+  await expect(inbox.getByRole("button", { name: "زيادة ميزانية الحملة" })).toBeVisible();
+});

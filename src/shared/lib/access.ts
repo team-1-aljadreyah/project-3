@@ -79,6 +79,8 @@ export interface NavItem {
   roles: Role[];
   /** false = not built yet: shown greyed out with "soon", never a broken link. */
   ready: boolean;
+  /** Not in the CEO's menu, the one exception to the CEO seeing every item ("My requests": requests go TO the CEO). */
+  notForCeo?: boolean;
 }
 
 const ALL: Role[] = ["ceo", "pm", "monitor", "lead", "employee", "admin"];
@@ -95,7 +97,7 @@ export const NAV: NavItem[] = [
   { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
   { key: "monitoring", ar: "المتابعة", en: "Monitoring", href: "/monitoring", roles: ["monitor"], ready: true },
   { key: "inbox", ar: "الوارد", en: "Inbox", href: "/inbox", roles: ["ceo"], ready: true },
-  { key: "requests", ar: "طلباتي", en: "My requests", href: "/requests", roles: ["employee"], ready: true },
+  { key: "requests", ar: "طلباتي", en: "My requests", href: "/requests", roles: ["pm", "monitor", "lead", "employee", "admin"], ready: true, notForCeo: true },
   { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },
   { key: "audit", ar: "سجل العمليات", en: "Audit log", href: "/audit", roles: ["ceo", "admin"], ready: true },
   { key: "advanced", ar: "الإعدادات المتقدمة", en: "Advanced settings", href: "/advanced", roles: ["ceo"], ready: true },
@@ -103,7 +105,7 @@ export const NAV: NavItem[] = [
 
 /** The menu of a job. The CEO sees every item, also the ones added later (the CEO rule above). */
 export function navFor(role: Role) {
-  return role === "ceo" ? NAV : NAV.filter((n) => n.roles.includes(role));
+  return role === "ceo" ? NAV.filter((n) => !n.notForCeo) : NAV.filter((n) => n.roles.includes(role));
 }
 
 /** Which menu item a page belongs to: "/projects/3" → "projects". */

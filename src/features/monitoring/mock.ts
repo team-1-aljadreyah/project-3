@@ -66,7 +66,7 @@ export const monitoringMock: MonitoringApi = {
   async create(input) {
     const user = currentUser();
     const request = input.kind === "request";
-    if (request && !canSendRequests(user)) return fail(403, "FORBIDDEN", "الطلبات للموظفين.", "Requests are for employees.");
+    if (request && !canSendRequests(user)) return fail(403, "FORBIDDEN", "الطلبات تُرسَل إلى المدير التنفيذي، لا منه.", "Requests go to the CEO, not from the CEO.");
     if (request) requireFeature(user, "requests");
     if (!request && !canWriteNotes(user)) return fail(403, "FORBIDDEN", "كتابة ملاحظات المتابعة لمسؤول المتابعة والتقييم.", "Monitoring notes are for the monitoring officer.");
     const title = input.title.trim();
@@ -143,7 +143,7 @@ export const monitoringMock: MonitoringApi = {
     if (reply && reply.length > L.reply) invalid("reply", "الرد أطول من المسموح.", "The reply is too long.");
     if (answer.state !== "seen" && answer.state !== "done") invalid("state", "حالة غير معروفة.", "Unknown state.");
     // "Done" stays done when the CEO only opens it again.
-    note.ceo_state = note.ceo_state === "done" && answer.state === "seen" && !reply ? "done" : answer.state;
+    note.ceo_state = answer.reopen ? "seen" : note.ceo_state === "done" && answer.state === "seen" && !reply ? "done" : answer.state;
     if (reply) {
       note.ceo_reply = reply;
       note.replied_at = nowIso();

@@ -12,7 +12,7 @@ import { canSendRequests, NOTE_LIMITS as L } from "../rules";
 import type { MonitorNote } from "../types";
 
 /**
- * An employee's requests to the CEO. Employees don't message the CEO directly: they send a request about anything,
+ * Your requests to the CEO (every job but the CEO). Nobody starts a chat with the CEO: they send a request about anything,
  * and the CEO answers it in her inbox (the answer shows here, and they are told).
  */
 export function RequestsPage() {
@@ -36,7 +36,7 @@ export function RequestsPage() {
     return [...byId.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
   }, [load.data, added]);
 
-  if (!allowed) return <Empty title={tr("الطلبات للموظفين", "Requests are for employees")} />;
+  if (!allowed) return <Empty title={tr("الطلبات تصل إليك في «الوارد»", "Requests reach you in your Inbox")} />;
   if (load.state.status === "loading") {
     return (
       <LoadingBlock className="mx-auto flex w-full max-w-3xl flex-col gap-3">

@@ -12,10 +12,11 @@ export const TONE_CLASS: Record<StatusTone, { pill: string; bar: string; text: s
   blocked: { pill: "bg-(--st-blocked) text-(--st-blocked-ink)", bar: "bg-(--st-blocked-ink)", text: "text-(--st-blocked-ink)" },
 };
 
-export const PRIORITY: Record<Priority, { ar: string; en: string; pill: string }> = {
-  high: { ar: "عالية", en: "High", pill: TONE_CLASS.blocked.pill },
-  medium: { ar: "متوسطة", en: "Medium", pill: TONE_CLASS.review.pill },
-  low: { ar: "منخفضة", en: "Low", pill: TONE_CLASS.new.pill },
+/** A priority's name, its soft background (cards that use it as a fill) and the colour of its signal bars. */
+export const PRIORITY: Record<Priority, { ar: string; en: string; pill: string; text: string }> = {
+  high: { ar: "عالية", en: "High", pill: TONE_CLASS.blocked.pill, text: TONE_CLASS.blocked.text },
+  medium: { ar: "متوسطة", en: "Medium", pill: TONE_CLASS.review.pill, text: TONE_CLASS.review.text },
+  low: { ar: "منخفضة", en: "Low", pill: TONE_CLASS.new.pill, text: "text-muted" },
 };
 
 export const AVATAR_CLASS = [
