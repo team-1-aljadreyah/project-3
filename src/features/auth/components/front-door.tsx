@@ -2,10 +2,9 @@
 // glass window with a live task, the plate that opens out of the logo, and the sections that settle into focus. Motion
 // is decoration only: everything works and reads the same with "reduce motion" (styles in app/styles.css).
 import { useEffect, useRef, useState } from "react";
-import { BRAND } from "@/shared/lib/brand";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
-import { Frost, Pill, Reveal } from "@/shared/ui";
+import { BrandMark, Frost, Pill, Reveal } from "@/shared/ui";
 
 const INTRO_KEY = "p3.intro";
 const reducedMotion = () => {
@@ -186,8 +185,8 @@ export function FlowPlate() {
     <section data-threads="soft" aria-labelledby="flow-title" className="relative isolate border-t border-white/5 px-4 py-24">
       <Frost kind="soft" />
       <div className="plate relative mx-auto flex w-full max-w-5xl flex-col gap-8 rounded-3xl border border-line bg-card/75 p-8 sm:p-12">
-        <span aria-hidden="true" className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-on-accent">
-          {BRAND.mark}
+        <span aria-hidden="true" className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#7c0e44]">
+          <BrandMark on="accent" className="size-10" />
         </span>
         <h2 id="flow-title" className="text-center text-3xl font-semibold">
           {tr("هكذا يمضي العمل", "How the work flows")}

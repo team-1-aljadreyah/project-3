@@ -14,5 +14,6 @@ export { Stat } from "./stat";
 export { MaybeLink } from "./maybe-link";
 export { PersonName } from "./person-name";
 export { LoadingRing, Reveal } from "./motion";
+export { BrandMark } from "./brand-mark";
 export { LightThreads, Frost } from "./light-threads";
 export { TONE_CLASS, PRIORITY, avatarClass } from "./tones";

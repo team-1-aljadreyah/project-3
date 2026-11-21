@@ -20,6 +20,11 @@
   --faint: #7a6470;         /* placeholders (5.4:1 on white, 5.1:1 on the page) */
   --line: #e9e3de;          /* a warm grey, no pink */
   --line-strong: #d49a9a;   /* dusty rose */
+  /* The logo («لوحة», the board): done column, in progress, new, and the check / card in flight (BrandMark). */
+  --brand-a: #7c0e44;
+  --brand-b: #aa5e7a;
+  --brand-c: #d49a9a;
+  --brand-d: #f2dace;
 
   --accent: #7c0e44;        /* wine: buttons, links, the active tab (white on it: 10.5:1) */
   --accent-hover: #650b37;
@@ -53,6 +58,10 @@
 
 .dark {
   --bg: #170d12;            /* deep wine-black */
+  --brand-a: #f0b9c8;
+  --brand-b: #c98aa3;
+  --brand-c: #9b5470;
+  --brand-d: #3b2330;
   --card: #22141b;
   --card-2: #1c1016;
   --chip: #33202a;

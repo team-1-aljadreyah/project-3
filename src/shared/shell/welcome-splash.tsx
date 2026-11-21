@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { roleName } from "@/shared/lib/site";
-import { BRAND } from "@/shared/lib/brand";
+import { BrandMark } from "@/shared/ui";
 import { useFmt } from "@/shared/lib/i18n";
 import { useSession, useUser } from "@/shared/lib/session";
 import { today } from "@/shared/lib/utils";
@@ -66,8 +66,8 @@ export function WelcomeSplash() {
   return (
     <div className="welcome" aria-hidden="true">
       <div className="welcome-card flex flex-col items-center gap-4 px-6 text-center">
-        <span className="welcome-mark flex size-16 items-center justify-center rounded-2xl bg-[#f2dace] text-2xl font-bold text-[#3b0720]">
-          {BRAND.mark}
+        <span className="welcome-mark flex size-16 items-center justify-center rounded-2xl bg-[#faf3ef]">
+          <BrandMark size="full" on="light" className="size-12" />
         </span>
         <p className="welcome-line text-3xl font-semibold text-white sm:text-4xl">
           {tr(`${hello.ar}، ${firstName(name)}`, `${hello.en}, ${firstName(name)}`)}
