@@ -508,3 +508,58 @@ body {
     opacity: 0.8;
   }
 }
+
+/* The welcome splash (shared/shell/welcome-splash.tsx): each time the app opens, a greeting that lifts away into the
+   page. Clicks pass through it; with "reduce motion" it is not shown. About 2.3 s in all. */
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 50% 45%, rgb(170 94 122 / 0.45) 0%, transparent 70%),
+    linear-gradient(160deg, #2b0a1b 0%, #170d12 60%);
+  animation: welcome-out 0.6s 1.7s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+@keyframes welcome-out {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+    visibility: hidden;
+  }
+}
+.welcome-mark {
+  animation: welcome-mark 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  box-shadow: 0 0 0 0 rgb(242 218 206 / 0.6);
+}
+@keyframes welcome-mark {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-8deg);
+  }
+  to {
+    box-shadow: 0 0 0 14px rgb(242 218 206 / 0);
+  }
+}
+.welcome-line {
+  animation: settle 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.welcome-bar > span {
+  transform-origin: left center;
+  animation: welcome-fill 1.5s 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+[dir="rtl"] .welcome-bar > span {
+  transform-origin: right center;
+}
+@keyframes welcome-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome {
+    display: none;
+  }
+}
