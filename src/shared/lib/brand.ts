@@ -1,8 +1,6 @@
-// The platform's name and mark. The client has not named the platform yet: these are placeholders,
-// kept in this one place so the real name and logo change everywhere at once.
+// The platform's name. The client has not named the platform yet: this is a placeholder, kept in one place so the real
+// name changes everywhere at once. The logo is «لوحة», the board (chosen 21 November 2026): BrandMark in shared/ui.
 export const BRAND = {
   ar: "منصة المشاريع",
   en: "Projects Platform",
-  /** The letter in the logo square. */
-  mark: "م",
 };
