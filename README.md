@@ -71,6 +71,7 @@ src/
 │                     (signed-in) group with its layout, not-found, error, loading, styles.css
 ├── features/
 │   ├── admin/        users and roles, teams, settings, data health, and the audit log
+│   ├── advanced/     the CEO's advanced settings: working time, rights, notifications, features, banner, history
 │   ├── announcements/ company announcements, who has and hasn't seen them
 │   ├── attachments/  file attachments (tasks, projects) and the project files page
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
@@ -100,7 +101,7 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth`; `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
+Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth`; `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
 `notifications` and `announcements` use `auth`. Never the other way, so there is no loop.
 
 **How data flows:**
@@ -139,6 +140,11 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   her; she stands behind the profile card, so she never covers it.
 - **Monitoring** (`src/features/monitoring`): the monitoring officer writes reports about teams and people, feedback
   on anyone and problems at `/monitoring`, and sends any of them to the CEO, who answers in `/inbox` ("From monitoring").
+- **Advanced settings** (`/advanced`, the CEO only, `src/features/advanced`): every company rule in one page, like
+  Project 2's: a side tree with a quick find (`?s=<part>` in the address; a short list on the phone), one draft for all
+  parts with «Changed» and the default beside each setting, a save bar, and the history, file and reset. What every
+  page obeys (features switched off, the banner, read-only mode) reaches the frame through `src/shared/lib/site.ts`;
+  docs/backend.md section 17 says what is enforced now and what is saved for later.
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
   short greeting with the person's first name, job and the day lifts away into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.

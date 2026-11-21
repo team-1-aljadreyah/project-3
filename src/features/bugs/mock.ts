@@ -4,6 +4,7 @@ import type { Project } from "@/features/projects";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
+import { codeOf, requireFeature } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { BugsApi } from "./api";
@@ -52,6 +53,7 @@ function checkFields(project: Project, f: Partial<BugPatch>) {
 export const bugsMock: BugsApi = {
   async bugs() {
     const user = currentUser();
+    requireFeature(user, "bugs");
     const db = getDb();
     const visible = new Set(db.projects.filter((p) => canSeeProject(user, p)).map((p) => p.id));
     return wait(db.bugs.filter((b) => visible.has(b.project_id)));
@@ -63,6 +65,7 @@ export const bugsMock: BugsApi = {
 
   async report(projectId, input) {
     const user = currentUser();
+    requireFeature(user, "bugs");
     const project = projectFor(user, projectId);
     if (!canReportBug(user, project)) return fail(403, "FORBIDDEN", "لا يحق لك تسجيل مشكلات في هذا المشروع.", "You can't report bugs in this project.");
     const fields = { ...input };
@@ -77,7 +80,7 @@ export const bugsMock: BugsApi = {
     const id = ++db.seq.bug;
     const bug: Bug = {
       id,
-      code: `BUG-${id}`,
+      code: codeOf("bug", id),
       project_id: project.id,
       phase_id: fields.phase_id || undefined,
       task_id: fields.task_id || undefined,

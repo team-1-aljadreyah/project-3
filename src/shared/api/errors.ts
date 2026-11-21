@@ -7,6 +7,8 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "BAD_STATE"
   | "RATE_LIMITED"
+  | "FEATURE_OFF"
+  | "READ_ONLY"
   | "NETWORK";
 
 export class ApiError extends Error {

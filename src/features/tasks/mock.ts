@@ -5,6 +5,7 @@ import type { Project } from "@/features/projects";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { aboutProject, aboutTask, notify } from "@/mock/notify";
+import { codeOf } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { TasksApi } from "./api";
@@ -105,7 +106,7 @@ export const tasksMock: TasksApi = {
     const id = ++db.seq.task;
     const task: Task = {
       id,
-      code: `TSK-${String(1000 + id)}`,
+      code: codeOf("task", 1000 + id),
       project_id: project.id,
       title: fields.title!,
       description: fields.description?.trim() ?? "",

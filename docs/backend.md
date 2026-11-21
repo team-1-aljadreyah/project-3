@@ -35,6 +35,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 6 | Dashboard and reports, performance | 12, 13 | give the management its numbers |
 | 7 | Administration, the audit log, sign-in locking | 14 | run the platform |
 | 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
+| 9 | The CEO's advanced settings and what they switch | 17 | let the CEO run the rules without a developer |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -129,6 +130,10 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
 | 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done |
+| 17 | `GET` | `/ceo/advanced` | ceo | The advanced settings in force (defaults merged in) |
+| 17 | `PUT` | `/ceo/advanced` | ceo | Save them (only what differs from the defaults; import, reset) |
+| 17 | `GET` | `/ceo/advanced/history` | ceo | Every save, from → to, newest first |
+| 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode |
 
 ### Who may do what (summary)
 
@@ -158,7 +163,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | Base URL | `{NEXT_PUBLIC_API_URL}/api/v1` + the paths below. JSON in, JSON out. |
 | Success | `{ "success": true, "data": … }` (the site reads `data`). |
 | Failure | `{ "success": false, "message": "نص للمستخدم", "code": "VALIDATION", "errors": { "field": "نص" } }` with the right HTTP status. `errors` keys are the form's field names (`title`, `blocked_reason`, `note`…): each shows under its field. |
-| Codes | `VALIDATION` 422 · `UNAUTHENTICATED` 401 · `FORBIDDEN` 403 · `NOT_FOUND` 404 · `BAD_STATE` 409 (not allowed in this state) · `RATE_LIMITED` 429. |
+| Codes | `VALIDATION` 422 · `UNAUTHENTICATED` 401 · `FORBIDDEN` 403 · `NOT_FOUND` 404 · `BAD_STATE` 409 (not allowed in this state) · `RATE_LIMITED` 429 · `FEATURE_OFF` 403 (the CEO switched the feature off) · `READ_ONLY` 423 (read-only mode, section 17). |
 | Language | Every request has `Accept-Language: ar` or `en`. `message` and `errors` come in that language (Arabic: Modern Standard Arabic). |
 | Sign in | `POST /auth/login {identifier, password}` → `{ token, user }`. `identifier` is the email (a phone may come later). Every other call: `Authorization: Bearer <token>`. A `401` signs the person out. Wrong email and wrong password give **the same** message. Rate-limit it. |
 | Dates | ISO 8601 with time zone; days are `YYYY-MM-DD`. The working day is Baghdad time (UTC+3). |
@@ -787,7 +792,90 @@ answered in `/ceo/inbox`. Other jobs: 403 for `kind: "request"`.
 In a private chat between an employee and the CEO (the CEO may start one), the employee may send only after the CEO has
 written there (403 before).
 
-## 17. Still open with the client
+## 17. The CEO's advanced settings
+
+Shapes: `src/features/advanced/types.ts` (`AdvancedRules`, `SettingsChange`) and `src/shared/lib/site.ts` (`SiteLive`,
+`Banner`, `FeatureKey`); defaults, limits and checks: `src/features/advanced/rules.ts` (`DEFAULT_RULES`, `rulesOf`,
+`checkRules`, `changedRules`, `diffRules`, `liveFor`); the demo backend: `src/features/advanced/mock.ts`; what the
+settings switch in the other demo backends: `src/mock/site.ts`, `src/mock/notify.ts` and `commit()` in `src/mock/db.ts`.
+
+**Who:** the `ceo` only (`GET/PUT /ceo/advanced`, `GET /ceo/advanced/history`): **403** for everyone else.
+`GET /site/live` is for everyone signed in.
+
+**Calls**
+
+| Call | Body | Answer |
+|---|---|---|
+| `GET /ceo/advanced` | | `{ rules: AdvancedRules, updated_at?, updated_by?: {id, name} }`, the defaults merged in |
+| `PUT /ceo/advanced` | `{ rules: Partial<AdvancedRules>, how?: "import" \| "reset" }` | the same as GET |
+| `GET /ceo/advanced/history` | | `SettingsChange[]` newest first: `{id, at, by: {id, name, name_en?}, how?, changes: [{key, from, to}]}` |
+| `GET /site/live` | | `{ features: {[key]: boolean}, banner: Banner \| null, read_only: {on, message, message_en?} }` |
+
+**How a save works (the server must keep all of it):**
+
+1. `rules` holds only what differs from the defaults (the page sends `changedRules`). **Anything missing is its
+   default**, so the body is the whole state: `how: "reset"` sends `{}`. Merge one level down (`rulesOf`): a setting
+   added later needs no data change.
+2. Check the merged rules with the same checks as `checkRules`; any problem → **422** `VALIDATION` with `errors` keyed
+   by the setting (`"work.days"`, `"names.task"`, `"banner.text"`…), in the request's language. Nothing is saved.
+3. Compare with the rules in force **after merging the defaults on both sides** (`diffRules`, one level down: `work.days`,
+   `permissions.change_due`, `banner`). Ticks compare as sets (order doesn't count). **No change → no history line and
+   no audit line.** (Project 2 wrote "— → 21" lines on the first save because it compared against missing values.)
+4. Store only the differences. The first three security numbers are **the administration's settings**
+   (`/admin/settings`, section 14): write them there, not twice. Keep the history (the demo keeps 300) and write one
+   audit line `settings_changed` (target `settings`, "الإعدادات المتقدمة") with each change.
+
+**The data, defaults and limits**
+
+| Key | Default | Limits / meaning |
+|---|---|---|
+| `work.days` | `[0,1,2,3,4]` (Sun–Thu; 0 = Sunday) | whole 0–6, no repeats, at least one |
+| `work.from`, `work.to` | `"08:00"`, `"16:00"` | `HH:MM`, from before to (`work.hours`) |
+| `work.holidays` | `[]` | ≤ 60, each `{date: YYYY-MM-DD, name ≤ 60, name_en? ≤ 60}`, one per day |
+| `due_days.{high,medium,low}` | 3, 7, 14 | working days, whole 1–90 |
+| `fix_days.{critical,high,medium,low}` | 1, 3, 7, 14 | working days, whole 1–60; a worse severity never more than a lighter one |
+| `tasks.approver` | `"either"` | `"pm"`, `"lead"` or `"either"` (the CEO always may) |
+| `tasks.employee_reopen` | `true` | an employee may move their finished task back |
+| `tasks.due_reason` | `false` | a reason (`due_note`) is required to change a due date |
+| `tasks.wip_limit` | 0 | tasks in progress per person, 0 = none, whole 0–50 |
+| `permissions.<action>` | today's rules (below) | jobs from `pm, monitor, lead, employee, admin`; never `ceo` (always allowed) |
+| `notify.<kind>` | every job | jobs that get the kind; **required kinds (section 7) must list every job** |
+| `features.<key>` | all `true` | `chat`, `group_chats`, `bugs`, `reviews`, `announcements`, `requests`, `github`, `welcome` |
+| `security.lock_after`, `lock_minutes`, `due_soon_days` | 5, 15, 1 | the administration's settings, same limits (3–10, 5–120, 1–7) |
+| `security.password_min` | 8 | 6–32, new and changed passwords only |
+| `names.{task,project,bug}` | `TSK`, `PRJ`, `BUG` | 2–5 capital letters A–Z, all different; new records only |
+| `banner` | `null` | `{text 1–300, text_en? ≤ 300, roles: Role[] (none = everyone), tone: "info"\|"warning", until?: ISO}` |
+| `read_only` | `{on: false, message: ""}` | `message` required when on, ≤ 300; `message_en?` ≤ 300 |
+
+The actions and their defaults (today's rules in the features' `rules.ts`): `create_project` pm · `close_project` pm ·
+`delete_task` pm, lead (no delete in the platform yet) · `reassign_task`, `change_due`, `approve_done` pm, lead ·
+`post_announcement` monitor, admin · `create_group_chat` pm, monitor, lead · `see_scores` pm, monitor, lead ·
+`write_reviews` pm, lead · `see_reports` pm, monitor, lead · `export_csv` pm, monitor, lead, admin · `report_bugs` pm,
+monitor, lead, employee · `bug_severity` pm, lead.
+
+**What the server must enforce now (version 1, the demo does it):**
+
+- **Features off:** for everyone but the `ceo`, the feature's calls answer **403 `FEATURE_OFF`** ("أوقفت الإدارة هذه
+  الميزة الآن."): `chat` → `GET /chats`, sending, `POST /chats/direct`, new groups; `group_chats` → new groups;
+  `bugs` → `GET /bugs`, reporting; `reviews` → writing and finalizing reviews; `announcements` → posting; `requests` →
+  an employee's request (`POST /monitoring/notes` with `kind: "request"`); `github` → `PUT /projects/:id/github`, and
+  `GET /{tasks|bugs}/:id/github` answers `{enabled: false, repos: [], items: []}`. `welcome` is the page's only. The
+  menu hides the feature's page (`/site/live`); the data stays and comes back when switched on.
+- **Read-only mode:** every change by anyone but the `ceo` answers **423 `READ_ONLY`** with the CEO's message, and
+  changes nothing. Still allowed: signing in, reading and marking notifications, notification preferences, marking a
+  chat or an announcement as read.
+- **Banner:** `/site/live` sends it only to the jobs in `roles` (none = everyone) and only until `until`.
+- **Notification table:** a kind is sent to a person only if their job is in `notify.<kind>` (then their own
+  preference decides, section 7). Required kinds always go.
+- **Code prefixes:** new tasks, projects and bugs get `<prefix>-<number>`. Old codes never change.
+- **Security:** the same values as `/admin/settings` (the lock and the due-soon reminder already use them).
+
+**Saved now, enforced later** (kept and shown; the server should enforce them when the matching screens come):
+working days and hours, holidays, due days per priority, fix targets per severity (the home page already counts bugs
+past their target in working days), who approves a task, an employee reopening a task, the reason for a due date
+change, the in-progress limit, the whole «who may do what» table, and the shortest password.
+
+## 18. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),

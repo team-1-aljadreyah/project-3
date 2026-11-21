@@ -4,6 +4,7 @@ import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
+import { requireFeature } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import { today } from "@/shared/lib/utils";
@@ -112,6 +113,7 @@ export const performanceMock: PerformanceApi = {
 
   async saveReview(input: ReviewInput, id?: number) {
     const user = currentUser();
+    requireFeature(user, "reviews");
     const db = getDb();
     const subject = db.users.find((u) => u.id === input.user_id);
     if (!subject || !canReview(user, subject, db.projects)) return fail(403, "FORBIDDEN", "لا يحق لك تقييم هذا الشخص.", "You can't review this person.");
@@ -145,6 +147,7 @@ export const performanceMock: PerformanceApi = {
 
   async finalizeReview(id) {
     const user = currentUser();
+    requireFeature(user, "reviews");
     const db = getDb();
     const review = db.reviews.find((r) => r.id === id);
     if (!review || review.reviewer_id !== user.id) return fail(404, "NOT_FOUND", "لم يُعثر على التقييم.", "Review not found.");

@@ -1,5 +1,6 @@
 // The demo data: invented people and projects (never real ones), with dates around today so "late",
 // "due today" and the sprint always look current. Demo accounts exist only here, in the demo build.
+import type { AdvancedRules, SettingsChange } from "@/features/advanced";
 import type { Announcement } from "@/features/announcements";
 import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
@@ -65,11 +66,15 @@ export interface MockDb {
   monitor_notes: MonitorNote[];
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
+  /** The CEO's advanced settings: only what differs from the defaults (the security numbers live in `settings`). */
+  advanced: Partial<AdvancedRules>;
+  /** Every save of the advanced settings, oldest first. */
+  advanced_log: SettingsChange[];
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
     attachment: number; announcement: number; bug: number; bug_event: number; direct: number; group: number; message: number; template: number; review: number; audit: number; team: number;
-    note: number;
+    note: number; advanced_change: number;
   };
 }
 
@@ -474,11 +479,12 @@ export function seed(now = new Date()): MockDb {
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
     announcements, announcement_reads, bugs, bug_events, teams, directs, groups, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
     github, github_items,
+    advanced: {}, advanced_log: [],
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
       bug: bugs.length, bug_event: bugEventId, direct: directs.length, group: groups.length, message: messageId, template: templates.length, review: reviews.length, audit: audit.length, team: teams.length,
-      note: monitor_notes.length,
+      note: monitor_notes.length, advanced_change: 0,
     },
   };
 }

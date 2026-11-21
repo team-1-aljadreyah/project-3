@@ -4,6 +4,7 @@ import { chatMembers } from "@/mock/chat";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
+import { requireFeature } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import type { ChatApi } from "./api";
 import { CHAT_LIMITS as L, canCreateGroupChat, canManageGroupChat, chatKey, mayJoinGroup, parseKey, canStartDirect, canWriteInDirect } from "./rules";
@@ -60,6 +61,7 @@ function conversation(key: ChatKey, userId: number): Conversation {
 export const chatMock: ChatApi = {
   async conversations() {
     const user = currentUser();
+    requireFeature(user, "chat");
     const db = getDb();
     const keys = [
       ...db.projects.map((p) => chatKey("project", p.id)),
@@ -80,6 +82,7 @@ export const chatMock: ChatApi = {
 
   async send(key, input) {
     const user = currentUser();
+    requireFeature(user, "chat");
     const members = membersFor(user, key);
     // An employee answers the CEO in a private chat only once the CEO has written there (they send requests instead).
     if (key.startsWith("d-")) {
@@ -119,13 +122,14 @@ export const chatMock: ChatApi = {
     if (!read || read.last_id < lastId) {
       db.chat_reads = db.chat_reads.filter((r) => r !== read);
       db.chat_reads.push({ chat: key, user_id: user.id, last_id: lastId });
-      commit();
+      commit({ own: true });
     }
     return wait(undefined);
   },
 
   async startDirect(userId) {
     const user = currentUser();
+    requireFeature(user, "chat");
     const db = getDb();
     const other = db.users.find((u) => u.id === userId && u.active);
     if (!other || other.id === user.id) return invalid("user_id", "اختر زميلاً آخر.", "Choose another person.");
@@ -142,6 +146,8 @@ export const chatMock: ChatApi = {
 
   async createGroup(input) {
     const user = currentUser();
+    requireFeature(user, "chat");
+    requireFeature(user, "group_chats");
     if (!canCreateGroupChat(user)) fail(403, "FORBIDDEN", "لا يمكنك إنشاء مجموعة محادثة.", "You can't create a group chat.");
     const name = checkName(input.name);
     const others = checkPeople(input.member_ids, user.id);

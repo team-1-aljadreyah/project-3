@@ -35,14 +35,14 @@ export const authMock: AuthApi = {
           notify(admins, "account_locked", { data: { note: user.name } });
         }
       }
-      commit();
+      commit({ own: true });
       return fail(422, "VALIDATION", "البريد أو كلمة المرور غير صحيحة.", "Wrong email or password.");
     }
     if (!user.active) return fail(403, "FORBIDDEN", "تم إيقاف هذا الحساب.", "This account is stopped.");
     login!.failed = 0;
     login!.locked_until = undefined;
     login!.last_login_at = now;
-    commit();
+    commit({ own: true });
     return wait({ token: `demo-${user.id}`, user });
   },
 

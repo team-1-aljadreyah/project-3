@@ -4,6 +4,7 @@ import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
 import { aboutProject, notify } from "@/mock/notify";
+import { codeOf } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
@@ -97,7 +98,7 @@ export const projectsMock: ProjectsApi = {
     const id = ++db.seq.project;
     const project: Project = {
       id,
-      code: `PRJ-${id}`,
+      code: codeOf("project", id),
       name: fields.name,
       name_en: fields.name_en?.trim() || undefined,
       description: fields.description.trim(),
@@ -120,7 +121,7 @@ export const projectsMock: ProjectsApi = {
       for (const t of template.tasks) {
         const taskId = ++db.seq.task;
         db.tasks.push({
-          id: taskId, code: `TSK-${String(1000 + taskId)}`, project_id: id, title: t.title, description: t.description, priority: t.priority,
+          id: taskId, code: codeOf("task", 1000 + taskId), project_id: id, title: t.title, description: t.description, priority: t.priority,
           phase_id: project.phases.find((ph) => ph.name === t.phase)?.id, status: project.statuses[0].key,
           subtasks_done: 0, subtasks_total: 0, created_by: user.id, created_at: nowIso(), updated_at: nowIso(),
         });
