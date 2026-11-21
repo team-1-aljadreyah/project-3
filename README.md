@@ -28,14 +28,17 @@ no backend needed. The login page has a one-tap button for each job (demo only; 
 | `npm run dev` | Development server on port 3000 |
 | `npm run build` | Builds the site into `.next/` |
 | `npm run start` | Serves the built site (port 3000; the browser tests use 3100) |
+| `npm run build:static` | Builds the site as plain files into `out/`, for Cloudflare Pages ([docs/deploy-cloudflare.md](docs/deploy-cloudflare.md)) |
+| `npm run serve:static` | Serves `out/` on port 3100 the way Cloudflare Pages does (its `_redirects` rules), to try it here |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Next.js route types, then TypeScript (no output files) |
 | `npm test` | Unit tests (Vitest) for the rules and helpers |
 | `npm run test:e2e` | Browser tests (Playwright) on phone and desktop sizes. Run `npm run build` first, with `NEXT_PUBLIC_USE_MOCK=true` |
-| `npm run check:no-demo` | After a real build (`NEXT_PUBLIC_USE_MOCK=false`): fails if a demo account or password is in `.next/` |
+| `npm run check:no-demo` | After a real build (`NEXT_PUBLIC_USE_MOCK=false`): fails if a demo account or password is in `.next/` or `out/` |
 
-Jenkins runs `npm ci`, lint, typecheck, unit tests, the real build with the no-demo check, the demo build and
-the browser tests on every push.
+Jenkins runs `npm ci`, lint, typecheck, unit tests, the real build and the Cloudflare build with the no-demo check,
+the demo build and the browser tests on every push. `E2E_STATIC=true npm run test:e2e` runs the browser tests on the
+plain-files build instead (after `NEXT_PUBLIC_USE_MOCK=true npm run build:static`).
 
 ## Configuration
 
@@ -47,9 +50,10 @@ the browser tests on every push.
 `NEXT_PUBLIC_*` values are built into the files and anyone can read them. Never put a secret in them.
 They are read when the site is **built**: change them, then build again (or restart `npm run dev`).
 
-**Hosting (not decided yet):** Next.js needs a Node.js 24 server (`npm ci && npm run build && npm run start`, behind
-nginx or in Docker) or a host that runs Next.js (Vercel, Cloudflare with OpenNext). Addresses like `/projects/1` are
-made when they are opened, so a plain static host is not enough.
+**Hosting:** the whole site runs in the browser, so it can be plain files: **Cloudflare Pages** with
+`npm run build:static` (steps in [docs/deploy-cloudflare.md](docs/deploy-cloudflare.md)). The pages with an id
+(`/projects/1`) are built once and `public/_redirects` serves them for every id; they read the id from the address
+(`src/shared/lib/route-param.ts`). A Node.js 24 server (`npm run build && npm run start`) works too.
 
 **Drawn in the browser:** the signed-in person, the language and the demo data live in the browser's storage, so the
 pages are drawn in the browser (`src/app/providers.tsx` waits for it). The server sends the frame, the title and the

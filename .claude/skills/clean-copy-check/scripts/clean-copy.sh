@@ -40,6 +40,8 @@ step "type check";             npm run typecheck                  || fail "type 
 step "unit tests";             npm test                           || fail "unit tests"
 step "real build (no .env)";   env -u NEXT_PUBLIC_USE_MOCK npm run build || fail "real build"
 step "no-demo check";          npm run check:no-demo              || fail "no-demo check (demo data is in the real build)"
+step "Cloudflare build";       env -u NEXT_PUBLIC_USE_MOCK npm run build:static || fail "Cloudflare Pages build (plain files in out/)"
+step "no-demo check (out/)";   npm run check:no-demo              || fail "no-demo check (demo data is in the Cloudflare build)"
 step "demo build";             NEXT_PUBLIC_USE_MOCK=true npm run build || fail "demo build"
 step "browser tests";          npm run test:e2e                   || fail "browser tests"
 

@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
+    "build:static": "next build",
+    "postbuild:static": "node scripts/flatten-segments.mjs",
+    "serve:static": "node scripts/serve-static.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",

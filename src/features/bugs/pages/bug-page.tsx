@@ -1,7 +1,6 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { AttachmentsPanel } from "@/features/attachments";
 import { GithubPanel } from "@/features/github";
 import { authApi } from "@/features/auth";
@@ -14,6 +13,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { today as todayIso } from "@/shared/lib/utils";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { Avatar, Button, Dialog, ErrorBox, Field, LoadingBlock, Pill, PriorityPill, Skeleton, Textarea, errorText, useToast } from "@/shared/ui";
 import { bugsApi } from "../api";
 import { BugEditDialog } from "../components/bug-edit-dialog";
@@ -31,7 +31,7 @@ interface Loaded {
 
 /** One bug: what happened, where it is in the flow (with the moves this person may make), its files and history. */
 export function BugPage() {
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("bugs"));
   const load = useLoad<Loaded>(async () => {
     const bug = await bugsApi.bug(id);
     const [project, people, history, task] = await Promise.all([

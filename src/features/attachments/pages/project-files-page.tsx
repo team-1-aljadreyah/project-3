@@ -1,17 +1,17 @@
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { canManageProject, projectsApi } from "@/features/projects";
 import { canTakePart } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { AttachmentsPanel } from "../components/attachments-panel";
 
 /** A project's own files (the brief: "the files and attachments of the project"), for everyone in the project. */
 export function ProjectFilesPage() {
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("projects"));
   const { tr, lang } = useFmt();
   const user = useUser();
   const load = useLoad(() => projectsApi.project(id), [id]);

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { authApi } from "@/features/auth";
 import { GithubSettingsTab } from "@/features/github";
 import { ApiError } from "@/shared/api";
@@ -10,6 +9,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
+import { useRouteParam } from "@/shared/lib/route-param";
 import { Copy } from "lucide-react";
 import { Button, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { projectsApi } from "../api";
@@ -43,7 +43,7 @@ interface Loaded {
 
 /** A project's setup: details, members, statuses, phases, sprints and its history. For its PM and the CEO. */
 export function ProjectSettingsPage() {
-  const id = Number(useParams().id);
+  const id = Number(useRouteParam("projects"));
   const load = useLoad<Loaded>(async () => {
     const [project, people, sprints, history] = await Promise.all([
       projectsApi.project(id),
