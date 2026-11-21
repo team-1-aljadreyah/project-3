@@ -76,7 +76,6 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
   const [tab, setTab] = useState<"comments" | "history">("comments");
 
   const people = new Map(users.map((u) => [u.id, u]));
-  const members = users.filter((u) => project.member_ids.includes(u.id));
   const status = statusOf(project, task.status);
   const assignee = task.assignee_id ? people.get(task.assignee_id) : undefined;
   const creator = task.created_by ? people.get(task.created_by) : undefined;
@@ -251,7 +250,7 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
           reload();
         }}
         project={project}
-        members={members}
+        members={users}
         sprints={sprints}
         task={task}
       />

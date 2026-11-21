@@ -52,6 +52,7 @@ export function TaskForm({
   onClose: () => void;
   onSaved: (task: Task) => void;
   project: Project;
+  /** Everyone (the form shows the project's members first, then the others, who join the project if chosen). */
   members: User[];
   sprints: Sprint[];
   task?: Task;
@@ -68,6 +69,12 @@ export function TaskForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  // Who can be given the task: anyone active except the system admin. The project's members come first.
+  const isIn = (u: User) => u.id === project.pm_id || project.member_ids.includes(u.id);
+  const people = members.filter((u) => u.active && u.role !== "admin");
+  const inProject = people.filter(isIn);
+  const others = people.filter((u) => !isIn(u));
+  const joins = !!v.assignee_id && others.some((u) => String(u.id) === v.assignee_id);
   const set = <K extends keyof Values>(k: K, value: Values[K]) => setV((old) => ({ ...old, [k]: value }));
   const dueChanged = !!task && v.due !== (task.due ?? "");
 
@@ -173,14 +180,30 @@ export function TaskForm({
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label={tr("المسؤول عنها", "Assignee")} htmlFor="task-assignee" error={errors.assignee_id}>
+          <Field
+            label={tr("المسؤول عنها", "Assignee")}
+            htmlFor="task-assignee"
+            error={errors.assignee_id}
+            hint={joins ? tr("سيُضاف إلى أعضاء المشروع ويُبلَّغ.", "They will join the project and be told.") : undefined}
+          >
             <Select id="task-assignee" value={v.assignee_id} invalid={!!errors.assignee_id} onChange={(e) => set("assignee_id", e.target.value)}>
               <option value="">{tr("غير مُسندة", "Unassigned")}</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {lang === "en" && m.name_en ? m.name_en : m.name}
-                </option>
-              ))}
+              <optgroup label={tr("أعضاء المشروع", "The project's members")}>
+                {inProject.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {lang === "en" && m.name_en ? m.name_en : m.name}
+                  </option>
+                ))}
+              </optgroup>
+              {others.length > 0 && (
+                <optgroup label={tr("آخرون (يُضافون إلى المشروع)", "Others (they join the project)")}>
+                  {others.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {lang === "en" && m.name_en ? m.name_en : m.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </Select>
           </Field>
 

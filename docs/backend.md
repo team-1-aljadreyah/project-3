@@ -176,6 +176,9 @@ The server must filter, not only the pages:
 - **Projects:** `ceo`, `monitor` and `admin` see all. Everyone else sees the projects they are in (`pm_id` or `member_ids`).
 - A project or a task you may not see answers **404, the same as one that doesn't exist** (nobody learns what exists).
 - **Manage tasks** (create, edit any field, move any task): the project's PM, a `lead` who is a member, and the `ceo`.
+- **Who a task can be given to** (`assignee_id`): anyone active, except the `admin`. Someone who is not in the project
+  is added to its members by the server when the task is saved: a `member_added` line in the project's history and a
+  `project_added` notification to them (the client, 21 November 2026). 422 on `assignee_id` for a stopped account or the admin.
 - **Move a task:** the managers above, or the task's assignee if they are a member.
 - **Approve completion:** the managers above, and the `ceo`. *(Not confirmed by the client yet: BRIEF question 5.)*
 - **Comment:** everyone who can see the project, except `admin`.

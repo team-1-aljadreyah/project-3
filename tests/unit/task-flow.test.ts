@@ -109,11 +109,22 @@ describe("creating and editing tasks", () => {
     expect((await fails(api.createTask(1, { title: "x", priority: "low" })))?.status).toBe(403);
   });
 
-  it("checks the fields: a title, and an assignee from the project", async () => {
+  it("checks the fields: a title, and an assignee who is active and not the system admin", async () => {
     as(2);
     expect((await fails(api.createTask(1, { title: "  ", priority: "low" })))?.errors?.title).toBeTruthy();
-    expect((await fails(api.createTask(1, { title: "x", priority: "low", assignee_id: 1 })))?.errors?.assignee_id).toBeTruthy();
+    expect((await fails(api.createTask(1, { title: "x", priority: "low", assignee_id: 8 })))?.errors?.assignee_id).toBeTruthy();
+    expect((await fails(api.createTask(1, { title: "x", priority: "low", assignee_id: 999 })))?.errors?.assignee_id).toBeTruthy();
     expect((await fails(api.createTask(1, { title: "x", priority: "low", status: "completed" })))?.errors?.status).toBeTruthy();
+  });
+
+  it("a task can be given to anyone: someone outside the project joins it and is told", async () => {
+    as(2);
+    const outsider = getDb().users.find((u) => u.active && u.role !== "admin" && !getDb().projects.find((p) => p.id === 2)!.member_ids.includes(u.id) && u.id !== getDb().projects.find((p) => p.id === 2)!.pm_id)!;
+    const t = await api.createTask(2, { title: "مهمة لشخص من خارج المشروع", priority: "low", assignee_id: outsider.id });
+    expect(t.assignee_id).toBe(outsider.id);
+    expect(getDb().projects.find((p) => p.id === 2)!.member_ids).toContain(outsider.id);
+    expect(getDb().project_events.at(-1)).toMatchObject({ project_id: 2, kind: "member_added", to: String(outsider.id) });
+    expect(getDb().notifications.some((n) => n.user_id === outsider.id && n.kind === "project_added" && n.project_id === 2)).toBe(true);
   });
 
   it("adds a task with a code, in the first column, with its history", async () => {

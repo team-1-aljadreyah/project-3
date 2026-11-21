@@ -4,7 +4,7 @@
 import type { Project } from "@/features/projects";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, projectFor, wait } from "@/mock/helpers";
-import { aboutTask, notify } from "@/mock/notify";
+import { aboutProject, aboutTask, notify } from "@/mock/notify";
 import type { User } from "@/shared/api/types";
 import { canSeeProject } from "@/shared/lib/access";
 import type { TasksApi } from "./api";
@@ -12,6 +12,19 @@ import { canApprove, canComment, canManageTasks, LIMITS, makesLoop, openDependen
 import type { Task, TaskEvent, TaskPatch } from "./types";
 
 const data = getDb;
+
+/**
+ * The person a task is given to joins the project if they are not in it yet: written in the project's history and
+ * told ("you were added to a project"), the same as when the project's manager adds a member.
+ */
+function joinProject(project: Project, userId: number | null | undefined, actorId: number) {
+  if (userId === undefined || userId === null || userId === project.pm_id || project.member_ids.includes(userId)) return;
+  const db = data();
+  const stored = db.projects.find((p) => p.id === project.id)!;
+  stored.member_ids = [...stored.member_ids, userId];
+  db.project_events.push({ id: ++db.seq.project_event, project_id: project.id, actor_id: actorId, kind: "member_added", to: String(userId), at: nowIso() });
+  notify([userId], "project_added", { actor_id: actorId, project_id: project.id, data: aboutProject(project) });
+}
 
 function taskFor(user: User, id: number): { task: Task; project: Project } {
   const task = data().tasks.find((t) => t.id === id);
@@ -36,8 +49,11 @@ function checkFields(project: Project, f: Partial<TaskPatch> & { title?: string 
   if (f.description !== undefined && f.description.length > LIMITS.description) {
     invalid("description", "الوصف أطول من المسموح.", "The description is too long.");
   }
-  if (f.assignee_id !== undefined && f.assignee_id !== null && !project.member_ids.includes(f.assignee_id)) {
-    invalid("assignee_id", "المسؤول عن المهمة ليس من أعضاء المشروع.", "The assignee is not a member of the project.");
+  // Anyone active in the company may be given the task (the client, 21 November 2026), except the system admin (accounts,
+  // not project work). Someone outside the project joins it when the task is saved (joinProject).
+  if (f.assignee_id !== undefined && f.assignee_id !== null) {
+    const person = data().users.find((u) => u.id === f.assignee_id);
+    if (!person || !person.active || person.role === "admin") invalid("assignee_id", "لا يمكن إسناد المهمة إلى هذا الشخص.", "The task can't be given to this person.");
   }
   if (f.due && f.start && f.due < f.start) invalid("due", "موعد التسليم قبل تاريخ البدء.", "The due date is before the start date.");
   if (f.sprint_id !== undefined && f.sprint_id !== null) {
@@ -80,6 +96,7 @@ export const tasksMock: TasksApi = {
     if (!canManageTasks(user, project)) return fail(403, "FORBIDDEN", "لا يحق لك إضافة مهام في هذا المشروع.", "You can't add tasks to this project.");
     const fields = { ...input };
     checkFields(project, fields);
+    joinProject(project, fields.assignee_id, user.id);
     const status = input.status ?? project.statuses[0].key;
     const target = statusOf(project, status);
     if (!target) return invalid("status", "حالة غير معروفة في هذا المشروع.", "Unknown status for this project.");
@@ -118,6 +135,7 @@ export const tasksMock: TasksApi = {
     if (!canManageTasks(user, project)) return fail(403, "FORBIDDEN", "لا يحق لك تعديل هذه المهمة.", "You can't edit this task.");
     const p = { ...patch };
     checkFields(project, { ...p, start: p.start ?? task.start, due: p.due ?? task.due });
+    joinProject(project, p.assignee_id, user.id);
     const changes: [keyof TaskPatch & keyof Task, TaskEvent["kind"]][] = [
       ["title", "title"],
       ["description", "description"],
