@@ -6,7 +6,7 @@ import { Avatar } from "@/shared/ui";
 import { roleName } from "@/shared/lib/site";
 import { resetDemoData } from "@/shared/api";
 import type { User } from "@/shared/api/types";
-import { clearSession } from "@/shared/lib/session";
+import { signOut as endSession } from "@/shared/lib/session";
 import { USE_MOCK } from "@/shared/lib/config";
 import { setLang, useFmt } from "@/shared/lib/i18n";
 import { setTheme, useTheme } from "@/shared/lib/theme";
@@ -108,9 +108,9 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
     items[(go[e.key] + items.length) % items.length].focus();
   };
 
-  const signOut = () => {
+  const signOut = async () => {
     setOpen(false);
-    clearSession();
+    await endSession();
     router.replace("/login");
   };
 

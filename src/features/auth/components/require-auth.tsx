@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
-import { clearSession, updateSessionUser, useSession } from "@/shared/lib/session";
+import { clearSession, onSignOut, updateSessionUser, useSession } from "@/shared/lib/session";
 import { authApi } from "../api";
 
 /**
@@ -13,6 +13,9 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const path = usePathname();
   const signedIn = !!session;
+
+  // Signing out (the account menu) first tells the server to cancel the token.
+  useEffect(() => onSignOut(() => authApi.logout()), []);
 
   useEffect(() => {
     if (!signedIn) router.replace(`/login?next=${encodeURIComponent(path)}`);

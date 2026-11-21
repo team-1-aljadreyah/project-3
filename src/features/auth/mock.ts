@@ -52,6 +52,11 @@ export const authMock: AuthApi = {
     return wait(currentUser());
   },
 
+  // The demo keeps no tokens on a server: nothing to cancel.
+  async logout() {
+    return wait(undefined);
+  },
+
   async users() {
     currentUser();
     return wait(getDb().users);
