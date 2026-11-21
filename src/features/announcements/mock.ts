@@ -41,7 +41,7 @@ export const announcementsMock: AnnouncementsApi = {
 
   async create(input) {
     const user = currentUser();
-    if (!canPostAnnouncements(user)) return fail(403, "FORBIDDEN", "نشر الإعلانات للإدارة فقط.", "Only the management posts announcements.");
+    if (!canPostAnnouncements(user)) return fail(403, "FORBIDDEN", "ينشر الإعلانات المدير التنفيذي ومسؤول النظام ومسؤول المتابعة.", "Announcements are posted by the CEO, the system admin and the monitoring officer.");
     const title = input.title.trim();
     const body = input.body.trim();
     if (!title) invalid("title", "اكتب عنوان الإعلان.", "Enter the announcement's title.");

@@ -46,3 +46,14 @@ test("an unseen announcement is marked 'new' until it is opened; employees can't
   await page.getByRole("link", { name: "الإعلانات" }).first().click();
   await expect(page.getByRole("link", { name: /اجتماع عام يوم الخميس/ }).getByText("جديد")).toHaveCount(0);
 });
+
+test("the monitoring officer posts an announcement too", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.goto("/announcements");
+  await page.getByRole("button", { name: "إعلان جديد" }).click();
+  const dialog = page.getByRole("dialog", { name: "إعلان جديد" });
+  await dialog.getByLabel("العنوان").fill("زيارة متابعة يوم الأحد");
+  await dialog.getByLabel("النص").fill("سأزور الفرق يوم الأحد لمتابعة سير العمل.");
+  await dialog.getByRole("button", { name: "انشر لكل الشركة" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "زيارة متابعة يوم الأحد" })).toBeVisible();
+});
