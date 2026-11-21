@@ -14,7 +14,10 @@ export const canAdminister = (user: Pick<User, "role">) => isCeo(user) || user.r
 /** The audit log: the admin and the CEO. Read only; nobody can change or remove a line (the brief). */
 export const canSeeAudit = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
 
-export const ADMIN_LIMITS = { name: 120, title: 80, teamName: 80 };
+/** How many related lines `GET /audit/:id` sends (the same person that day; the same subject). */
+export const RELATED_LIMIT = 20;
+
+export const ADMIN_LIMITS ={ name: 120, title: 80, teamName: 80 };
 
 export const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 

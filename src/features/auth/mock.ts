@@ -1,7 +1,7 @@
 // The demo backend for signing in and people. Only the demo build loads it (see ./api.ts).
 // Wrong passwords: after the admin's `lock_after` in a row, the account locks for `lock_minutes`, the admins are told,
 // and the audit log records it (the brief: "a user who can't sign in for a while"; docs/backend.md section 14).
-import { audit } from "@/mock/audit";
+import { audit, newSessionId } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
@@ -25,12 +25,12 @@ export const authMock: AuthApi = {
       return fail(429, "RATE_LIMITED", `الحساب مقفل مؤقتاً بعد محاولات خاطئة، حتى ${until}. أو اطلب من مسؤول النظام فتحه.`, `The account is locked after wrong passwords, until ${until}. Or ask the system admin to unlock it.`);
     }
     if (!user || password !== DEMO_PASSWORD) {
-      audit(undefined, "login_failed", { type: "login", id: user?.id, label: id.slice(0, 120) });
+      audit(undefined, "login_failed", { type: "login", id: user?.id, label: id.slice(0, 120) }, undefined, { userId: user?.id });
       if (user && login) {
         login.failed++;
         if (login.failed >= db.settings.lock_after) {
           login.locked_until = new Date(Date.now() + db.settings.lock_minutes * 60_000).toISOString();
-          audit(undefined, "login_locked", { type: "user", id: user.id, label: user.name }, [{ field: "minutes", to: String(db.settings.lock_minutes) }]);
+          audit(undefined, "login_locked", { type: "user", id: user.id, label: user.name }, [{ field: "minutes", to: String(db.settings.lock_minutes) }], { userId: user.id });
           const admins = db.users.filter((u) => u.role === "admin" && u.active).map((u) => u.id);
           notify(admins, "account_locked", { data: { note: user.name } });
         }
@@ -42,6 +42,8 @@ export const authMock: AuthApi = {
     login!.failed = 0;
     login!.locked_until = undefined;
     login!.last_login_at = now;
+    // A new session: the audit log writes it on everything this person does until they sign in again.
+    login!.session_id = newSessionId();
     commit({ own: true });
     return wait({ token: `demo-${user.id}`, user });
   },

@@ -124,7 +124,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 14 | `GET` | `/admin/settings` | admin, ceo | Platform settings |
 | 14 | `PUT` | `/admin/settings` | admin, ceo | Save them |
 | 14 | `GET` | `/admin/health` | admin, ceo | Data checks |
-| 14 | `GET` | `/audit` | admin, ceo | The audit log (with filters) |
+| 14 | `GET` | `/audit` | admin, ceo | The audit log (filters: action, person, kind, IP, search, days), each line with IP and device |
+| 14 | `GET` | `/audit/:id` | admin, ceo | One line with the same person's other lines that day and the subject's history (404 when none) |
 | 15 | `GET` | `/projects/:projectId/github` | its pm, ceo | GitHub settings |
 | 15 | `PUT` | `/projects/:projectId/github` | its pm, ceo | Save them |
 | 15 | `GET` | `/{tasks\|bugs}/:id/github` | see §2 | Linked pull requests and commits |
@@ -722,9 +723,41 @@ told `team_joined`. Members are set on each user. *(Assumption: a team is fixed,
 `due_soon_days` decides when `task_due_soon` starts. **Data health** (`GET /admin/health`): counts of users (active,
 stopped, locked), projects, tasks, files and their size, audit lines. Backups: DevOps (BRIEF question 14).
 
-**Audit log** (`GET /audit?action&actor_id&from&to`, newest first): `ceo` and `admin` (403 others). Each line
-`{id, actor_id?, action, target: {type, id?, label}, changes?: [{field, from?, to?}], at}`. **There is no call that
-changes or removes a line** (the brief: normal users can't hide it); keep it in its own table, append only. Written for:
+**Audit log** (`GET /audit?action&actor_id&kind&ip&q&from&to`, newest first): `ceo` and `admin` (403 others). Each line
+`{id, actor_id?, action, target: {type, id?, label}, changes?: [{field, from?, to?}], at, ip?, user_agent?, session_id?, request_id?}`
+(`AuditEntry` in `src/features/admin/types.ts`). **There is no call that changes or removes a line** (the brief: normal
+users can't hide it); keep it in its own table, append only: the database user the API runs as may `INSERT` and `SELECT`
+on it, never `UPDATE` or `DELETE`, and the new columns are written once with the line, never filled in later.
+
+- **Filters:** `kind` is the part of the platform (`account`, `team`, `settings`, `signin`, `project`, `announcement`,
+  `review`: `ACTION_KIND` in `src/features/admin/audit-words.ts`). `ip` is exact (`192.0.2.14`), or a prefix when it ends
+  with `.`, `:` or `*` (`192.0.2.`); without such an ending it matches whole parts only (`192.0.2` matches `192.0.2.14`,
+  `192.0.2.1` does not): `ipMatches` in `src/features/admin/audit-detail.ts`. `q` searches the person's name (both
+  languages) and email, the action in words, the subject's label, what changed (field, old, new) and the IP, ignoring
+  case and Arabic letter forms.
+- **Where it came from (written by the server on every line, from the request itself, never from the body):**
+  - `ip`: the real client address. Behind Cloudflare that is the **`CF-Connecting-IP`** header; trust it (and
+    `X-Forwarded-For`) **only when the request comes from Cloudflare's or our own proxy's addresses**, else use the
+    socket's address (anyone can send those headers). IPv6 as written (`2001:db8::1`).
+  - `user_agent`: the `User-Agent` header, **cut to 300 characters**. The site reads the browser and system from it
+    (`parseUserAgent`); keep the raw text, don't parse it on the server.
+  - `session_id`: the id of the sign-in session (the token's session) the action was made in; none for a failed
+    sign-in. `request_id`: the request's id as in the server's own logs (so a line can be found there). A good
+    sign-in writes no line (it sets `last_login_at`); it starts the session whose id the person's next lines carry.
+- **`GET /audit/:id`** → the line plus `{ related_by_actor: AuditEntry[], related_by_target: AuditEntry[] }`, each newest
+  first, at most 20, without the line itself: `related_by_actor` = the same `actor_id`'s other lines on the same day
+  (the company's time zone, Asia/Baghdad; the demo uses the browser's), empty when the line has no person;
+  `related_by_target` = the other lines with the same `target.type` and `target.id` (the same `label` when there is no
+  id), and for an account also its failed sign-ins and locks (`login` and `user` targets with the same id). Same
+  permissions as the list (403), **404** when there is no such line. The page shows the line from the list at once and
+  takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
+- **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
+  audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
+  **Open question (client, section 20):** how long to keep them. If they must go after a while (for example 12
+  months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
+  job empties, so the line itself is never changed.
+
+Written for:
 `user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
 `team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
@@ -994,4 +1027,5 @@ when it is someone else's. The person can set a new one. *(Not decided with the 
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
-the review criteria and who reviews whom (13), the sign-in lock and backups (14), GitHub one-way or two-way (15).
+the review criteria and who reviews whom (13), the sign-in lock and backups (14), how long the audit log keeps IP
+addresses and devices (14), GitHub one-way or two-way (15).

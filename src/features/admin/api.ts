@@ -2,7 +2,7 @@
 // the demo backend (./mock.ts). Both follow `AdminApi`.
 import { http, lazyApi } from "@/shared/api";
 import type { Team, User } from "@/shared/api/types";
-import type { AdminUser, AuditEntry, AuditFilter, DataHealth, Settings, TeamInput, UserInput, UserPatch } from "./types";
+import type { AdminUser, AuditDetail, AuditEntry, AuditFilter, DataHealth, Settings, TeamInput, UserInput, UserPatch } from "./types";
 
 export interface AdminApi {
   users(): Promise<AdminUser[]>;
@@ -16,6 +16,8 @@ export interface AdminApi {
   health(): Promise<DataHealth>;
   /** The audit log, newest first (the admin and the CEO). */
   audit(filter: AuditFilter): Promise<AuditEntry[]>;
+  /** One line with its context (the same person that day, the same subject): the admin and the CEO; 404 when there is none. */
+  auditEntry(id: number): Promise<AuditDetail>;
 }
 
 const data = <T>(p: Promise<{ data: T }>) => p.then((r) => r.data);
@@ -31,6 +33,7 @@ export const adminHttp: AdminApi = {
   saveSettings: (settings) => data(http.put<Settings>("/admin/settings", settings)),
   health: () => data(http.get<DataHealth>("/admin/health")),
   audit: (filter) => data(http.get<AuditEntry[]>("/audit", { params: filter })),
+  auditEntry: (id) => data(http.get<AuditDetail>(`/audit/${id}`)),
 };
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.

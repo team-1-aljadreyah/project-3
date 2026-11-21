@@ -5,8 +5,12 @@ import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { Team, User } from "@/shared/api/types";
+import { matches } from "@/shared/lib/utils";
 import type { AdminApi } from "./api";
-import { ADMIN_LIMITS as L, canAdminister, canSeeAudit, isEmail, ROLE_KEYS, settingsProblem } from "./rules";
+import { ipMatches, searchText } from "./audit-detail";
+import { ACTION_KIND, ACTION_WORDS } from "./audit-words";
+import { ADMIN_LIMITS as L, canAdminister, canSeeAudit, isEmail, RELATED_LIMIT, ROLE_KEYS, settingsProblem } from "./rules";
+import { dayOf } from "./summary";
 import type { AuditEntry, TeamInput, UserInput, UserPatch } from "./types";
 
 function admin() {
@@ -251,11 +255,47 @@ export const adminMock: AdminApi = {
   },
 
   async audit(filter) {
-    const user = currentUser();
-    if (!canSeeAudit(user)) return fail(403, "FORBIDDEN", "سجل العمليات للإدارة ومسؤول النظام.", "The audit log is for management and the admin.");
-    const list = getDb()
-      .audit.filter((e) => (!filter.action || e.action === filter.action) && (!filter.actor_id || e.actor_id === filter.actor_id))
-      .filter((e) => (!filter.from || e.at.slice(0, 10) >= filter.from) && (!filter.to || e.at.slice(0, 10) <= filter.to));
+    auditReader();
+    const db = getDb();
+    const q = filter.q?.trim();
+    const list = db.audit
+      .filter((e) => (!filter.action || e.action === filter.action) && (!filter.actor_id || e.actor_id === filter.actor_id))
+      .filter((e) => (!filter.kind || ACTION_KIND[e.action] === filter.kind) && ipMatches(e.ip, filter.ip))
+      .filter((e) => (!filter.from || e.at.slice(0, 10) >= filter.from) && (!filter.to || e.at.slice(0, 10) <= filter.to))
+      .filter((e) => !q || matches(q, searchText(e, actorWords(e.actor_id), [ACTION_WORDS[e.action].ar, ACTION_WORDS[e.action].en])));
     return wait([...list].reverse());
   },
+
+  async auditEntry(id) {
+    auditReader();
+    const all = getDb().audit;
+    const entry = all.find((e) => e.id === id);
+    if (!entry) return fail(404, "NOT_FOUND", "لم يُعثر على هذا السطر في السجل.", "This audit line was not found.");
+    const newestFirst = [...all].reverse().filter((e) => e.id !== id);
+    // The same person's other actions that day (the browser's day in the demo; the company's time zone on the server).
+    const day = dayOf(entry.at);
+    const byActor = entry.actor_id === undefined ? [] : newestFirst.filter((e) => e.actor_id === entry.actor_id && dayOf(e.at) === day);
+    // The other lines about the same subject: the same kind and id, or the same label when it has no id (a sign-in by email).
+    const t = entry.target;
+    const sameTarget = (o: AuditEntry["target"]) =>
+      o.type === t.type && (t.id !== undefined ? o.id === t.id : o.id === undefined && o.label === t.label);
+    // A failed sign-in for an account and that account's lock are about the same person.
+    const samePerson = (o: AuditEntry["target"]) =>
+      t.id !== undefined && o.id === t.id && ((o.type === "login" && t.type === "user") || (o.type === "user" && t.type === "login"));
+    const byTarget = newestFirst.filter((e) => sameTarget(e.target) || samePerson(e.target));
+    return wait({ ...entry, related_by_actor: byActor.slice(0, RELATED_LIMIT), related_by_target: byTarget.slice(0, RELATED_LIMIT) });
+  },
 };
+
+/** The audit log is read by the admin and the CEO only. */
+function auditReader() {
+  const user = currentUser();
+  if (!canSeeAudit(user)) return fail(403, "FORBIDDEN", "سجل العمليات للإدارة ومسؤول النظام.", "The audit log is for management and the admin.");
+  return user;
+}
+
+/** What the search box finds a person by: their names in both languages and their email. */
+function actorWords(id?: number) {
+  const u = id === undefined ? undefined : getDb().users.find((x) => x.id === id);
+  return u ? [u.name, u.name_en ?? "", u.email] : [];
+}

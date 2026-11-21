@@ -19,6 +19,78 @@ import { daysBetween, today } from "@/shared/lib/utils";
 /** The demo password of every demo account. Only the demo build has it. */
 export const DEMO_PASSWORD = "123456";
 
+// ── Where the demo people work from (the audit log's "from where") ──────────────────────────────────────────────────
+// The demo has no network: each person has a fixed address from the ranges set aside for examples (RFC 5737:
+// 192.0.2.x, 198.51.100.x, 203.0.113.x; the admin sits on the office's private 10.x network). Never a real address.
+
+const DEMO_IPS: Record<number, string> = {
+  1: "198.51.100.24",
+  2: "198.51.100.31",
+  3: "198.51.100.47",
+  4: "192.0.2.14",
+  5: "192.0.2.58",
+  6: "192.0.2.73",
+  7: "192.0.2.90",
+  8: "10.20.0.5",
+};
+
+/** Where someone who isn't anyone we know signs in from (a wrong email). */
+export const UNKNOWN_IP = "203.0.113.250";
+
+/** The fixed address of a demo person (undefined: someone unknown). Anyone added later gets one from 203.0.113.x. */
+export const demoIp = (userId?: number) => (userId === undefined ? UNKNOWN_IP : (DEMO_IPS[userId] ?? `203.0.113.${10 + (userId % 200)}`));
+
+/** The device when there is no browser (the unit tests, on Node): a plain Chrome on Windows. */
+export const TEST_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+/** The devices the old lines were written from (plain, common ones). */
+const UA = {
+  chromeWin: TEST_USER_AGENT,
+  edgeWin: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+  firefoxUbuntu: "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0",
+  safariMac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+  safariIphone: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
+  chromeAndroid: "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+};
+/** Each person's devices: the CEO works on a Mac and her phone, the others on one machine each. */
+const DEMO_DEVICES: Record<number, string[]> = {
+  1: [UA.safariMac, UA.safariIphone],
+  2: [UA.edgeWin],
+  3: [UA.chromeWin],
+  4: [UA.chromeWin],
+  5: [UA.chromeWin, UA.chromeAndroid],
+  6: [UA.firefoxUbuntu],
+  7: [UA.chromeWin],
+  8: [UA.firefoxUbuntu],
+};
+
+/** A small fixed hash as hex (FNV-1a), so the old lines get the same ids on every fresh demo. */
+function hashHex(s: string, length: number) {
+  let out = "";
+  for (let round = 0; out.length < length; round++) {
+    let h = 0x811c9dc5 ^ round;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+    out += (h >>> 0).toString(16).padStart(8, "0");
+  }
+  return out.slice(0, length);
+}
+
+/**
+ * Where an old (seeded) line came from: the person's address, one of their devices, the session of that person on
+ * that day (one sign-in a day), and a request id.
+ */
+function seededOrigin(e: AuditEntry): Pick<AuditEntry, "ip" | "user_agent" | "session_id" | "request_id"> {
+  const day = e.at.slice(0, 10);
+  const devices = (e.actor_id && DEMO_DEVICES[e.actor_id]) || [UA.chromeWin];
+  const device = devices[Number.parseInt(hashHex(`${e.actor_id}-${day}`, 2), 16) % devices.length];
+  return {
+    ip: demoIp(e.actor_id),
+    user_agent: device,
+    session_id: e.actor_id ? `s_${hashHex(`${e.actor_id}-${day}-${device}`, 16)}` : undefined,
+    request_id: `req_${hashHex(`line-${e.id}-${e.at}`, 12)}`,
+  };
+}
+
 /** One account per job for the login page's one-tap buttons (the demo build only). */
 export function demoAccounts() {
   const users = seed().users;
@@ -56,7 +128,8 @@ export interface MockDb {
   /** The audit log (nobody changes or removes a line), the platform settings, and each person's sign-in record. */
   audit: AuditEntry[];
   settings: Settings;
-  logins: { user_id: number; failed: number; locked_until?: string; last_login_at?: string }[];
+  /** `session_id`: the session the last good sign-in started (the audit log writes it on each line). */
+  logins: { user_id: number; failed: number; locked_until?: string; last_login_at?: string; session_id?: string }[];
   /** The GitHub link: each project's setting, and the pull requests and commits the server got from GitHub. */
   github: GithubSettings[];
   github_items: GithubItem[];
@@ -421,7 +494,10 @@ export function seed(now = new Date()): MockDb {
     { id: ++auditId, actor_id: 1, action: "criteria_approved", target: { type: "criteria", label: "معايير التقييم" }, at: criteria.approved_at! },
     changed(at(1, 15, 40), 2, "name_en"),
   ];
-  audit.sort((a, b) => a.at.localeCompare(b.at)).forEach((e, i) => (e.id = i + 1));
+  audit.sort((a, b) => a.at.localeCompare(b.at)).forEach((e, i) => {
+    e.id = i + 1;
+    Object.assign(e, seededOrigin(e));
+  });
 
   // GitHub is on for project 1 (two repositories). Made-up pull requests and commits that mention task and bug codes.
   const github: GithubSettings[] = [{ project_id: 1, enabled: true, repos: ["aljadreyah/booking-web", "aljadreyah/booking-api"] }];
