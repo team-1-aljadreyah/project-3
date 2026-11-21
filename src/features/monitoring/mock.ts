@@ -52,6 +52,15 @@ export const monitoringMock: MonitoringApi = {
     if (body.length > L.body) invalid("body", "النص أطول من المسموح.", "The text is too long.");
     if (input.kind === "feedback" && input.about.type !== "person") invalid("about", "الملاحظة تكون على شخص.", "Feedback is about a person.");
     if (input.kind === "feedback" && input.about.id === user.id) invalid("about", "اختر شخصاً غيرك.", "Choose someone other than yourself.");
+    const subject = input.subject?.trim() || undefined;
+    if (subject && subject.length > L.subject) invalid("subject", "الموضوع أطول من المسموح.", "The subject is too long.");
+    const ids = [...new Set(input.people_ids ?? [])];
+    if (ids.length > L.people) invalid("people_ids", "اخترت أشخاصاً أكثر من المسموح.", "Too many people.");
+    const people = ids.map((id) => {
+      const u = getDb().users.find((x) => x.id === id && x.active);
+      if (!u) return invalid("people_ids", "أحد الأشخاص غير موجود.", "One of the people doesn't exist.");
+      return { id: u.id, label: u.name, label_en: u.name_en };
+    });
     const db = getDb();
     const note: MonitorNote = {
       id: ++db.seq.note,
@@ -60,6 +69,8 @@ export const monitoringMock: MonitoringApi = {
       body,
       about: aboutOf(input.about),
       ...(input.kind === "feedback" ? { tone: input.tone === "praise" ? "praise" : "improve" } : {}),
+      ...(subject ? { subject } : {}),
+      ...(people.length ? { people } : {}),
       author_id: user.id,
       created_at: nowIso(),
     };

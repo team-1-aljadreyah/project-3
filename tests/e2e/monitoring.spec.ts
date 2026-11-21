@@ -44,3 +44,18 @@ test("other jobs don't have the monitoring workspace or the CEO's inbox", async 
   await page.goto("/inbox");
   await expect(page.getByText("هذا الوارد للمدير التنفيذي")).toBeVisible();
 });
+
+test("a problem can be about anything and involve any people", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.goto("/monitoring");
+  await page.getByRole("button", { name: "مشكلة تحتاج قراراً" }).click();
+  await page.getByLabel("عن ماذا").fill("الموافقات على الإجازات");
+  await page.getByRole("group", { name: /الأشخاص المعنيون/ }).getByRole("checkbox", { name: /سارة علي/ }).check();
+  await page.getByRole("group", { name: /الأشخاص المعنيون/ }).getByRole("checkbox", { name: /علي حسين/ }).check();
+  await page.getByLabel("العنوان").fill("الموافقات تتأخر");
+  await page.getByLabel("النص").fill("طلبات الإجازة تنتظر أكثر من أسبوع.");
+  await page.getByRole("button", { name: "احفظ وأرسل" }).click();
+  const card = page.getByRole("list", { name: "ما كتبته" }).getByRole("article").filter({ hasText: "الموافقات تتأخر" });
+  await expect(card.getByText("الموافقات على الإجازات")).toBeVisible();
+  await expect(card.getByText(/سارة علي، علي حسين/)).toBeVisible();
+});

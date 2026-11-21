@@ -3,13 +3,27 @@ import type { User } from "@/shared/api/types";
 import { ROLES } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { matches } from "@/shared/lib/utils";
-import { Avatar, Input } from "@/shared/ui";
+import { Avatar } from "./avatar";
+import { Input } from "./field";
 
 /**
- * Pick the people of a group chat: a search box and one checkbox per person. The whole row is the label, so a click
- * anywhere on it ticks the box. `people` is already the list that may be picked (the page leaves out who can't).
+ * Pick several people: a search box and one checkbox per person. The whole row is the label, so a click anywhere on it
+ * ticks the box. `people` is already the list that may be picked (the page leaves out who can't). `legend` names the
+ * list (it gets the number picked); by default "Members".
  */
-export function PeoplePicker({ people, value, onChange, error }: { people: User[]; value: number[]; onChange: (ids: number[]) => void; error?: string }) {
+export function PeoplePicker({
+  people,
+  value,
+  onChange,
+  error,
+  legend,
+}: {
+  people: User[];
+  value: number[];
+  onChange: (ids: number[]) => void;
+  error?: string;
+  legend?: { ar: string; en: string };
+}) {
   const { tr, lang, num } = useFmt();
   const [q, setQ] = useState("");
   const searchId = useId();
@@ -19,7 +33,7 @@ export function PeoplePicker({ people, value, onChange, error }: { people: User[
 
   return (
     <fieldset className="flex flex-col gap-2" aria-describedby={error ? `${searchId}-error` : undefined}>
-      <legend className="mb-1.5 text-sm font-medium">{tr(`الأعضاء (اخترت ${num(value.length)})`, `Members (${num(value.length)} picked)`)}</legend>
+      <legend className="mb-1.5 text-sm font-medium">{tr(`${legend?.ar ?? "الأعضاء"} (اخترت ${num(value.length)})`, `${legend?.en ?? "Members"} (${num(value.length)} picked)`)}</legend>
       <label htmlFor={searchId} className="sr-only">
         {tr("ابحث عن زميل", "Search for a colleague")}
       </label>

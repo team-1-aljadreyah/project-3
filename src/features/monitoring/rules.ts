@@ -16,4 +16,4 @@ export const canSendToCeo = (user: Pick<User, "id" | "role">, note: Pick<Monitor
 /** The CEO's inbox of what monitoring sent: read, answer, mark done. */
 export const canUseCeoInbox = (user: Pick<User, "role">) => isCeo(user);
 
-export const NOTE_LIMITS = { title: 160, body: 5000, reply: 2000 };
+export const NOTE_LIMITS = { title: 160, body: 5000, reply: 2000, subject: 120, people: 30 };
