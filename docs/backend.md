@@ -36,6 +36,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 7 | Administration, the audit log, sign-in locking | 14 | run the platform |
 | 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
 | 9 | The CEO's advanced settings and what they switch | 17 | let the CEO run the rules without a developer |
+| 10 | Profile pictures | 20 | let everyone put a face to their name |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -50,7 +51,10 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 |---|---|---|---|---|
 | 1 | `POST` | `/auth/login` | anyone | Sign in → `{ token, user }` |
 | 1 | `GET` | `/me` | signed in | The signed-in person |
-| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams) for pickers and avatars |
+| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`) for pickers and avatars |
+| 20 | `PUT` | `/me/avatar` | signed in (only yourself) | Set or replace my picture (`multipart/form-data`, field `file`) → the updated `User` |
+| 20 | `DELETE` | `/me/avatar` | signed in (only yourself) | Remove my picture → the updated `User` |
+| 20 | `DELETE` | `/users/:id/avatar` | admin, ceo | Remove someone's picture that is not appropriate → that `User` |
 | 5 | `GET` | `/projects` | see §2 | Projects this person may see, with counts |
 | 5 | `GET` | `/projects/:id` | see §2 | One project with its statuses, phases, members |
 | 6 | `POST` | `/projects` | ceo, pm | Create a project (a pm becomes its manager) |
@@ -150,6 +154,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | Review criteria | ✓ | | | | | |
 | Post announcements | ✓ | | ✓ | | | ✓ |
 | Accounts, teams, settings, audit log | ✓ | | | | | ✓ |
+| Set or remove my own picture | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Remove someone else's picture | ✓ | | | | | ✓ |
 | Monitoring notes | ✓ | | ✓ | | | |
 | The CEO's inbox | ✓ | | | | | |
 
@@ -266,6 +272,7 @@ Every change updates the task's `updated_at`.
 | `POST /auth/login` | anyone | `Session` |
 | `GET /me` | signed in | `User` |
 | `GET /users` | signed in | `User[]` |
+| `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | yourself; removing someone's: `admin`, `ceo` | `User` (section 20) |
 | `GET /projects` | signed in (filtered) | `ProjectSummary[]`, with `tasks_total`, `tasks_done`, `tasks_late`, `tasks_blocked` |
 | `GET /projects/:id` | can see it | `Project` |
 | `GET /projects/:id/tasks` | can see it | `Task[]` |
@@ -720,7 +727,7 @@ changes or removes a line** (the brief: normal users can't hide it); keep it in 
 `user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
 `team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
-`criteria_approved`, `review_finalized`. (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 20). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
 
 ## 15. GitHub
 
@@ -895,7 +902,42 @@ the rest. `GET /search?q=` (signed in; `q` 2–80 characters, else **422** on `q
   matter, like the front end's `matches()` in `src/shared/lib/utils.ts`.
 - It is called while typing (after a 160 ms pause): keep it fast (an index on titles and codes, or Postgres full-text).
 
-## 20. Still open with the client
+## 20. Profile pictures
+
+Rules and limits: `src/features/profile/rules.ts`; the calls: `src/features/profile/api.ts`; the demo backend (the reference):
+`src/features/profile/mock.ts`; the tests: `tests/unit/profile.test.ts`. Every job may set, change and remove **their own**
+picture (the client, 21 November 2026: "make it able for every role to change their pics").
+
+`User` gets **`avatar_url?: string`**: the address of the picture, or nothing (the site then draws the person's first
+letter on a colour). It is part of `User` everywhere: `/auth/login`, `/me`, `/users`, `/admin/users`.
+
+**Setting it** (`PUT /me/avatar`, `multipart/form-data` with one field **`file`**) → the updated `User`:
+
+- Always the signed-in person: there is no call to set someone else's picture.
+- The browser already sends a small square: **256×256, WebP** (JPEG where the browser can't write WebP), usually 10–60 KB.
+  The person picks a JPEG, PNG or WebP of up to 5 MB, crops it and the browser makes the small copy.
+- **The server checks again** (the browser can be skipped): the **real content** must be PNG, JPEG or WebP (read the first
+  bytes, never trust the name or `Content-Type`); **never SVG or HTML** (they can run code in a browser). At most
+  **200 KB**; empty → 422. Errors: **422 on `file`**, in the request's language.
+- **Decode and draw it again** on the server (any image library): that drops what the file carries besides the picture
+  (place, camera, date: EXIF and other metadata) and anything hidden in it. Store it at most 256×256 (or make 256 from a
+  larger one), as WebP or JPEG.
+- **Where:** in object storage (S3-compatible, or the server's files folder) under a server-made name such as
+  `avatars/<user_id>/<random>.webp`, with a row in a files table (owner, size, type, created_at), never inside the users
+  table. `avatar_url` is where the site loads it from: a public CDN address, or a long-lived signed link. **A new name for
+  each new picture** (so caches never show the old one), served with `Cache-Control: public, max-age=31536000, immutable`
+  and `Content-Type` set by the server, `X-Content-Type-Options: nosniff`. The old file is deleted when replaced.
+- Read-only mode (section 17) still allows it: a person's own picture is their own bookkeeping, like their notification
+  choices. *(Assumption.)*
+
+**Removing my picture** (`DELETE /me/avatar`) → the updated `User` without `avatar_url`; delete the file.
+
+**Removing someone's picture** (`DELETE /users/:id/avatar`): the `admin` and the `ceo` (THE CEO RULE), for a picture that
+is not appropriate (the admin's user window has "Remove picture"). Anyone else → **403**, unknown user → 404. Removing
+yourself this way is allowed too. Log **`picture_removed`** in the audit log (`target: {type: "user", id, label: name}`)
+when it is someone else's. The person can set a new one. *(Not decided with the client: whether the person is told.)*
+
+## 21. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),

@@ -72,7 +72,8 @@ export type AuditAction =
   | "announcement_deleted"
   | "criteria_changed"
   | "criteria_approved"
-  | "review_finalized";
+  | "review_finalized"
+  | "picture_removed";
 
 /** One line of the audit log: who did what, to what, what changed, and when. Nobody can change or remove it. */
 export interface AuditEntry {

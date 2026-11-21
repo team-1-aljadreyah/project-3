@@ -71,7 +71,7 @@ test("a completion that waits for approval counts as in review, and the task sta
 test("the summary speaks English, left to right, and fits the screen", async ({ page }) => {
   await signInAs(page, /سارة علي/);
   await page.getByRole("button", { name: /حسابي/ }).click();
-  await page.getByRole("menuitem", { name: "English" }).click();
+  await page.getByRole("menuitemradio", { name: "English" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await page.goto("/my-tasks");
 

@@ -21,6 +21,7 @@ export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
   criteria_changed: { ar: "غيّر معايير التقييم", en: "changed the review criteria" },
   criteria_approved: { ar: "اعتمد معايير التقييم", en: "approved the review criteria" },
   review_finalized: { ar: "اعتمد تقييم أداء", en: "made a review final" },
+  picture_removed: { ar: "أزال صورة شخصية", en: "removed a profile picture" },
 };
 
 /** The kind of an action: the part of the platform it is about. The admin page shows it as a small coloured label. */
@@ -45,6 +46,7 @@ export const ACTION_KIND: Record<AuditAction, AuditKind> = {
   criteria_changed: "review",
   criteria_approved: "review",
   review_finalized: "review",
+  picture_removed: "account",
 };
 
 /** Each kind in words, with its colour family (sign-in trouble is the red one). */

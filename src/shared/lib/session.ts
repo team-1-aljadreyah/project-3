@@ -1,6 +1,6 @@
 // The signed-in person, saved in the browser so a refresh keeps you signed in (every tab shares it).
 import { useSyncExternalStore } from "react";
-import type { Session } from "../api/types";
+import type { Session, User } from "../api/types";
 
 const KEY = "p3.session";
 const listeners = new Set<() => void>();
@@ -48,6 +48,17 @@ export function setSession(session: Session) {
     localStorage.setItem(KEY, JSON.stringify(session));
   } catch {}
   emit();
+}
+
+/**
+ * The signed-in person changed (a new picture, or the server's fresher copy from /me): keep the token, swap the person.
+ * Every screen that shows them (the top bar) redraws at once. Nothing happens when nothing changed.
+ */
+export function updateSessionUser(user: User) {
+  const session = read();
+  if (!session || session.user.id !== user.id) return;
+  if (JSON.stringify(session.user) === JSON.stringify(user)) return;
+  setSession({ ...session, user });
 }
 
 export function clearSession() {

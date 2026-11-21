@@ -16,6 +16,11 @@ export interface User {
   title: string;
   team_id?: number;
   active: boolean;
+  /**
+   * The person's profile picture (square, 256×256), or none: then their initial on a colour shows instead. The real
+   * server gives a URL; the demo keeps the picture itself as a "data:" link. Only the person sets it (docs/backend.md §18).
+   */
+  avatar_url?: string;
 }
 
 /**
