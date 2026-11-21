@@ -73,6 +73,8 @@ test("a feature switched off leaves an employee's menu, not the CEO's", async ({
 });
 
 test("the banner shows on top of the pages for the chosen job only", async ({ page }) => {
+  // Three sign-ins in one test: more time than the usual 30 s, like the other tests that sign in more than once.
+  test.setTimeout(60_000);
   await signInAs(page, /مريم العبيدي/);
   await page.goto("/advanced?s=announce");
   await page.getByRole("switch", { name: "الإعلان" }).click();
