@@ -15,6 +15,18 @@ test("each time the app opens, a welcome greets the person by name, never blocks
   await expect(splash).toHaveCount(0);
 });
 
+test("after signing out and in again, the welcome shows again", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: /هدى ناصر/ }).click();
+  await expect(page.locator(".welcome")).toHaveCount(1);
+  await expect(page.locator(".welcome")).toHaveCount(0, { timeout: 5000 });
+  // Sign out with the account menu, then sign in again in the same tab.
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByRole("button", { name: /مريم العبيدي/ }).click();
+  await expect(page.locator(".welcome")).toContainText("مريم");
+});
+
 test("with reduce motion there is no welcome splash", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/login");

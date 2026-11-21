@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ROLES } from "@/shared/lib/access";
 import { BRAND } from "@/shared/lib/brand";
 import { useFmt } from "@/shared/lib/i18n";
-import { useUser } from "@/shared/lib/session";
+import { useSession, useUser } from "@/shared/lib/session";
 import { today } from "@/shared/lib/utils";
 
 const KEY = "p3.welcome";
@@ -13,26 +13,32 @@ export function greeting(hour: number) {
   return hour >= 5 && hour < 12 ? { ar: "صباح الخير", en: "Good morning" } : { ar: "مساء الخير", en: "Good evening" };
 }
 
-// Decided once per page load (React may run a start-up effect twice in development; the answer must not change).
-let opening: boolean | undefined;
-/** Is the app opening now in this tab (the first signed-in page since the tab opened), and may it move? */
-function opensNow() {
-  if (opening === undefined) {
+// Decided once per sign-in (React may run a start-up effect twice in development; the answer must not change).
+const decided = new Map<string, boolean>();
+/**
+ * Should the splash show now? Yes the first time a signed-in page opens in this tab for this sign-in: in a new tab, a
+ * new browser start, and after every sign-in (a new sign-in has a new token). Not on a reload of the same tab.
+ */
+function opensNow(token: string) {
+  if (!decided.has(token)) {
+    let show = false;
     try {
-      opening = !sessionStorage.getItem(KEY) && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      sessionStorage.setItem(KEY, "1");
+      show = sessionStorage.getItem(KEY) !== token && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      sessionStorage.setItem(KEY, token);
     } catch {
-      opening = false;
+      show = false;
     }
+    decided.set(token, show);
   }
-  return opening;
+  return decided.get(token)!;
 }
 
 /** The first name, for a warm hello ("مريم العبيدي" → "مريم"). */
 export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
 /**
- * The welcome splash: every time the app opens (a new tab or a new browser start; not on a reload of the same tab), a
+ * The welcome splash: every time the app opens (a new tab or a new browser start) and after every sign-in (not on a
+ * reload of the same tab), a
  * short greeting with the person's first name, their job and the day, which then lifts away into their page.
  * It never blocks anything: clicks pass through it, it is hidden from screen readers (the page itself is announced), it
  * is gone after about two seconds, and with "reduce motion" it is not shown at all. Styles in app/styles.css (.welcome).
@@ -40,10 +46,11 @@ export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 export function WelcomeSplash() {
   const user = useUser();
   const { tr, lang, day } = useFmt();
+  const token = useSession()?.token ?? "";
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (!opensNow()) return;
+    if (!token || !opensNow(token)) return;
     // Shown from the browser only (after the first paint), so the server and the browser draw the same page first.
     const start = requestAnimationFrame(() => setShow(true));
     const done = setTimeout(() => setShow(false), SHOWN_MS);
@@ -51,7 +58,7 @@ export function WelcomeSplash() {
       cancelAnimationFrame(start);
       clearTimeout(done);
     };
-  }, []);
+  }, [token]);
 
   if (!show) return null;
   const hello = greeting(new Date().getHours());
