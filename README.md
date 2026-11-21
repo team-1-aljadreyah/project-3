@@ -134,7 +134,9 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   today) and a board of every task in their projects (`PmPlan`); the team leader gets a slide where a glass sphere
   clears to show the team's tasks as smaller spheres, with the four shares beside it (`LeadSphere`); monitoring and
   evaluation gets a banner with who is signed in, summary cards, and every project against its plan with a filter and a
-  search (`MonitorSummary`).
+  search (`MonitorSummary`). In that banner a small character drawn in code (a monitoring officer with a ponytail,
+  glasses and a tablet, `MonitorCharacter`) breathes, blinks and swipes her tablet, and waves when the mouse goes over
+  her; she stands behind the profile card, so she never covers it.
 - **Monitoring** (`src/features/monitoring`): the monitoring officer writes reports about teams and people, feedback
   on anyone and problems at `/monitoring`, and sends any of them to the CEO, who answers in `/inbox` ("From monitoring").
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
