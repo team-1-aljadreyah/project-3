@@ -123,11 +123,11 @@ export function seed(now = new Date()): MockDb {
     { id: 3, project_id: 1, name: "الدورة 5", start: d(6), end: d(19), planned_ratio: 0 },
   ];
 
-  // A moment `days` ago at `hour` o'clock, for history and comments.
-  const at = (days: number, hour = 10) => {
+  // A moment `days` ago at `hour` o'clock (and `minute`), for history and comments.
+  const at = (days: number, hour = 10, minute = 0) => {
     const x = new Date(now);
     x.setDate(x.getDate() - days);
-    x.setHours(hour, 0, 0, 0);
+    x.setHours(hour, minute, 0, 0);
     return x.toISOString();
   };
 
@@ -331,6 +331,7 @@ export function seed(now = new Date()): MockDb {
 
   // The review criteria, approved by the CEO: half counted from the tasks, half scored by the reviewer (the brief: a
   // review must not rest on the number of tasks alone). Sara has two final reviews (her trend) from her team leader.
+  // The CEO changed the weights two days ago and approved them again yesterday (the audit log below has both lines).
   const criteria: Criteria = {
     items: [
       { id: "completion", name: "إنجاز المهام", name_en: "Tasks done", kind: "auto", metric: "completion", weight: 25 },
@@ -338,7 +339,7 @@ export function seed(now = new Date()): MockDb {
       { id: "quality", name: "جودة العمل", name_en: "Quality of work", kind: "manual", weight: 30 },
       { id: "teamwork", name: "التعاون والتواصل", name_en: "Teamwork", kind: "manual", weight: 20 },
     ],
-    approved_by: 1, approved_at: at(20), updated_at: at(21),
+    approved_by: 1, approved_at: at(1, 11, 5), updated_at: at(2, 14, 20),
   };
   const pastReview = (id: number, from: number, to: number, perf: { done: number; assigned: number; on_time: number; late: number }, stars: [number, number], total: number, note: string): Review => ({
     id, user_id: 5, reviewer_id: 4, period: { from: d(-from), to: d(-to) },
@@ -354,12 +355,52 @@ export function seed(now = new Date()): MockDb {
 
   // The audit log so far: what the admin, the CEO and the PM did (newest last).
   let auditId = 0;
+  // The admin changed one field of an account: its job title (from an older one) or its English name (there was none).
+  // The new value is read from the account itself, so a line can never disagree with the demo people above.
+  const changed = (when: string, userId: number, field: "title" | "name_en", from?: string): AuditEntry => {
+    const user = users.find((u) => u.id === userId)!;
+    return { id: ++auditId, actor_id: 8, action: "user_changed", target: { type: "user", id: userId, label: user.name }, changes: [{ field, ...(from ? { from } : {}), to: user[field] }], at: when };
+  };
+  // The admin changed one setting. The last change of each setting ends at its value in the demo settings below.
+  const setting = (when: string, field: keyof Settings, from: number, to: number): AuditEntry => ({
+    id: ++auditId, actor_id: 8, action: "settings_changed", target: { type: "settings", label: "الإعدادات" }, changes: [{ field, from: String(from), to: String(to) }], at: when,
+  });
   const audit: AuditEntry[] = [
     { id: ++auditId, actor_id: 8, action: "team_created", target: { type: "team", id: 1, label: "فريق التطوير" }, changes: [{ field: "lead", to: "مصطفى جواد" }], at: at(45, 9) },
     ...projects.map((p): AuditEntry => ({ id: ++auditId, actor_id: p.pm_id, action: "project_created", target: { type: "project", id: p.id, label: p.name }, at: at(Math.max(0, -daysFrom(p.start)) + 2, 9) })),
     { id: ++auditId, actor_id: 1, action: "criteria_approved", target: { type: "criteria", label: "معايير التقييم" }, at: at(20) },
     { id: ++auditId, actor_id: 2, action: "sprint_closed", target: { type: "sprint", id: 2, label: "الدورة 3" }, changes: [{ field: "moved_to", to: "الدورة 4" }], at: at(7, 15) },
     { id: ++auditId, actor_id: 8, action: "user_changed", target: { type: "user", id: 7, label: "زينب فاضل" }, changes: [{ field: "team", to: "فريق التطوير" }], at: at(30, 11) },
+
+    // The last two weeks, so the admin page's activity chart has a shape on a fresh demo. With the lines above: a quiet
+    // week (13 to 7 days ago: 1, 2, 1, 1, 1, 1, 2 a day), then a busier one (6 days ago to yesterday: 2, 1, 2, 6, 2, 2)
+    // with one busy day, three days ago, when the admin wrote the team's English names. Nothing is dated today.
+    // The tests count on this: no wrong password and no stopped account here, and no new account or team in the last 7
+    // days. A removed template or announcement is no longer in the demo data, so its line only names it.
+    changed(at(13, 10, 20), 2, "title", "مدير مشروع"),
+    { id: ++auditId, actor_id: 8, action: "user_created", target: { type: "user", id: 3, label: "هدى ناصر" }, changes: [{ field: "role", to: "monitor" }], at: at(12, 9, 40) },
+    changed(at(12, 9, 55), 3, "title", "مسؤولة المتابعة"),
+    setting(at(11, 14, 10), "lock_after", 3, 5),
+    { id: ++auditId, actor_id: 2, action: "template_deleted", target: { type: "template", label: "تطبيق جوال (مسودة)" }, at: at(10, 12, 30) },
+    { id: ++auditId, actor_id: 1, action: "announcement_deleted", target: { type: "announcement", label: "استبيان رضا الموظفين" }, at: at(9, 9, 15) },
+    changed(at(8, 11, 15), 1, "title", "المديرة العامة"),
+    changed(at(7, 10, 30), 6, "title", "مطور"),
+
+    setting(at(6, 9, 30), "due_soon_days", 1, 2),
+    changed(at(6, 13, 45), 4, "title", "قائد فريق"),
+    changed(at(5, 10, 5), 5, "title", "مطورة"),
+    // The admin's first maintenance notice named the wrong night: removed, then posted again (announcement 2 above).
+    { id: ++auditId, actor_id: 8, action: "announcement_deleted", target: { type: "announcement", label: "صيانة الخوادم ليلة الجمعة" }, at: at(4, 10, 50) },
+    changed(at(4, 12, 40), 7, "title", "مختبِرة"),
+    ...[4, 5, 6, 7, 3].map((userId, i) => changed(at(3, 10, 12 + i * 3), userId, "name_en")),
+    setting(at(3, 14, 5), "due_soon_days", 2, 1),
+    // The CEO moved weight from the counted numbers to the quality of the work, and approved the criteria again.
+    {
+      id: ++auditId, actor_id: 1, action: "criteria_changed", target: { type: "criteria", label: "معايير التقييم" }, at: criteria.updated_at,
+      changes: [{ field: "items", from: criteria.items.map((c, i) => `${c.name} ${[30, 30, 20, 20][i]}`).join("، "), to: criteria.items.map((c) => `${c.name} ${c.weight}`).join("، ") }],
+    },
+    { id: ++auditId, actor_id: 1, action: "criteria_approved", target: { type: "criteria", label: "معايير التقييم" }, at: criteria.approved_at! },
+    changed(at(1, 15, 40), 2, "name_en"),
   ];
   audit.sort((a, b) => a.at.localeCompare(b.at)).forEach((e, i) => (e.id = i + 1));
 

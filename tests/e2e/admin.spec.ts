@@ -41,6 +41,42 @@ test("the admin adds a user, stops another, makes a team; the CEO reads it all i
   await expect(log.getByRole("listitem")).toHaveCount(1);
 });
 
+test("the top of the admin page: the numbers, the week's activity, the latest actions and the last changed accounts", async ({ page }) => {
+  await signInAs(page, /حسن رعد/);
+  await page.goto("/admin");
+
+  // Four number cards; each small line says its numbers in words (one team all week).
+  const numbers = page.getByRole("region", { name: "نظرة عامة" });
+  const active = numbers.getByRole("listitem").filter({ hasText: "حسابات نشطة" });
+  await expect(active).toContainText("موقوفة 0");
+  await expect(numbers.getByRole("img", { name: "عدد الفرق في آخر 7 أيام: 1، 1، 1، 1، 1، 1، 1" })).toBeVisible();
+
+  // The whole row of a recent account opens it (click anywhere): stop one from there.
+  const people = page.getByRole("region", { name: "أحدث الحسابات" });
+  await people.getByRole("button", { name: /سارة علي/ }).click();
+  await page.getByRole("dialog", { name: /تعديل سارة علي/ }).getByRole("button", { name: "أوقف الحساب" }).click();
+  await expect(page.getByText("أُوقف الحساب.")).toBeVisible();
+
+  // The page counts again by itself: one stopped, she is the first of the recent accounts, and the newest line is hers.
+  await expect(active).toContainText("موقوفة 1");
+  await expect(people.getByRole("listitem").first()).toContainText("سارة علي");
+  await expect(people.getByRole("listitem").first()).toContainText("موقوف");
+  const latest = page.getByRole("table", { name: "آخر ما سجّله سجل العمليات" });
+  await expect(latest.getByRole("row")).toHaveCount(6); // the heads and the 5 newest lines
+  await expect(latest.getByRole("row").nth(1)).toContainText("أوقف حساباً: سارة علي");
+
+  // The chart shows this week first and says each day's number in words; the other pill shows the week before.
+  const activity = page.getByRole("region", { name: "النشاط" });
+  await expect(activity.getByRole("img", { name: /هذا الأسبوع/ })).toBeVisible();
+  await activity.getByRole("button", { name: "الأسبوع الماضي" }).click();
+  await expect(activity.getByRole("button", { name: "الأسبوع الماضي" })).toHaveAttribute("aria-pressed", "true");
+  await expect(activity.getByRole("img", { name: /الأسبوع الماضي/ })).toBeVisible();
+
+  // "View all" opens the audit log.
+  await page.getByRole("link", { name: /عرض الكل/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "سجل العمليات" })).toBeVisible();
+});
+
 test("wrong passwords lock the account; the sign-in page says so", async ({ page }) => {
   await page.goto("/login");
   for (let i = 0; i < 5; i++) {
