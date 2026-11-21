@@ -7,6 +7,8 @@ export interface AuthApi {
   login(identifier: string, password: string): Promise<Session>;
   me(): Promise<User>;
   users(): Promise<User[]>;
+  /** Sign out on the server: this token stops working (the browser has already forgotten it, so it is passed in). */
+  logout(token: string): Promise<void>;
 }
 
 const data = <T>(p: Promise<{ data: T }>) => p.then((r) => r.data);
@@ -15,6 +17,7 @@ export const authHttp: AuthApi = {
   login: (identifier, password) => data(http.post<Session>("/auth/login", { identifier, password })),
   me: () => data(http.get<User>("/me")),
   users: () => data(http.get<User[]>("/users")),
+  logout: (token) => data(http.post<void>("/auth/logout", null, { headers: { Authorization: `Bearer ${token}` } })),
 };
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.

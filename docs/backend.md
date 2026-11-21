@@ -18,6 +18,27 @@ Switching the site to the backend: `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC
 below, with a Bearer token. So the API must allow the site's addresses (CORS): `https://follow.ama8.uk` and the
 Cloudflare Pages preview address.
 
+**The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
+`https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
+error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
+the front end's 92 calls** are there. Still to build on the server (each is in its section below; the demo backend in
+`src/features/<feature>/mock.ts` is the reference):
+
+| Feature | Calls | Section |
+|---|---|---|
+| Group chats | `POST /chats/groups`, `PATCH /chats/:key`, `POST /chats/:key/leave` | 11 |
+| Monitoring notes, requests, the CEO's inbox | `GET`/`POST /monitoring/notes`, `POST /monitoring/notes/:id/send`, `GET /ceo/inbox`, `POST /ceo/inbox/:id/answer` (with `reopen`), `GET /monitoring/report-facts` | 16 |
+| The CEO's advanced settings and new roles | `GET`/`PUT /ceo/advanced`, `GET /ceo/advanced/history`, `GET /site/live` | 17, 17.1 |
+| Audit details | `GET /audit/:id`; `GET /audit` with `q`, `kind`, `ip`; `ip`, `user_agent`, `session_id`, `request_id` on every line | 14 |
+| Quick search | `GET /search?q=` | 18 |
+| Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
+
+Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); error codes `FEATURE_OFF` (403) and
+`READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
+with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
+every job except the CEO (16). The front end now calls `POST /auth/logout` when someone signs out (the server already
+has it). `null` for an empty `name_en`, `phone` or `team_id` is fine: the front end treats it as empty.
+
 **See every screen working before you build:** `npm ci`, then `NEXT_PUBLIC_USE_MOCK=true npm run dev`, open
 http://localhost:3000 and sign in with any one-tap demo account (password `123456`). Each screen there is exactly
 what your answers must make possible. The demo backend of a feature is `src/features/<feature>/mock.ts`: when this
@@ -50,6 +71,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | § | Method | Path | Who (the `ceo` always may too) | What |
 |---|---|---|---|---|
 | 1 | `POST` | `/auth/login` | anyone | Sign in → `{ token, user }` |
+| 1 | `POST` | `/auth/logout` | signed in | Sign out: cancel this token (the front end calls it, then forgets the token) |
 | 1 | `GET` | `/me` | signed in | The signed-in person |
 | 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`) for pickers and avatars |
 | 19 | `PUT` | `/me/avatar` | signed in (only yourself) | Set or replace my picture (`multipart/form-data`, field `file`) → the updated `User` |
@@ -105,7 +127,10 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 11 | `GET` | `/chats/:key/messages` | its members | Messages |
 | 11 | `POST` | `/chats/:key/messages` | its members | Send (with @mentions) |
 | 11 | `POST` | `/chats/:key/read` | its members | Read up to here |
-| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone |
+| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (nobody but the CEO starts one with the CEO: 403) |
+| 11 | `POST` | `/chats/groups` | monitor, pm, lead, ceo | Make a group chat `{name, member_ids}` |
+| 11 | `PATCH` | `/chats/:key` | the group's maker, ceo | Rename a group, change its members |
+| 11 | `POST` | `/chats/:key/leave` | its members | Leave a group |
 | 12 | `GET` | `/reports/overview` | ceo, pm, monitor, lead | Every number of the dashboard and the reports |
 | 13 | `GET` | `/performance` | ceo, pm, monitor, lead | People and teams' numbers for a period |
 | 13 | `GET` | `/performance/people/:userId` | see §13 | One person's numbers and reviews |

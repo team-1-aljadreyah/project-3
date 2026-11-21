@@ -9,6 +9,9 @@ const STATIC = process.env.E2E_STATIC === "true";
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
+  // On a developer's machine at most 6 browsers at once: with ~200 tests (many sign in two or three times) and the
+  // sign-in page's animations, 12 at once made random tests time out. Jenkins keeps Playwright's own default.
+  workers: process.env.CI ? undefined : 6,
   retries: process.env.CI ? 1 : 0,
   // Many tests run at once: give a page up to 10 s to show what a test waits for (the default is 5 s).
   expect: { timeout: 10_000 },
