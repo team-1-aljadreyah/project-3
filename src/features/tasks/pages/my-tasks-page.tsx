@@ -7,6 +7,7 @@ import { useLoad } from "@/shared/lib/use-load";
 import { daysBetween, today as todayIso } from "@/shared/lib/utils";
 import { Empty, ErrorBox, LoadingBlock, PriorityPill, Skeleton, StatusPill } from "@/shared/ui";
 import { tasksApi } from "../api";
+import { MySummary, MySummarySkeleton } from "../components/my-summary";
 import { statusOf } from "../rules";
 import type { Task } from "../types";
 
@@ -30,10 +31,14 @@ export function MyTasksPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
       <h1 className="text-2xl font-semibold">{tr("مهامي", "My tasks")}</h1>
       {load.state.status === "loading" && (
-        <LoadingBlock className="flex flex-col gap-2">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
-          ))}
+        <LoadingBlock className="flex flex-col gap-6">
+          {/* The summary's place first, then the rows of the list. */}
+          <MySummarySkeleton />
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 rounded-xl" />
+            ))}
+          </div>
         </LoadingBlock>
       )}
       {load.state.status === "error" && <ErrorBox error={load.state.error} onRetry={load.reload} />}
@@ -65,6 +70,9 @@ function MyTasks({ tasks, projects }: { tasks: Task[]; projects: ProjectSummary[
 
   return (
     <div className="flex flex-col gap-6">
+      {/* The summary first: my numbers, my projects, my statuses and how much is done. The list under it is unchanged. */}
+      <MySummary tasks={tasks} projects={projects} today={day} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">{tr(`مهام مفتوحة: ${open}`, `Open tasks: ${open}`)}</p>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
