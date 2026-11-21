@@ -6,9 +6,9 @@ import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
-import { Button, Empty, ErrorBox, Input, LoadingBlock, Select, Skeleton } from "@/shared/ui";
+import { Button, Empty, ErrorBox, Input, LoadingBlock, MaybeLink, Select, Skeleton } from "@/shared/ui";
 import { adminApi } from "../api";
-import { ACTION_WORDS } from "../audit-words";
+import { ACTION_WORDS, targetHref } from "../audit-words";
 import { canSeeAudit } from "../rules";
 import type { AuditAction, AuditFilter } from "../types";
 
@@ -89,13 +89,17 @@ export function AuditPage() {
       {load.data && load.data[0].length > 0 && (
         <ol aria-label={tr("العمليات", "Actions")} className="flex flex-col divide-y divide-line rounded-xl border border-line bg-card">
           {load.data[0].map((e) => (
-            <li key={e.id} className="flex flex-col gap-1 px-4 py-3 text-sm sm:flex-row sm:items-baseline sm:gap-4">
+            // The whole line opens what the action was about, when it has a page.
+            <li key={e.id} className="relative flex flex-col gap-1 px-4 py-3 text-sm hover:bg-card-2 sm:flex-row sm:items-baseline sm:gap-4">
               <time dateTime={e.at} className="w-40 shrink-0 text-xs text-muted">
                 {dateTime(e.at)}
               </time>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span>
-                  <b>{nameOf(e.actor_id)}</b> · {actionOf(e.action)}: <bdi>{e.target.label}</bdi>
+                  <b>{nameOf(e.actor_id)}</b> · {actionOf(e.action)}:{" "}
+                  <MaybeLink href={targetHref(e.target)} cover>
+                    <bdi>{e.target.label}</bdi>
+                  </MaybeLink>
                 </span>
                 {e.changes && (
                   <span dir="auto" className="text-xs text-muted">

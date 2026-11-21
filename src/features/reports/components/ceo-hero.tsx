@@ -6,7 +6,7 @@ import { useFmt } from "@/shared/lib/i18n";
  * platform is for, today's numbers and the way to the reports. The words arrive one after the other. Always dark,
  * whatever the theme (styles in app/styles.css, `.night-hero`). Decoration only: with "reduce motion" it is simply there.
  */
-export function CeoHero({ date, numbers }: { date: string; numbers: { label: string; value: string; alert?: boolean }[] }) {
+export function CeoHero({ date, numbers }: { date: string; numbers: { label: string; value: string; alert?: boolean; href: string }[] }) {
   const { tr } = useFmt();
   return (
     <section aria-labelledby="dashboard-title" className="night-hero relative isolate overflow-hidden rounded-3xl px-5 py-14 text-center sm:py-20">
@@ -29,10 +29,12 @@ export function CeoHero({ date, numbers }: { date: string; numbers: { label: str
         <ul className="hero-in flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-[#e6d3da]">
           {numbers.map((n) => (
             <li key={n.label}>
-              {n.label}:{" "}
-              <b dir="ltr" className={n.alert ? "num font-semibold text-[#ffb9b1]" : "num font-semibold text-white"}>
-                {n.value}
-              </b>
+              <Link href={n.href} className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-white">
+                {n.label}:{" "}
+                <b dir="ltr" className={n.alert ? "num font-semibold text-[#ffb9b1]" : "num font-semibold text-white"}>
+                  {n.value}
+                </b>
+              </Link>
             </li>
           ))}
         </ul>

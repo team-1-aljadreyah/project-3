@@ -9,7 +9,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { useRouteParam } from "@/shared/lib/route-param";
-import { Avatar, Button, Dialog, ErrorBox, LoadingBlock, Pill, Skeleton, errorText, useToast } from "@/shared/ui";
+import { Avatar, Button, Dialog, ErrorBox, LoadingBlock, Pill, Skeleton, errorText, useToast, PersonName } from "@/shared/ui";
 import { announcementsApi } from "../api";
 import { canManageAnnouncement } from "../rules";
 import type { Announcement } from "../types";
@@ -147,9 +147,10 @@ function Reads({ id, people }: { id: number; people: Map<number, User> }) {
           {rows.map((r) => {
             const u = people.get(r.id);
             return (
-              <li key={r.id} className="flex items-center gap-2 text-sm">
+              // The whole row opens the person's performance, when this viewer may open it.
+              <li key={r.id} className="relative flex items-center gap-2 text-sm">
                 {u && <Avatar user={u} size="sm" />}
-                <span className="flex-1">{nameOf(u)}</span>
+                {u ? <PersonName person={u} cover className="flex-1" /> : <span className="flex-1">{nameOf(u)}</span>}
                 {r.note && <span className="text-xs text-faint">{r.note}</span>}
               </li>
             );

@@ -125,7 +125,8 @@ export function notificationLink(n: Notification) {
   if (n.announcement_id) return `/announcements/${n.announcement_id}`;
   if (n.bug_id) return `/bugs/${n.bug_id}`;
   if (n.chat_key) return `/chat/${n.chat_key}`;
-  if (n.kind === "review_final") return "/performance";
+  // A final review is about the person told: it opens their own performance page.
+  if (n.kind === "review_final") return `/performance/${n.user_id}`;
   if (n.kind === "note_sent") return "/inbox";
   if (n.kind === "note_answered") return n.data.note_kind === "request" ? "/requests" : "/monitoring";
   if (n.kind === "account_locked") return "/admin";

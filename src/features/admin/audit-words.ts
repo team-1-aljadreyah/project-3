@@ -57,3 +57,28 @@ export const KIND_WORDS: Record<AuditKind, { ar: string; en: string; tone: Statu
   announcement: { ar: "إعلان", en: "Announcement", tone: "review" },
   review: { ar: "تقييم", en: "Review", tone: "done" },
 };
+
+/**
+ * Where an audit line's subject opens (the admin overview and the audit log link it): its own page, or the admin tab
+ * that holds it. A sprint, a review or a sign-in has no page of its own: no link.
+ */
+export function targetHref(target: { type: string; id?: number }): string | undefined {
+  switch (target.type) {
+    case "project":
+      return target.id ? `/projects/${target.id}` : "/";
+    case "announcement":
+      return target.id ? `/announcements/${target.id}` : "/announcements";
+    case "criteria":
+      return "/performance/criteria";
+    case "template":
+      return "/templates";
+    case "user":
+      return "/admin?tab=users";
+    case "team":
+      return "/admin?tab=teams";
+    case "settings":
+      return "/admin?tab=settings";
+    default:
+      return undefined;
+  }
+}

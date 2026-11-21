@@ -1,13 +1,14 @@
 import { History, Lock, Network, UserCheck, Users, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { StatusTone } from "@/shared/api/types";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
-import { Avatar, Button, ButtonLink, ErrorBox, LoadingBlock, Pill, Skeleton, TONE_CLASS } from "@/shared/ui";
+import { Avatar, Button, ButtonLink, ErrorBox, LoadingBlock, MaybeLink, Pill, Skeleton, TONE_CLASS } from "@/shared/ui";
 import { adminApi } from "../api";
-import { ACTION_KIND, ACTION_WORDS, KIND_WORDS } from "../audit-words";
+import { ACTION_KIND, ACTION_WORDS, KIND_WORDS, targetHref } from "../audit-words";
 import { isLocked } from "../rules";
 import { adminOverview } from "../summary";
 import type { AdminUser } from "../types";
@@ -69,9 +70,10 @@ export function AdminOverview({ me }: { me: number }) {
       tr("لا جديد هذا الأسبوع", "Nothing new this week")
     );
 
-  const stats: { key: string; label: string; icon: LucideIcon; tone: StatusTone; value: number; note: React.ReactNode; trend: number[]; trendLabel: string }[] = [
+  const stats: { key: string; href: string; label: string; icon: LucideIcon; tone: StatusTone; value: number; note: React.ReactNode; trend: number[]; trendLabel: string }[] = [
     {
       key: "accounts",
+      href: "/admin?tab=users",
       label: tr("الحسابات", "Accounts"),
       icon: Users,
       tone: "todo",
@@ -82,6 +84,7 @@ export function AdminOverview({ me }: { me: number }) {
     },
     {
       key: "active",
+      href: "/admin?tab=users",
       label: tr("حسابات نشطة", "Active accounts"),
       icon: UserCheck,
       tone: "done",
@@ -92,6 +95,7 @@ export function AdminOverview({ me }: { me: number }) {
     },
     {
       key: "teams",
+      href: "/admin?tab=teams",
       label: tr("الفرق", "Teams"),
       icon: Network,
       tone: "testing",
@@ -102,6 +106,7 @@ export function AdminOverview({ me }: { me: number }) {
     },
     {
       key: "lines",
+      href: "/audit",
       label: tr("عمليات هذا الأسبوع", "Actions this week"),
       icon: History,
       tone: "review",
@@ -140,9 +145,12 @@ export function AdminOverview({ me }: { me: number }) {
         </h2>
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((s) => (
-            <li key={s.key} className={cn("flex flex-col gap-1 rounded-2xl p-4", TONE_CLASS[s.tone].pill)}>
+            // The whole card opens its tab or page (the label is the link, stretched over the card).
+            <li key={s.key} className={cn("relative flex flex-col gap-1 rounded-2xl p-4 transition-transform hover:-translate-y-0.5", TONE_CLASS[s.tone].pill)}>
               <span className="flex items-center justify-between gap-2 text-[13px] font-medium">
-                {s.label}
+                <Link href={s.href} className="after:absolute after:inset-0 after:rounded-2xl hover:underline">
+                  {s.label}
+                </Link>
                 <s.icon size={18} aria-hidden="true" className="shrink-0" />
               </span>
               <span className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -226,7 +234,8 @@ export function AdminOverview({ me }: { me: number }) {
                       );
                       const kindPill = <Pill tone={kind.tone}>{tr(kind.ar, kind.en)}</Pill>;
                       return (
-                        <tr key={e.id} className="border-t border-line">
+                        // The whole row opens what the action was about, when it has a page.
+                        <tr key={e.id} className="relative border-t border-line hover:bg-card-2">
                           {/* On a phone four columns don't fit: the time sits under the name and the kind under the
                               action, and their own columns are hidden. */}
                           <td className={td}>
@@ -245,7 +254,10 @@ export function AdminOverview({ me }: { me: number }) {
                           <td className={cn(td, "wrap-anywhere")}>
                             <span className="flex flex-col items-start gap-1">
                               <span>
-                                {tr(ACTION_WORDS[e.action].ar, ACTION_WORDS[e.action].en)}: <bdi>{e.target.label}</bdi>
+                                {tr(ACTION_WORDS[e.action].ar, ACTION_WORDS[e.action].en)}:{" "}
+                                <MaybeLink href={targetHref(e.target)} cover>
+                                  <bdi>{e.target.label}</bdi>
+                                </MaybeLink>
                               </span>
                               <span className="sm:hidden">{kindPill}</span>
                             </span>

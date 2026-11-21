@@ -1,4 +1,4 @@
-import { Paperclip, Plus, Settings } from "lucide-react";
+import { MessagesSquare, Paperclip, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { authApi } from "@/features/auth";
@@ -7,6 +7,7 @@ import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
+import { featureOn, useSiteLive } from "@/shared/lib/site";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
@@ -55,6 +56,7 @@ type View = "sprint" | "backlog" | "all";
 function Board({ project, tasks, users, sprints, reload }: { project: Project; tasks: Task[]; users: User[]; sprints: Sprint[]; reload: () => void }) {
   const { tr, lang, pct, num, day } = useFmt();
   const user = useUser();
+  const live = useSiteLive();
   const today = todayIso();
   const { move, dialog } = useMoveTask(user, project, reload);
   const [adding, setAdding] = useState(false);
@@ -172,10 +174,26 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 text-[13px] text-muted">
-            <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
-            <AvatarStack users={members} />
-          </div>
+          {/* The team: opens the members in the project's settings for whoever manages it. */}
+          {canManageProject(user, project) ? (
+            <Link href={`/projects/${project.id}/settings`} className="flex items-center gap-2 rounded-full text-[13px] text-muted hover:text-text">
+              <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
+              <AvatarStack users={members} />
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2 text-[13px] text-muted">
+              <span className="hidden sm:inline">{tr("الفريق", "Team")}</span>
+              <AvatarStack users={members} />
+            </div>
+          )}
+          {/* The project's chat: its members, the CEO and M&E are in it (not the system admin). */}
+          {user.role !== "admin" && featureOn(live, "chat", user.role) && (
+            <ButtonLink href={`/chat/p-${project.id}`} variant="secondary" pill>
+              <MessagesSquare size={15} aria-hidden="true" />
+              {/* On a phone only the icon shows; screen readers still hear the name. */}
+              <span className="sr-only sm:not-sr-only">{tr("المحادثة", "Chat")}</span>
+            </ButtonLink>
+          )}
           <ButtonLink href={`/projects/${project.id}/files`} variant="secondary" pill>
             <Paperclip size={15} aria-hidden="true" />
             {/* On a phone only the icon shows; screen readers still hear the name. */}

@@ -3,7 +3,7 @@ import { isImage } from "@/features/attachments";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
-import { Avatar } from "@/shared/ui";
+import { Avatar, PersonName } from "@/shared/ui";
 import { splitMentions } from "../rules";
 import type { Message } from "../types";
 
@@ -38,7 +38,7 @@ export function MessageItem({
       {author && <Avatar user={author} size="sm" />}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-          <b className={cn("font-semibold", mine && "text-accent")}>{nameOf(m.author_id)}</b>
+          <b className={cn("font-semibold", mine && "text-accent")}>{author ? <PersonName person={author} /> : nameOf(m.author_id)}</b>
           <time dateTime={m.created_at} className="text-xs text-faint">
             {dateTime(m.created_at)}
           </time>
@@ -91,7 +91,7 @@ export function MessageItem({
         type="button"
         onClick={() => onReply(m)}
         aria-label={tr(`ردّ على رسالة ${nameOf(m.author_id)}`, `Reply to ${nameOf(m.author_id)}`)}
-        className="flex h-7 shrink-0 items-center gap-1 self-start rounded-md px-2 text-xs text-muted opacity-60 group-hover:opacity-100 hover:bg-chip hover:text-text focus-visible:opacity-100"
+        className="flex h-7 shrink-0 items-center gap-1 self-start rounded-md px-2 text-xs text-muted hover:bg-chip hover:text-text focus-visible:opacity-100"
       >
         <Reply size={13} aria-hidden="true" className="rtl:-scale-x-100" />
         {tr("رد", "Reply")}

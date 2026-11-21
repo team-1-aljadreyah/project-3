@@ -29,10 +29,10 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
   const rows = useMemo(() => followUp(o.projects, filter, query), [o.projects, filter, query]);
   const projectName = (p: { name: string; name_en?: string }) => (lang === "en" && p.name_en ? p.name_en : p.name);
   const stats = [
-    { icon: FolderKanban, label: tr("المشاريع النشطة", "Active projects"), value: num(t.projects.active), note: tr(`من ${num(t.projects.all)} مشاريع`, `of ${t.projects.all} projects`) },
-    { icon: TrendingUp, label: tr("الإنجاز الكلي", "Overall progress"), value: pct(t.ratio), note: tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`) },
-    { icon: Clock3, label: tr("مهام متأخرة", "Late tasks"), value: num(t.tasks.late), note: tr(`متوقفة ${num(t.tasks.blocked)}`, `${t.tasks.blocked} blocked`), danger: t.tasks.late > 0 },
-    { icon: Bug, label: tr("أخطاء مفتوحة", "Open bugs"), value: num(o.bugs.open), note: tr(`متأخرة ${num(o.bugs.late)} · حرجة ${num(o.bugs.critical_open)}`, `${o.bugs.late} late · ${o.bugs.critical_open} critical`), danger: o.bugs.late > 0 },
+    { icon: FolderKanban, label: tr("المشاريع النشطة", "Active projects"), href: "/", value: num(t.projects.active), note: tr(`من ${num(t.projects.all)} مشاريع`, `of ${t.projects.all} projects`) },
+    { icon: TrendingUp, label: tr("الإنجاز الكلي", "Overall progress"), href: "/reports", value: pct(t.ratio), note: tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`) },
+    { icon: Clock3, label: tr("مهام متأخرة", "Late tasks"), href: "#follow-title", value: num(t.tasks.late), note: tr(`متوقفة ${num(t.tasks.blocked)}`, `${t.tasks.blocked} blocked`), danger: t.tasks.late > 0 },
+    { icon: Bug, label: tr("أخطاء مفتوحة", "Open bugs"), href: o.bugs.late > 0 ? "/bugs?show=late" : "/bugs", value: num(o.bugs.open), note: tr(`متأخرة ${num(o.bugs.late)} · حرجة ${num(o.bugs.critical_open)}`, `${o.bugs.late} late · ${o.bugs.critical_open} critical`), danger: o.bugs.late > 0 },
   ];
 
   return (
@@ -55,7 +55,9 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
         <div className="relative mx-3 -mt-12 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-card/95 p-3 shadow-card sm:mx-5">
           <Avatar user={user} size="lg" className="size-12 rounded-xl text-base" />
           <div className="flex min-w-0 flex-1 flex-col">
-            <b className="truncate">{lang === "en" && user.name_en ? user.name_en : user.name}</b>
+            <Link href={`/performance/${user.id}`} className="truncate font-bold hover:underline">
+              {lang === "en" && user.name_en ? user.name_en : user.name}
+            </Link>
             <span className="truncate text-sm text-muted">{tr(ROLES[user.role].ar, ROLES[user.role].en)}</span>
           </div>
           <ButtonLink href="/reports" variant="secondary" pill>
@@ -70,12 +72,15 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-3.5 rounded-xl border border-line bg-card px-4 py-3.5">
+          // The whole card opens its page (the label is the link, stretched over the card).
+          <div key={s.label} className="relative flex items-center gap-3.5 rounded-xl border border-line bg-card px-4 py-3.5 transition-colors focus-within:border-accent hover:border-accent">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
               <s.icon size={21} aria-hidden="true" />
             </span>
             <span className="flex flex-col">
-              <span className="text-[13px] text-muted">{s.label}</span>
+              <Link href={s.href} className="text-[13px] text-muted after:absolute after:inset-0 after:rounded-xl">
+                {s.label}
+              </Link>
               <span className={cn("num text-xl font-semibold", s.danger && "text-danger")}>{s.value}</span>
               <span className={cn("text-xs", s.danger ? "text-danger" : "text-muted")}>{s.note}</span>
             </span>

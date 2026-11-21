@@ -9,14 +9,14 @@ import { featureOn, useSiteLive } from "@/shared/lib/site";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
-import { AvatarStack, Empty, ErrorBox, IconButton, LoadingBlock, Skeleton } from "@/shared/ui";
+import { AvatarStack, Empty, ErrorBox, IconButton, LoadingBlock, PersonName, Skeleton } from "@/shared/ui";
 import { chatApi } from "../api";
 import { ConversationList } from "../components/conversation-list";
 import { GroupActions } from "../components/group-actions";
 import { GroupDialog } from "../components/group-dialog";
 import { NewDirectDialog } from "../components/new-direct-dialog";
 import { Thread } from "../components/thread";
-import { canCreateGroupChat, chatTitle } from "../rules";
+import { canCreateGroupChat, chatTitle, parseKey } from "../rules";
 import type { ChatKind, Conversation } from "../types";
 
 /**
@@ -114,7 +114,16 @@ export function ChatPage() {
                   </Link>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span dir="auto" className="truncate font-semibold">
-                      {title}
+                      {/* A project's chat opens its board; a private chat, the other person (when allowed). */}
+                      {open.kind === "project" ? (
+                        <Link href={`/projects/${parseKey(open.key)?.id}`} className="hover:underline">
+                          {title}
+                        </Link>
+                      ) : open.kind === "direct" && people.get(open.member_ids.find((id) => id !== me.id) ?? 0) ? (
+                        <PersonName person={people.get(open.member_ids.find((id) => id !== me.id)!)!}>{title}</PersonName>
+                      ) : (
+                        title
+                      )}
                     </span>
                     <span className="text-xs text-muted">
                       {KIND[open.kind]}

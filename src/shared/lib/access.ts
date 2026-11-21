@@ -24,6 +24,27 @@ export function canSeeProject(user: Pick<User, "id" | "role">, project: Members)
 }
 
 /**
+ * Where a person's name leads: their performance page, or undefined when the viewer may not open it (then the name
+ * stays plain text). The same rule as canSeePerson in features/performance/rules.ts, for places that know only some of
+ * the facts: without the person's job, or (for a PM) without the projects, there is no link rather than a wrong one.
+ * tests/unit/person-href.test.ts checks it never links where canSeePerson says no.
+ */
+export function personHref(
+  viewer: Pick<User, "id" | "role" | "team_id">,
+  person: { id: number; role?: Role; team_id?: number },
+  projects: Members[] = [],
+) {
+  const href = `/performance/${person.id}`;
+  if (viewer.id === person.id) return href;
+  // The CEO and the admin have no task numbers to show.
+  if (!person.role || person.role === "ceo" || person.role === "admin") return undefined;
+  if (isCeo(viewer) || viewer.role === "monitor") return href;
+  if (viewer.role === "pm") return projects.some((p) => p.pm_id === viewer.id && p.member_ids.includes(person.id)) ? href : undefined;
+  if (viewer.role === "lead") return person.role === "employee" && !!viewer.team_id && person.team_id === viewer.team_id ? href : undefined;
+  return undefined;
+}
+
+/**
  * Change a project's setup: details, members, statuses, phases, sprints, GitHub. The project's PM and the CEO. Here (not
  * in the projects feature) because the GitHub feature needs it too, and features may not import each other in a loop.
  */

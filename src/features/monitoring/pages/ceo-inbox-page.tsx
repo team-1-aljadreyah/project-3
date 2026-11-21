@@ -90,6 +90,8 @@ export function CeoInboxPage() {
       {notes.length === 0 ? (
         <Empty title={tr("لا شيء وارد بعد", "Nothing has arrived yet")} body={tr("حين تُرسَل إليك تقارير المتابعة أو طلبات الموظفين، تظهر هنا.", "Monitoring's reports and the employees' requests show here.")} />
       ) : (
+        <>
+        <h2 className="sr-only">{tr("الوارد", "Inbox")}</h2>
         <ul aria-label={tr("الوارد", "Inbox")} className="flex flex-col gap-3">
           {notes.map((n) => {
             const isOpen = openId === n.id;
@@ -126,6 +128,7 @@ export function CeoInboxPage() {
             );
           })}
         </ul>
+        </>
       )}
     </div>
   );

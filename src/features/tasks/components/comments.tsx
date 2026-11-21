@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Avatar, Button, Field, Textarea, errorText, useToast } from "@/shared/ui";
+import { Avatar, Button, Field, Textarea, errorText, useToast, PersonName } from "@/shared/ui";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { tasksApi } from "../api";
@@ -21,7 +21,7 @@ export function Comments({
   canWrite: boolean;
   onAdded: () => void;
 }) {
-  const { tr, lang, ago, dateTime } = useFmt();
+  const { tr, ago, dateTime } = useFmt();
   const toast = useToast();
   const [body, setBody] = useState("");
   const [error, setError] = useState<string>();
@@ -59,7 +59,7 @@ export function Comments({
                 {author && <Avatar user={author} size="md" />}
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                    <b className="font-semibold">{author ? (lang === "en" && author.name_en ? author.name_en : author.name) : "-"}</b>
+                    <b className="font-semibold">{author ? <PersonName person={author} /> : "-"}</b>
                     <time dateTime={c.created_at} title={dateTime(c.created_at)} className="text-xs text-faint">
                       {ago(c.created_at)}
                     </time>

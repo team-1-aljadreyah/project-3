@@ -140,6 +140,8 @@ export function MonitoringPage() {
       {shown.length === 0 ? (
         <Empty title={tr("لا شيء هنا بعد", "Nothing here yet")} body={tr("ما تكتبينه يظهر هنا.", "What you write shows here.")} />
       ) : (
+        <>
+        <h2 className="sr-only">{tr("ما كتبته", "What you wrote")}</h2>
         <ul aria-label={tr("ما كتبته", "What you wrote")} className="flex flex-col gap-3">
           {shown.map((n) => (
             <li key={n.id}>
@@ -159,6 +161,7 @@ export function MonitoringPage() {
             </li>
           ))}
         </ul>
+        </>
       )}
 
       <NoteDialog
