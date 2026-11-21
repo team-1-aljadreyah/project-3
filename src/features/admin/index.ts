@@ -2,4 +2,5 @@
 export { adminApi, type AdminApi } from "./api";
 export { AdminPage } from "./pages/admin-page";
 export { AuditPage } from "./pages/audit-page";
+export { DEFAULT_SETTINGS, SETTING_RANGE } from "./rules";
 export type * from "./types";

@@ -2,6 +2,7 @@
 // keeps a few made-up ones (src/mock/seed.ts) and links them the same way: by the task's or bug's code in the text.
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, projectFor, wait } from "@/mock/helpers";
+import { featureIsOn, requireFeature } from "@/mock/site";
 import { canManageProjectSetup } from "@/shared/lib/access";
 import type { GithubApi } from "./api";
 import { GITHUB_LIMITS, isRepoName, mentions, safeGithubUrl } from "./rules";
@@ -16,6 +17,7 @@ export const githubMock: GithubApi = {
 
   async saveSettings(projectId, input) {
     const user = currentUser();
+    requireFeature(user, "github");
     const project = projectFor(user, projectId);
     if (!canManageProjectSetup(user, project)) return fail(403, "FORBIDDEN", "يضبط GitHub مدير المشروع أو المدير التنفيذي.", "The project's PM or the CEO sets up GitHub.");
     const repos = [...new Set(input.repos.map((r) => r.trim()).filter(Boolean))];
@@ -37,7 +39,8 @@ export const githubMock: GithubApi = {
     if (!item) return fail(404, "NOT_FOUND", "لم يُعثر على المطلوب.", "Not found.");
     projectFor(user, item.project_id); // 404 for someone who can't see the project
     const s = settingsOf(item.project_id);
-    if (!s.enabled) return wait({ enabled: false, repos: [], items: [] });
+    // Switched off by the CEO: nothing is shown, as if the project had no link (the CEO still sees it).
+    if (!s.enabled || (user.role !== "ceo" && !featureIsOn("github"))) return wait({ enabled: false, repos: [], items: [] });
     const items = db.github_items
       .filter((g) => s.repos.includes(g.repo) && mentions(g.title, item.code) && safeGithubUrl(g.url))
       .sort((a, b) => b.at.localeCompare(a.at));

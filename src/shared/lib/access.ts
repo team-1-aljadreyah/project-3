@@ -77,6 +77,7 @@ export const NAV: NavItem[] = [
   { key: "requests", ar: "طلباتي", en: "My requests", href: "/requests", roles: ["employee"], ready: true },
   { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },
   { key: "audit", ar: "سجل العمليات", en: "Audit log", href: "/audit", roles: ["ceo", "admin"], ready: true },
+  { key: "advanced", ar: "الإعدادات المتقدمة", en: "Advanced settings", href: "/advanced", roles: ["ceo"], ready: true },
 ];
 
 /** The menu of a job. The CEO sees every item, also the ones added later (the CEO rule above). */

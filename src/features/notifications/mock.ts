@@ -14,7 +14,7 @@ export const notificationsMock: NotificationsApi = {
     remindDueTasks(user.id);
     remindLateBugs(user.id);
     // Save only when a reminder was added, so reading the list doesn't refresh every open screen each time.
-    if (db.notifications.length !== before) commit();
+    if (db.notifications.length !== before) commit({ own: true });
     const mine = db.notifications.filter((n) => n.user_id === user.id).sort((a, b) => b.at.localeCompare(a.at) || b.id - a.id);
     return wait(mine.slice(0, 100));
   },
@@ -26,7 +26,7 @@ export const notificationsMock: NotificationsApi = {
     if (!n || n.user_id !== user.id) return fail(404, "NOT_FOUND", "لم يُعثر على الإشعار.", "Notification not found.");
     if (!n.read) {
       n.read = true;
-      commit();
+      commit({ own: true });
     }
     return wait(undefined);
   },
@@ -40,7 +40,7 @@ export const notificationsMock: NotificationsApi = {
         changed = true;
       }
     }
-    if (changed) commit();
+    if (changed) commit({ own: true });
     return wait(undefined);
   },
 
@@ -60,7 +60,7 @@ export const notificationsMock: NotificationsApi = {
     }
     const db = getDb();
     db.notification_prefs[user.id] = { ...prefs };
-    commit();
+    commit({ own: true });
     return wait(db.notification_prefs[user.id]);
   },
 };

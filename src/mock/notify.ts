@@ -7,10 +7,18 @@ import { REQUIRED_NOTIFICATIONS, type NotificationKind } from "@/shared/api/noti
 import { daysBetween, today } from "@/shared/lib/utils";
 import { getDb } from "./db";
 import { nowIso } from "./helpers";
+import { jobGets } from "./site";
 
-/** Does this person want this kind? Required kinds always; the rest unless they turned it off. */
+/**
+ * Does this person want this kind? Required kinds always. The rest: only if the CEO's table sends this kind to their
+ * job (the advanced settings; every job by default), and they didn't turn it off themselves.
+ */
 export function wants(userId: number, kind: NotificationKind) {
-  return REQUIRED_NOTIFICATIONS.has(kind) || getDb().notification_prefs[userId]?.[kind] !== false;
+  if (REQUIRED_NOTIFICATIONS.has(kind)) return true;
+  const db = getDb();
+  const role = db.users.find((u) => u.id === userId)?.role;
+  if (role && !jobGets(role, kind)) return false;
+  return db.notification_prefs[userId]?.[kind] !== false;
 }
 
 /**

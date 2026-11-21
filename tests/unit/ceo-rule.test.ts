@@ -9,6 +9,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as admin from "@/features/admin/rules";
+import * as advanced from "@/features/advanced/rules";
 import * as announcements from "@/features/announcements/rules";
 import * as bugs from "@/features/bugs/rules";
 import * as chat from "@/features/chat/rules";
@@ -35,6 +36,8 @@ const CHECKS: Record<string, () => boolean> = {
   // admin
   canAdminister: () => admin.canAdminister(ceo),
   canSeeAudit: () => admin.canSeeAudit(ceo),
+  // advanced settings (the CEO only)
+  canUseAdvancedSettings: () => advanced.canUseAdvancedSettings(ceo),
   // announcements
   canPostAnnouncements: () => announcements.canPostAnnouncements(ceo),
   canManageAnnouncement: () => announcements.canManageAnnouncement(ceo, { author_id: 7 }),

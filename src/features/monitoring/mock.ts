@@ -3,6 +3,7 @@
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
+import { requireFeature } from "@/mock/site";
 import { today } from "@/shared/lib/utils";
 import type { MonitoringApi } from "./api";
 import { canSeeNote, canSendRequests, canSendToCeo, canUseCeoInbox, canWriteNotes, NOTE_LIMITS as L } from "./rules";
@@ -66,6 +67,7 @@ export const monitoringMock: MonitoringApi = {
     const user = currentUser();
     const request = input.kind === "request";
     if (request && !canSendRequests(user)) return fail(403, "FORBIDDEN", "الطلبات للموظفين.", "Requests are for employees.");
+    if (request) requireFeature(user, "requests");
     if (!request && !canWriteNotes(user)) return fail(403, "FORBIDDEN", "كتابة ملاحظات المتابعة لمسؤول المتابعة والتقييم.", "Monitoring notes are for the monitoring officer.");
     const title = input.title.trim();
     const body = input.body.trim();
