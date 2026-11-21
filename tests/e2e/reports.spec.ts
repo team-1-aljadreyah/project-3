@@ -71,6 +71,23 @@ test("the monitoring officer's dashboard: who is signed in, the summary cards, a
   await expect(page).toHaveURL(/\/projects\/\d+$/);
 });
 
+test("the monitoring officer's banner has her character: hidden from screen readers and clear of the card's link", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.goto("/dashboard");
+  const top = page.getByRole("region", { name: "لوحة القيادة" });
+  const character = top.locator(".wave-banner .mc");
+  await expect(character).toBeVisible();
+  await expect(character).toHaveAttribute("aria-hidden", "true");
+  // She stands behind the profile card: her box never covers the "All reports" link.
+  const link = top.getByRole("link", { name: "كل التقارير" });
+  await expect(link).toBeVisible();
+  const a = await character.boundingBox();
+  const b = await link.boundingBox();
+  if (!a || !b) throw new Error("the character or the link has no box");
+  const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  expect(overlap).toBe(false);
+});
+
 test("reports: by project, by team and person (filter), by sprint with velocity; each table downloads as CSV", async ({ page }) => {
   await signInAs(page, /أحمد كريم/);
   await page.goto("/reports");

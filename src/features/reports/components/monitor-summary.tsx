@@ -8,6 +8,7 @@ import { cn } from "@/shared/lib/utils";
 import { Avatar, ButtonLink, Input, Pill, ProgressBar, Select } from "@/shared/ui";
 import { followUp, type FollowUpFilter, type totals } from "../compute";
 import type { Overview } from "../types";
+import { MonitorCharacter } from "./monitor-character";
 
 const FILTERS: { key: FollowUpFilter; ar: string; en: string }[] = [
   { key: "all", ar: "كل المشاريع", en: "All projects" },
@@ -17,8 +18,8 @@ const FILTERS: { key: FollowUpFilter; ar: string; en: string }[] = [
 ];
 
 /**
- * The top of the monitoring and evaluation officer's dashboard: a wine banner with the page's name, a card with who is
- * signed in resting on its edge, the summary numbers as four cards with an icon each, and "following the projects": a
+ * The top of the monitoring and evaluation officer's dashboard: a wine banner with the page's name and a small animated
+ * character (MonitorCharacter), a card with who is signed in resting on its edge, the summary numbers as four cards with an icon each, and "following the projects": a
  * list of every project against its plan, with a filter and a search. Every row opens its project.
  */
 export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: ReturnType<typeof totals> }) {
@@ -37,7 +38,7 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
   return (
     <>
       <section aria-labelledby="dashboard-title">
-        <div className="wave-banner relative isolate h-36 overflow-hidden rounded-2xl px-5 pt-4 sm:h-40">
+        <div className="wave-banner relative isolate h-36 overflow-hidden rounded-2xl px-5 pt-4 sm:h-40 lg:h-48">
           {/* Soft waves across the banner: a drawing, not a photo. */}
           <svg aria-hidden="true" viewBox="0 0 1200 160" preserveAspectRatio="none" className="absolute inset-0 -z-10 h-full w-full">
             <path d="M0 96C180 40 330 150 540 92S900 24 1200 84V160H0Z" fill="#fff" fillOpacity="0.07" />
@@ -47,6 +48,9 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
           <h1 id="dashboard-title" className="text-sm font-semibold text-white">
             {tr("لوحة القيادة", "Dashboard")}
           </h1>
+          {/* Her character, at the end side away from the name. Her lower edge is the card's top edge (the card rises
+              3rem into the banner), so she seems to stand behind it and never covers it. */}
+          <MonitorCharacter className="absolute end-4 bottom-12 h-[5.25rem] sm:end-8 sm:h-[6.25rem] lg:end-12 lg:h-[8.5rem]" />
         </div>
         <div className="relative mx-3 -mt-12 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-card/95 p-3 shadow-card sm:mx-5">
           <Avatar user={user} size="lg" className="size-12 rounded-xl text-base" />
