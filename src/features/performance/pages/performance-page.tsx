@@ -135,14 +135,15 @@ function PeopleList() {
               </table>
             </div>
           )}
-          <p className="text-xs text-faint">
-            {tr(
-              "الأرقام وحدها لا تكفي للحكم على الأداء: التقييم يجمعها مع تقدير المسؤول لجودة العمل والتعاون، بمعايير تعتمدها الإدارة.",
-              "Numbers alone don't judge performance: a review adds the manager's view of quality and teamwork, with criteria the management approves.",
-            )}
-          </p>
         </>
       )}
+      {/* Fixed words, there from the first paint (they don't wait for the numbers). */}
+      <p className="text-xs text-faint">
+        {tr(
+          "الأرقام وحدها لا تكفي للحكم على الأداء: التقييم يجمعها مع تقدير المسؤول لجودة العمل والتعاون، بمعايير تعتمدها الإدارة.",
+          "Numbers alone don't judge performance: a review adds the manager's view of quality and teamwork, with criteria the management approves.",
+        )}
+      </p>
     </div>
   );
 }
