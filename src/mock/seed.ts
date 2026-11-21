@@ -43,6 +43,8 @@ export interface MockDb {
   teams: Team[];
   /** Private chats between two people. Project and team chats come from the projects and teams. */
   directs: { id: number; member_ids: number[] }[];
+  /** Group chats: a name, the people in it, and who manages it (`created_by`). */
+  groups: { id: number; name: string; created_by: number; member_ids: number[]; created_at: string }[];
   messages: Omit<Message, "files">[];
   /** The last message each person has read in each chat. */
   chat_reads: { chat: string; user_id: number; last_id: number }[];
@@ -66,7 +68,7 @@ export interface MockDb {
   /** The last id given to each kind of record. */
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
-    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; message: number; template: number; review: number; audit: number; team: number;
+    attachment: number; announcement: number; bug: number; bug_event: number; direct: number; group: number; message: number; template: number; review: number; audit: number; team: number;
     note: number;
   };
 }
@@ -307,9 +309,11 @@ export function seed(now = new Date()): MockDb {
   );
 
   // One team (BRIEF question 6 is open), and a few messages: in project 1's chat (with a reply and a mention of Sara),
-  // in the team's chat, and a private chat between Ahmed and Sara. Sara hasn't read the newest ones.
+  // in the team's chat, and a private chat between Ahmed and Sara. Sara hasn't read the newest ones. Huda (monitoring)
+  // made a group with the CEO, Ahmed and Mustafa to follow the launch; she hasn't read the CEO's last message.
   const teams: Team[] = [{ id: 1, name: "فريق التطوير", name_en: "Development team", lead_id: 4 }];
   const directs = [{ id: 1, member_ids: [2, 5] }];
+  const groups = [{ id: 1, name: "متابعة الإطلاق", created_by: 3, member_ids: [3, 1, 2, 4], created_at: at(1, 8, 30) }];
   let messageId = 0;
   const msg = (chat: string, author_id: number, body: string, when: string, extra: Partial<Message> = {}) => ({
     id: ++messageId, chat, author_id, body, mentions: [], created_at: when, ...extra,
@@ -321,12 +325,18 @@ export function seed(now = new Date()): MockDb {
     msg("d-1", 2, "سارة، هل تحتاجين مساعدة في صفحة الإعلانات؟", at(1, 15)),
     msg("p-1", 6, "نقطة الاتصال جاهزة على بيئة التجربة.", at(0, 9), { reply_to: 2 }),
     msg("p-1", 2, "ممتاز. @سارة علي هل يمكنك تجربتها على اللوحة اليوم؟", at(0, 10), { mentions: [5] }),
+    msg("g-1", 3, "أنشأت هذه المجموعة لمتابعة إطلاق منصة الحجز. سأرسل ملخص التقدم هنا كل أحد.", at(1, 8, 30)),
+    msg("g-1", 2, "شكراً هدى. الدورة الحالية تنتهي الخميس، والتأخير الوحيد في ربط اللوحة.", at(1, 9, 15)),
+    msg("g-1", 4, "أنهى الفريق نقاط الاتصال، وبقيت التجربة على الهاتف.", at(1, 13)),
+    msg("g-1", 1, "جيد. أريد ملخصاً قصيراً قبل اجتماع الإدارة يوم الأحد.", at(0, 8, 45)),
   ];
   const chat_reads = [
     { chat: "p-1", user_id: 5, last_id: 2 },
     { chat: "t-1", user_id: 5, last_id: 3 },
     { chat: "p-1", user_id: 2, last_id: 6 },
     { chat: "d-1", user_id: 2, last_id: 4 },
+    { chat: "g-1", user_id: 3, last_id: 9 },
+    { chat: "g-1", user_id: 1, last_id: 10 },
   ];
   notifications.push({
     id: ++notificationId, user_id: 5, kind: "chat_mention", actor_id: 2, chat_key: "p-1",
@@ -462,12 +472,12 @@ export function seed(now = new Date()): MockDb {
   return {
     monitor_notes,
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads, bugs, bug_events, teams, directs, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
+    announcements, announcement_reads, bugs, bug_events, teams, directs, groups, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
     github, github_items,
     seq: {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
-      bug: bugs.length, bug_event: bugEventId, direct: directs.length, message: messageId, template: templates.length, review: reviews.length, audit: audit.length, team: teams.length,
+      bug: bugs.length, bug_event: bugEventId, direct: directs.length, group: groups.length, message: messageId, template: templates.length, review: reviews.length, audit: audit.length, team: teams.length,
       note: monitor_notes.length,
     },
   };

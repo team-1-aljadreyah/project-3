@@ -1,4 +1,4 @@
-import { FolderKanban, Users } from "lucide-react";
+import { FolderKanban, Users, UsersRound } from "lucide-react";
 import Link from "next/link";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
@@ -33,6 +33,10 @@ export function ConversationList({ list, people, me, active }: { list: Conversat
                 <span aria-hidden="true">
                   <Avatar user={other} size="lg" />
                 </span>
+              ) : c.kind === "group" ? (
+                <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                  <UsersRound size={18} />
+                </span>
               ) : (
                 <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-chip text-muted">
                   {c.kind === "project" ? <FolderKanban size={18} /> : <Users size={18} />}
@@ -40,9 +44,16 @@ export function ConversationList({ list, people, me, active }: { list: Conversat
               )}
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-baseline gap-2">
-                  <span dir="auto" className={cn("flex-1 truncate text-sm", c.unread ? "font-semibold" : "font-medium")}>
+                  <span dir="auto" className={cn("min-w-0 flex-1 truncate text-sm", c.unread ? "font-semibold" : "font-medium")}>
                     {title}
                   </span>
+                  {c.kind === "group" && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 self-center text-[11px] text-muted">
+                      <UsersRound size={11} aria-hidden="true" />
+                      {num(c.member_ids.length)}
+                      <span className="sr-only">{tr(" أعضاء في المجموعة", " group members")}</span>
+                    </span>
+                  )}
                   {last && <span className="shrink-0 text-[11px] text-faint">{ago(last.created_at)}</span>}
                 </span>
                 <span className="flex items-center gap-2">

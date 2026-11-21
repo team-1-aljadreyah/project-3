@@ -1,23 +1,25 @@
 // Who belongs to which chat, for the demo server. The chat backend and the attachments backend (files sent in a chat)
-// both need it, so it lives here in the demo layer. Keys are "p-3" (project), "t-1" (team), "d-7" (private), as in
-// src/features/chat/rules.ts.
+// both need it, so it lives here in the demo layer. Keys are "p-3" (project), "t-1" (team), "d-7" (private), "g-2"
+// (group), as in src/features/chat/rules.ts.
 import { getDb } from "./db";
 
 /** The people of a chat, or null when the chat doesn't exist. Read each time, so a change of members applies at once. */
 export function chatMembers(key: string): number[] | null {
-  const m = /^([ptd])-(\d+)$/.exec(key);
+  const m = /^([ptdg])-(\d+)$/.exec(key);
   if (!m) return null;
   const db = getDb();
   const id = Number(m[2]);
-  // The CEO is in every project and team chat (the CEO rule, shared/lib/access.ts), but not in private chats.
-  const ceos = db.users.filter((u) => u.active && u.role === "ceo").map((u) => u.id);
+  // The CEO is in every project and team chat (the CEO rule, shared/lib/access.ts), and so is the monitoring officer
+  // (the client: she follows all the work's conversations). Neither is in other people's private chats or groups.
+  const followers = db.users.filter((u) => u.active && (u.role === "ceo" || u.role === "monitor")).map((u) => u.id);
   if (m[1] === "p") {
     const project = db.projects.find((p) => p.id === id);
-    return project ? [...new Set([project.pm_id, ...project.member_ids, ...ceos])] : null;
+    return project ? [...new Set([project.pm_id, ...project.member_ids, ...followers])] : null;
   }
   if (m[1] === "t") {
     if (!db.teams.some((t) => t.id === id)) return null;
-    return [...new Set([...db.users.filter((u) => u.active && u.team_id === id).map((u) => u.id), ...ceos])];
+    return [...new Set([...db.users.filter((u) => u.active && u.team_id === id).map((u) => u.id), ...followers])];
   }
+  if (m[1] === "g") return db.groups.find((g) => g.id === id)?.member_ids ?? null;
   return db.directs.find((d) => d.id === id)?.member_ids ?? null;
 }

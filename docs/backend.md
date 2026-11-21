@@ -171,7 +171,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 
 The server must filter, not only the pages:
 
-- **The CEO rule** (the client, 21 November 2026): the `ceo` may see and do **everything any other job can**, including the system admin's work (accounts, teams, settings), and every rule added later must allow the `ceo` too. The only exception: other people's private one-to-one chats. The `ceo` is a member of every project chat and team chat.
+- **The CEO rule** (the client, 21 November 2026): the `ceo` may see and do **everything any other job can**, including the system admin's work (accounts, teams, settings), and every rule added later must allow the `ceo` too. The only exception: other people's private one-to-one chats and group chats the `ceo` is not in. The `ceo` is a member of every project chat and team chat.
 
 - **Projects:** `ceo`, `monitor` and `admin` see all. Everyone else sees the projects they are in (`pm_id` or `member_ids`).
 - A project or a task you may not see answers **404, the same as one that doesn't exist** (nobody learns what exists).
@@ -543,14 +543,18 @@ the client's answer on what a team is (BRIEF question 6); today the site shows *
 Shapes: `src/features/chat/types.ts`. Rules (keys, limits, mentions): `src/features/chat/rules.ts`. The demo backend
 (`src/features/chat/mock.ts`, and who belongs to which chat in `src/mock/chat.ts`) is the reference.
 
-**The chats** (the brief: project, team and private chats). A chat's key is safe in a web address: `p-3` (project 3),
-`t-1` (team 1), `d-7` (private chat 7).
+**The chats** (the brief: project, team and private chats; the client added group chats). A chat's key is safe in a web
+address: `p-3` (project 3), `t-1` (team 1), `d-7` (private chat 7), `g-2` (group 2).
 
 | Kind | Members | Exists |
 |---|---|---|
-| project | the project's PM and members, **read each time** (someone removed from the project stops seeing its chat) | always, one per project |
-| team | the active people with that `team_id` | always, one per team |
+| project | the project's PM and members, **read each time** (someone removed from the project stops seeing its chat), plus every active `ceo` and `monitor` | always, one per project |
+| team | the active people with that `team_id`, plus every active `ceo` and `monitor` | always, one per team |
 | private | the two people | made by `POST /chats/direct` the first time; **one per pair** |
+| group | the people picked by its maker (stored: `groups: {id, name, created_by, member_ids, created_at}`) | made by `POST /chats/groups` |
+
+The monitoring and evaluation officer (`monitor`) is in every project and team chat, like the `ceo`, so she can follow all
+the work's conversations (the client). Private chats and groups stay closed to anyone who isn't in them.
 
 `Team`: `{id, name, name_en?, lead_id?}` (`src/shared/api/types.ts`). *Assumption, BRIEF question 6 is open:* a team is
 fixed, not made per project. `GET /teams` will come with the admin part.
@@ -559,9 +563,10 @@ fixed, not made per project. `GET /teams` will come with the admin part.
 → 404** (the same answer, so nobody learns which chats exist). No role sees other people's chats, not the CEO either
 (*assumption*: the audit log of a later part decides if the admin may).
 
-`Conversation`: `{key, kind, title, title_en?, member_ids, last_message?, unread}`. `title` is the project's or team's name
-(empty for a private chat: the site names it after the other person). `unread` = messages from others after the last one
-this person read.
+`Conversation`: `{key, kind, title, title_en?, member_ids, created_by?, last_message?, unread}`. `kind` is `project`,
+`team`, `direct` or `group`. `title` is the project's, team's or group's name (empty for a private chat: the site names it
+after the other person). `created_by` (groups only) is the person who manages the group. `unread` = messages from others
+after the last one this person read.
 
 `Message`: `{id, chat, author_id, body, reply_to?, mentions, created_at, files}`. `files` are its attachments (section 8,
 owner type `message`).
@@ -580,6 +585,27 @@ when a new message arrives in the open chat. Keep one mark per person per chat (
 
 **Files in a chat:** `POST /messages/:id/attachments` only by **the message's writer**; members see them; only the writer
 removes them (no PM override). The same types and sizes as section 8; **no history entry** (a chat isn't a task).
+
+**Group chats** (the client asked that the monitoring officer can "use chat and make group chats"):
+
+| Call | Body | Answer | Who |
+|---|---|---|---|
+| `POST /chats/groups` | `{name, member_ids}` | the new `Conversation` | `monitor`, `pm`, `lead` and the `ceo` (`canCreateGroupChat`); others → **403** |
+| `PATCH /chats/:key` | `{name?, member_ids?}` | the changed `Conversation` | a member who manages the group (`created_by`), or the `ceo` if she is a member (`canManageGroupChat`); other members → **403** |
+| `POST /chats/:key/leave` | none | nothing | any member |
+
+- `name`: trimmed, required, ≤ **60** letters (422 on `name`).
+- `member_ids`: the other people. The maker (on create) or the manager (on change) is **always added**, whatever was
+  sent; repeats are dropped. Each must be an **active** person who is **not the system admin**, and there must be **at
+  least 2** besides the maker/manager (422 on `member_ids`). On `PATCH`, `member_ids` is the **whole new list**: people
+  left out are removed and stop seeing the group at once.
+- Not a member, no such group, or a key that isn't a group (`p-1` on `PATCH` or `/leave`) → **404**, like the other chats.
+  The `ceo` does not see groups she is not in (*assumption*, like private chats).
+- **Leaving:** the person is taken out and their read mark removed. If the manager leaves, the next member in the list
+  manages the group, so it never has nobody to change it. A group whose last member left is not shown to anyone.
+- Messages, mentions, read marks and files work in a group exactly as in the other chats.
+- *Not built yet:* a notification when someone is added to a group (no notification kind for it yet), deleting a group,
+  and a group picture.
 
 **Live:** the site reloads the open chat when data changes in this browser. With the real server, a WebSocket message
 `chat_message {chat}` (planned, like `notification`) will tell the site to load that chat and the list again.
