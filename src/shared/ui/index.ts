@@ -11,6 +11,8 @@ export { Skeleton, LoadingBlock, Empty, ErrorBox } from "./feedback";
 export { errorText } from "./error-text";
 export { ProgressBar } from "./progress";
 export { Stat } from "./stat";
+export { MaybeLink } from "./maybe-link";
+export { PersonName } from "./person-name";
 export { LoadingRing, Reveal } from "./motion";
 export { LightThreads, Frost } from "./light-threads";
 export { TONE_CLASS, PRIORITY, avatarClass } from "./tones";

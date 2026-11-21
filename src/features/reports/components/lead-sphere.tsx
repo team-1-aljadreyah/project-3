@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useFmt } from "@/shared/lib/i18n";
 import type { TeamShares } from "../compute";
 
@@ -23,7 +24,7 @@ const SPOTS: [number, number][] = [
  * shares appear at the sides. Always dark, whatever the theme (styles in app/styles.css, `.sphere-slide`). Decoration
  * only: the numbers are also read out as the picture's label, and with "reduce motion" it is simply there.
  */
-export function LeadSphere({ shares, team, date }: { shares: TeamShares; team: string; date: string }) {
+export function LeadSphere({ shares, team, date, href }: { shares: TeamShares; team: string; date: string; /** The team's people report. */ href: string }) {
   const { tr, num, pct } = useFmt();
   const parts = PARTS.map((p) => ({ ...p, label: tr(p.ar, p.en), value: shares[p.key], share: shares.total ? shares[p.key] / shares.total : 0 }));
   const biggest = Math.max(1, ...parts.map((p) => p.value));
@@ -31,13 +32,16 @@ export function LeadSphere({ shares, team, date }: { shares: TeamShares; team: s
   const list = (items: typeof parts) => (
     <ul className="flex flex-col gap-4">
       {items.map((p) => (
-        <li key={p.key} className="flex items-center gap-3">
+        // Each share opens the team's people report (the label is the link, stretched over the line).
+        <li key={p.key} className="relative flex items-center gap-3 rounded-lg">
           <span aria-hidden="true" className="size-3.5 shrink-0 rounded-full" style={{ background: `linear-gradient(135deg, ${p.light}, ${p.dark})` }} />
           <span className="flex flex-col">
             <b dir="ltr" className="num text-start text-3xl leading-none font-light">
               {pct(p.share)}
             </b>
-            <span className="mt-1 text-xs text-[#e6d3da]">{tr(`${p.label}: ${num(p.value)}`, `${p.label}: ${p.value}`)}</span>
+            <Link href={href} className="mt-1 text-xs text-[#e6d3da] underline-offset-4 after:absolute after:inset-0 hover:underline focus-visible:outline-white">
+              {tr(`${p.label}: ${num(p.value)}`, `${p.label}: ${p.value}`)}
+            </Link>
           </span>
         </li>
       ))}
@@ -120,9 +124,9 @@ export function LeadSphere({ shares, team, date }: { shares: TeamShares; team: s
 
         <div className="flex flex-col justify-between gap-8">
           <p className="hero-in text-sm leading-relaxed text-[#e6d3da] lg:max-w-56 lg:self-end lg:text-end">
-            <b dir="auto" className="block font-semibold text-white">
+            <Link href={href} dir="auto" className="block font-semibold text-white hover:underline focus-visible:outline-white">
               {team}
-            </b>
+            </Link>
             {shares.total
               ? tr(`مهام مفتوحة: ${num(shares.open)} · متأخرة: ${num(shares.late)}`, `Open tasks: ${shares.open} · Late: ${shares.late}`)
               : tr("لا مهام للفريق بعد.", "No tasks for the team yet.")}

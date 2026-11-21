@@ -1,20 +1,22 @@
 import { Download } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { authApi } from "@/features/auth";
-import { PROJECT_STATE } from "@/features/projects";
+import { PROJECT_STATE, projectsApi } from "@/features/projects";
+import { personHref } from "@/shared/lib/access";
 import { downloadCsv } from "@/shared/lib/csv";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
+import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
-import { Button, Empty, ErrorBox, LoadingBlock, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
+import { Button, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { velocity } from "../compute";
 import { canSeeReports } from "../rules";
 
 type Tab = "projects" | "people" | "sprints";
+const TAB_KEYS = ["projects", "people", "sprints"] as const;
 const TABS: { key: Tab; ar: string; en: string }[] = [
   { key: "projects", ar: "حسب المشروع", en: "By project" },
   { key: "people", ar: "حسب الفريق والموظف", en: "By team and person" },
@@ -33,10 +35,12 @@ export function ReportsPage() {
   usePageTitle(tr("التقارير", "Reports"));
   const user = useUser();
   const allowed = canSeeReports(user);
-  const load = useLoad(() => (allowed ? Promise.all([reportsApi.overview(), authApi.users()]) : Promise.resolve(null)), [allowed]);
-  const [tab, setTab] = useState<Tab>("projects");
-  const [team, setTeam] = useState("");
-  const [projectId, setProjectId] = useState<number>();
+  const load = useLoad(() => (allowed ? Promise.all([reportsApi.overview(), authApi.users(), user.role === "pm" ? projectsApi.projects() : Promise.resolve([])]) : Promise.resolve(null)), [allowed]);
+  // In the address, so a link can open a tab already set: /reports?tab=people&team=1, ?tab=sprints&project=2.
+  const [tab, setTab] = useQueryParam<Tab>("tab", "projects", TAB_KEYS);
+  const [team, setTeam] = useQueryParam<string>("team", "");
+  const [project, setProject] = useQueryParam<string>("project", "");
+  const projectId = Number(project) || undefined;
 
   if (!allowed) return <Empty title={tr("التقارير للإدارة", "Reports are for management")} body={tr("افتح «مهامي» لترى مهامك.", 'Open "My tasks" to see your tasks.')} />;
 
@@ -84,7 +88,8 @@ export function ReportsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold">{tr("التقارير", "Reports")}</h1>
-          {o && <p className="text-sm text-muted">{tr(`حتى ${day(o.today)}، للمشاريع التي تراها.`, `Up to ${day(o.today)}, for the projects you can see.`)}</p>}
+          {/* The line is there from the start (empty while loading), so nothing under it moves when the numbers come. */}
+          <p className="min-h-5 text-sm text-muted">{o ? tr(`حتى ${day(o.today)}، للمشاريع التي تراها.`, `Up to ${day(o.today)}, for the projects you can see.`) : " "}</p>
         </div>
         <Button variant="secondary" pill onClick={csv} disabled={!o || (tab === "sprints" && !chosen)}>
           <Download size={15} aria-hidden="true" />
@@ -134,9 +139,10 @@ export function ReportsPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {o.projects.map((p) => (
-                  <tr key={p.id}>
+                  // The whole row opens the project (its name is the link, stretched over the row).
+                  <tr key={p.id} className="relative hover:bg-card-2">
                     <td className={td}>
-                      <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
+                      <Link href={`/projects/${p.id}`} className="font-medium after:absolute after:inset-0 hover:underline">
                         <span dir="auto">{projectName(p)}</span>
                       </Link>
                       <span dir="ltr" className="ms-2 text-xs text-faint">
@@ -194,8 +200,13 @@ export function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-line">
                   {peopleRows.map((r) => (
-                    <tr key={r.user_id}>
-                      <td className={cn(td, "font-medium")}>{nameOf(r.user_id)}</td>
+                    // The whole row opens the person's performance, when this viewer may open it.
+                    <tr key={r.user_id} className="relative hover:bg-card-2">
+                      <td className={cn(td, "font-medium")}>
+                        <MaybeLink href={people.get(r.user_id) && personHref(user, people.get(r.user_id)!, load.data?.[2])} cover>
+                          {nameOf(r.user_id)}
+                        </MaybeLink>
+                      </td>
                       <td className={td}>{teamName(r.team_id)}</td>
                       <td className={cn(td, "num")}>{num(r.open)}</td>
                       <td className={cn(td, "num")}>{num(r.done)}</td>
@@ -217,7 +228,7 @@ export function ReportsPage() {
             <Empty title={tr("لا توجد دورات", "No sprints")} body={tr("لا يعمل أي من مشاريعك بالدورات بعد.", "None of your projects works in sprints yet.")} />
           ) : (
             <div className="flex flex-col gap-4">
-              <Select aria-label={tr("المشروع", "Project")} value={chosen.id} onChange={(e) => setProjectId(Number(e.target.value))} className="h-9 w-auto self-start">
+              <Select aria-label={tr("المشروع", "Project")} value={chosen.id} onChange={(e) => setProject(e.target.value)} className="h-9 w-auto self-start">
                 {sprintProjects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {projectName(p)}
@@ -230,11 +241,12 @@ export function ReportsPage() {
               </div>
               <ul aria-label={tr("الدورات: المخطط والمنجز", "Sprints: planned and done")} className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4">
                 {sprintRows.map((s) => (
-                  <li key={s.sprint_id} className="flex flex-col gap-1.5">
+                  // Each sprint opens its project's board.
+                  <li key={s.sprint_id} className="relative flex flex-col gap-1.5 rounded-lg p-1 hover:bg-card-2">
                     <div className="flex flex-wrap justify-between gap-2 text-sm">
-                      <span className="font-medium">
+                      <Link href={`/projects/${chosen.id}`} className="font-medium after:absolute after:inset-0 hover:underline">
                         {s.name} {s.closed && <span className="text-xs text-faint">{tr("(منتهية)", "(ended)")}</span>}
-                      </span>
+                      </Link>
                       <span className="text-xs text-muted">
                         {tr(`المخطط ${num(s.planned)} · المنجز ${num(s.done)} · المتبقي ${num(s.left)}`, `${s.planned} planned · ${s.done} done · ${s.left} left`)}
                       </span>

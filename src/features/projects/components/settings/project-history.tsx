@@ -1,6 +1,6 @@
 import type { User } from "@/shared/api/types";
 import { useFmt, type Fmt } from "@/shared/lib/i18n";
-import { Avatar } from "@/shared/ui";
+import { Avatar, PersonName } from "@/shared/ui";
 import { PROJECT_STATE } from "../../project-state";
 import type { ProjectEvent, ProjectState } from "../../types";
 
@@ -66,7 +66,7 @@ function eventText(e: ProjectEvent, fmt: Fmt, people: Map<number, User>) {
 /** The project's history, newest first. Nobody can edit or hide it (the brief). */
 export function ProjectHistory({ events, people }: { events: ProjectEvent[]; people: Map<number, User> }) {
   const fmt = useFmt();
-  const { tr, lang, dateTime } = fmt;
+  const { tr, dateTime } = fmt;
   const list = [...events].sort((a, b) => b.at.localeCompare(a.at));
   if (!list.length) return <p className="text-sm text-muted">{tr("لا يوجد سجل بعد.", "No history yet.")}</p>;
 
@@ -79,7 +79,7 @@ export function ProjectHistory({ events, people }: { events: ProjectEvent[]; peo
             {actor && <Avatar user={actor} size="sm" />}
             <div className="flex min-w-0 flex-col gap-0.5">
               <p className="text-sm">
-                <b className="font-semibold">{actor ? (lang === "en" && actor.name_en ? actor.name_en : actor.name) : "-"}</b> {eventText(e, fmt, people)}
+                <b className="font-semibold">{actor ? <PersonName person={actor} /> : "-"}</b> {eventText(e, fmt, people)}
               </p>
               {e.note && (
                 <p className="text-[13px] text-muted">

@@ -1,15 +1,17 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { personHref } from "@/shared/lib/access";
 import { authApi } from "@/features/auth";
 import { projectsApi, type ProjectSummary } from "@/features/projects";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
+import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
-import { Button, Empty, ErrorBox, LoadingBlock, Pill, PriorityPill, Select, Skeleton, Stat } from "@/shared/ui";
+import { Button, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, PriorityPill, Select, Skeleton, Stat } from "@/shared/ui";
 import { bugsApi } from "../api";
 import { ReportBugDialog } from "../components/report-bug-dialog";
 import { BUG_STATUS, SEVERITY } from "../labels";
@@ -17,6 +19,7 @@ import { bugLateDays, canReportBug, isOpen, SEVERITY_ORDER } from "../rules";
 import type { Bug, Severity } from "../types";
 
 type Show = "open" | "late" | "closed" | "all";
+const SHOW_KEYS = ["open", "late", "closed", "all"] as const;
 
 /** The bug tracker: the brief's reports (open, late, closed; by project and by developer), filters, and the list. */
 export function BugsPage() {
@@ -43,8 +46,9 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
   const { tr, lang, num, due } = useFmt();
   const user = useUser();
   const day = todayIso();
-  const [show, setShow] = useState<Show>("open");
-  const [projectId, setProjectId] = useState("");
+  // In the address, so a link can open the list already filtered: /bugs?show=late, /bugs?project=2.
+  const [show, setShow] = useQueryParam<Show>("show", "open", SHOW_KEYS);
+  const [projectId, setProjectId] = useQueryParam<string>("project", "");
   const [severity, setSeverity] = useState("");
   const [reporting, setReporting] = useState(false);
   const projectOf = new Map(projects.map((p) => [p.id, p]));
@@ -78,6 +82,12 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
     return { id, name: nameOf(personOf.get(id)), open: mine.length, late: mine.filter(late).length };
   });
 
+  /** Filter the list and bring it into view (the number boxes and the "by project" rows). */
+  const focusList = (change: () => void) => {
+    change();
+    document.getElementById("bug-list-tools")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const SHOWS: { key: Show; ar: string; en: string; n: number }[] = [
     { key: "open", ar: "المفتوحة", en: "Open", n: counts.open },
     { key: "late", ar: "المتأخرة", en: "Late", n: counts.late },
@@ -98,9 +108,9 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <Stat label={tr("مفتوحة", "Open")} value={num(counts.open)} note={tr("لم تُغلق بعد", "Not closed yet")} />
-        <Stat label={tr("متأخرة", "Late")} value={num(counts.late)} danger={counts.late > 0} note={tr("تجاوزت الموعد المتوقع", "Past the expected day")} />
-        <Stat label={tr("مغلقة", "Closed")} value={num(counts.closed)} note={tr("أُصلحت وتأكدنا منها", "Fixed and checked")} />
+        <Stat label={tr("مفتوحة", "Open")} value={num(counts.open)} note={tr("لم تُغلق بعد", "Not closed yet")} onClick={() => focusList(() => setShow("open"))} />
+        <Stat label={tr("متأخرة", "Late")} value={num(counts.late)} danger={counts.late > 0} note={tr("تجاوزت الموعد المتوقع", "Past the expected day")} onClick={() => focusList(() => setShow("late"))} />
+        <Stat label={tr("مغلقة", "Closed")} value={num(counts.closed)} note={tr("أُصلحت وتأكدنا منها", "Fixed and checked")} onClick={() => focusList(() => setShow("closed"))} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -119,8 +129,13 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
             </thead>
             <tbody>
               {byProject.map((r) => (
-                <tr key={r.id} className="border-t border-line">
-                  <td className="py-2">{r.name}</td>
+                // The whole row shows that project's bugs in the list below.
+                <tr key={r.id} className="relative border-t border-line hover:bg-card-2">
+                  <td className="py-2">
+                    <button type="button" onClick={() => focusList(() => setProjectId(String(r.id)))} className="text-start after:absolute after:inset-0 hover:underline">
+                      {r.name}
+                    </button>
+                  </td>
                   <td className="num py-2 text-center">{num(r.open)}</td>
                   <td className={cn("num py-2 text-center", r.late > 0 && "font-semibold text-danger")}>{num(r.late)}</td>
                   <td className="num py-2 text-center">{num(r.closed)}</td>
@@ -143,8 +158,13 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
             </thead>
             <tbody>
               {byDeveloper.map((r) => (
-                <tr key={r.id} className="border-t border-line">
-                  <td className="py-2">{r.name}</td>
+                // The whole row opens the developer's performance (when this viewer may open it).
+                <tr key={r.id} className="relative border-t border-line hover:bg-card-2">
+                  <td className="py-2">
+                    <MaybeLink href={r.id ? personHref(user, personOf.get(r.id) ?? { id: r.id }, projects) : undefined} cover>
+                      {r.name}
+                    </MaybeLink>
+                  </td>
                   <td className="num py-2 text-center">{num(r.open)}</td>
                   <td className={cn("num py-2 text-center", r.late > 0 && "font-semibold text-danger")}>{num(r.late)}</td>
                 </tr>
@@ -158,7 +178,7 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
         <h2 id="bug-list" className="sr-only">
           {tr("القائمة", "The list")}
         </h2>
-        <div className="flex flex-wrap items-center gap-2">
+        <div id="bug-list-tools" className="flex scroll-mt-24 flex-wrap items-center gap-2">
           <div role="group" aria-label={tr("عرض", "Show")} className="flex flex-wrap gap-1 rounded-full bg-chip p-1">
             {SHOWS.map((s) => (
               <button

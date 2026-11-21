@@ -1,8 +1,10 @@
 import { FileText, FolderKanban, HandHelping, MessageSquareHeart, Send, TriangleAlert, User, Users } from "lucide-react";
 import type { StatusTone } from "@/shared/api/types";
+import { isCeo } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
+import { useSession } from "@/shared/lib/session";
 import { cn } from "@/shared/lib/utils";
-import { Pill } from "@/shared/ui";
+import { MaybeLink, Pill } from "@/shared/ui";
 import type { MonitorNote, ReportFacts } from "../types";
 import { KIND } from "./note-dialog";
 
@@ -63,6 +65,12 @@ export function NoteCard({
   const AboutIcon = ABOUT_ICON[note.about.type];
   const about = note.about.type === "general" ? tr("عام", "General") : lang === "en" && note.about.label_en ? note.about.label_en : note.about.label;
   const state = ceoStateOf(note);
+  // Notes are read by their writer and the CEO; the CEO and M&E may open anyone's work and every project.
+  const viewer = useSession()?.user;
+  const opensAll = !!viewer && (isCeo(viewer) || viewer.role === "monitor");
+  const aboutHref = !opensAll || !note.about.id ? undefined : note.about.type === "project" ? `/projects/${note.about.id}` : note.about.type === "person" ? `/performance/${note.about.id}` : note.about.type === "team" ? `/reports?tab=people&team=${note.about.id}` : undefined;
+  // Above the card's own button (which covers the card), so these links get the click.
+  const inner = "relative z-10";
   return (
     <article className={cn("relative flex flex-col gap-3 rounded-xl border border-line bg-card p-4", onToggle && "hover:border-accent")}>
       <header className="flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -73,7 +81,9 @@ export function NoteCard({
         {note.tone && <Pill tone={note.tone === "praise" ? "done" : "review"}>{note.tone === "praise" ? tr("ثناء", "Praise") : tr("شيء يتحسن", "To improve")}</Pill>}
         <span className="inline-flex items-center gap-1">
           <AboutIcon size={13} aria-hidden="true" />
-          <span dir="auto">{about}</span>
+          <MaybeLink href={aboutHref} className={inner}>
+            <span dir="auto">{about}</span>
+          </MaybeLink>
         </span>
         <span className="ms-auto">
           {author && `${author} · `}
@@ -90,7 +100,16 @@ export function NoteCard({
           {!!note.people?.length && (
             <span>
               {tr("المعنيون", "Involved")}:{" "}
-              <b className="font-medium text-text">{note.people.map((p) => (lang === "en" && p.label_en ? p.label_en : p.label)).join(tr("، ", ", "))}</b>
+              <b className="font-medium text-text">
+                {note.people.map((p, i) => (
+                  <span key={p.id}>
+                    {i > 0 && tr("، ", ", ")}
+                    <MaybeLink href={opensAll ? `/performance/${p.id}` : undefined} className={inner}>
+                      {lang === "en" && p.label_en ? p.label_en : p.label}
+                    </MaybeLink>
+                  </span>
+                ))}
+              </b>
             </span>
           )}
         </p>

@@ -7,7 +7,7 @@ import { useLoad } from "@/shared/lib/use-load";
 import { daysBetween, today as todayIso } from "@/shared/lib/utils";
 import { Empty, ErrorBox, LoadingBlock, PriorityPill, Skeleton, StatusPill } from "@/shared/ui";
 import { tasksApi } from "../api";
-import { MySummary, MySummarySkeleton } from "../components/my-summary";
+import { MySummary, MySummarySkeleton, type ListPlace } from "../components/my-summary";
 import { statusOf } from "../rules";
 import type { Task } from "../types";
 
@@ -64,6 +64,16 @@ function MyTasks({ tasks, projects }: { tasks: Task[]; projects: ProjectSummary[
   const sorted = [...tasks].sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999") || a.code.localeCompare(b.code));
   const open = tasks.filter((t) => groupOf(t) !== "done").length;
 
+  /** A summary tile was pressed: bring that group into view (showing the done ones first if needed). */
+  const show = (place: ListPlace) => {
+    if (place === "done") setShowDone(true);
+    // After the done group is drawn; a group with no tasks falls back to the top of the list.
+    requestAnimationFrame(() => {
+      const target = (place !== "top" && document.getElementById(`group-${place}`)) || document.getElementById("my-list-top");
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   if (tasks.length === 0) {
     return <Empty title={tr("لا توجد مهام مسندة إليك", "No tasks assigned to you")} body={tr("حين يسند إليك مدير المشروع مهمة، تظهر هنا.", "When a project manager gives you a task, it shows here.")} />;
   }
@@ -71,9 +81,9 @@ function MyTasks({ tasks, projects }: { tasks: Task[]; projects: ProjectSummary[
   return (
     <div className="flex flex-col gap-6">
       {/* The summary first: my numbers, my projects, my statuses and how much is done. The list under it is unchanged. */}
-      <MySummary tasks={tasks} projects={projects} today={day} />
+      <MySummary tasks={tasks} projects={projects} today={day} onShow={show} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div id="my-list-top" className="flex scroll-mt-24 flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">{tr(`مهام مفتوحة: ${open}`, `Open tasks: ${open}`)}</p>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} />
@@ -86,7 +96,7 @@ function MyTasks({ tasks, projects }: { tasks: Task[]; projects: ProjectSummary[
         if (!list.length) return null;
         return (
           <section key={g.key} aria-labelledby={`group-${g.key}`} className="flex flex-col gap-2">
-            <h2 id={`group-${g.key}`} className={g.key === "late" ? "font-semibold text-danger" : "font-semibold"}>
+            <h2 id={`group-${g.key}`} className={g.key === "late" ? "scroll-mt-24 font-semibold text-danger" : "scroll-mt-24 font-semibold"}>
               {tr(g.ar, g.en)} <span className="num text-sm font-normal text-muted">({list.length})</span>
             </h2>
             <ul className="flex flex-col gap-2">

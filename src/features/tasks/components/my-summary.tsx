@@ -30,7 +30,10 @@ const CARD = "flex min-w-0 flex-col gap-4 rounded-2xl border border-line bg-card
  * row of number tiles, my open tasks per project as pills, all my tasks by status family as a ring, and the share that
  * is done as a half gauge. Every number is counted from the same tasks as the list under it (../my-summary.ts).
  */
-export function MySummary({ tasks, projects, today }: { tasks: Task[]; projects: ProjectSummary[]; today: string }) {
+/** Where a tile takes you in the list under the summary. */
+export type ListPlace = "top" | "late" | "soon" | "done";
+
+export function MySummary({ tasks, projects, today, onShow }: { tasks: Task[]; projects: ProjectSummary[]; today: string; onShow?: (place: ListPlace) => void }) {
   const { tr, lang, num, pct, due } = useFmt();
   const n = myNumbers(tasks, projects, today);
   const bars = openByProject(tasks, projects);
@@ -45,18 +48,20 @@ export function MySummary({ tasks, projects, today }: { tasks: Task[]; projects:
   return (
     <div className="flex flex-col gap-4">
       <section aria-labelledby="my-numbers-title">
-        <h3 id="my-numbers-title" className="sr-only">
+        <h2 id="my-numbers-title" className="sr-only">
           {tr("ملخص مهامي", "My summary")}
-        </h3>
+        </h2>
         <ul className={TILES}>
-          <Tile look="accent" className={SPANS[0]} value={num(n.open)} label={tr("مهام مفتوحة", "Open tasks")} note={tr(`من أصل ${num(n.total)}`, `of ${n.total} tasks`)} />
+          <Tile onClick={onShow && (() => onShow("top"))} look="accent" className={SPANS[0]} value={num(n.open)} label={tr("مهام مفتوحة", "Open tasks")} note={tr(`من أصل ${num(n.total)}`, `of ${n.total} tasks`)} />
           <Tile
+            onClick={onShow && (() => onShow("soon"))}
             className={SPANS[1]}
             value={num(n.dueToday)}
             label={tr("موعدها اليوم", "Due today")}
             note={n.dueWeek > 0 ? tr(`خلال ${arDays(WEEK_DAYS)}: ${num(n.dueWeek)}`, `${n.dueWeek} in the next ${WEEK_DAYS} days`) : undefined}
           />
           <Tile
+            onClick={onShow && (() => onShow("late"))}
             className={SPANS[2]}
             value={num(n.late)}
             label={tr("متأخرة", "Late")}
@@ -64,21 +69,22 @@ export function MySummary({ tasks, projects, today }: { tasks: Task[]; projects:
             note={n.late > 0 ? tr(`أقدمها ${due(-n.longestLate)}`, `Oldest: ${due(-n.longestLate)}`) : undefined}
           />
           <Tile
+            onClick={onShow && (() => onShow("top"))}
             className={SPANS[3]}
             value={num(n.inReview)}
             label={tr("بانتظار المراجعة", "In review")}
             note={n.awaitingApproval > 0 ? tr(`بانتظار الاعتماد: ${num(n.awaitingApproval)}`, `${n.awaitingApproval} waiting for approval`) : undefined}
           />
-          <Tile look="done" className={SPANS[4]} value={num(n.done)} label={tr("مكتملة", "Done")} note={tr(`${pct(n.ratio)} من مهامي`, `${pct(n.ratio)} of my tasks`)} />
+          <Tile onClick={onShow && (() => onShow("done"))} look="done" className={SPANS[4]} value={num(n.done)} label={tr("مكتملة", "Done")} note={tr(`${pct(n.ratio)} من مهامي`, `${pct(n.ratio)} of my tasks`)} />
         </ul>
       </section>
 
       <div className={CARDS}>
         <section aria-labelledby="my-projects-title" className={cn(CARD, "md:col-span-2 lg:col-span-1")}>
           <div className="flex items-baseline justify-between gap-3">
-            <h3 id="my-projects-title" className="font-semibold">
+            <h2 id="my-projects-title" className="font-semibold">
               {tr("مهامي حسب المشروع", "My tasks by project")}
-            </h3>
+            </h2>
             {/* The pills count open tasks only (the ring beside them counts every task). */}
             <span className="shrink-0 text-xs text-muted">{tr("المفتوحة", "Open")}</span>
           </div>
@@ -116,16 +122,16 @@ export function MySummary({ tasks, projects, today }: { tasks: Task[]; projects:
         </section>
 
         <section aria-labelledby="my-status-title" className={CARD}>
-          <h3 id="my-status-title" className="font-semibold">
+          <h2 id="my-status-title" className="font-semibold">
             {tr("حسب الحالة", "By status")}
-          </h3>
+          </h2>
           <StatusRing slices={byTone(tasks, projects)} total={n.total} />
         </section>
 
         <section aria-labelledby="my-done-title" className={CARD}>
-          <h3 id="my-done-title" className="font-semibold">
+          <h2 id="my-done-title" className="font-semibold">
             {tr("المنجز", "Done")}
-          </h3>
+          </h2>
           <HalfGauge
             value={n.ratio}
             label={tr(`المنجز: ${num(n.done)} من ${num(n.total)} (${pct(n.ratio)})`, `Done: ${n.done} of ${n.total} tasks (${pct(n.ratio)})`)}
@@ -179,8 +185,11 @@ function Tile({
   note,
   look = "plain",
   danger,
+  onClick,
   className,
 }: {
+  /** A press on the tile: show that part of the list. */
+  onClick?: () => void;
   value: string;
   label: string;
   note?: string;
@@ -190,10 +199,17 @@ function Tile({
   className?: string;
 }) {
   return (
-    <li className={cn("flex min-h-26 flex-col gap-2.5 rounded-2xl border px-4 py-3.5 transition-transform duration-300", TILE[look], className)}>
+    <li className={cn("relative flex min-h-26 flex-col gap-2.5 rounded-2xl border px-4 py-3.5 transition-transform duration-300", onClick && "hover:-translate-y-0.5", TILE[look], className)}>
       <span className={cn("text-3xl leading-none font-semibold", danger && "text-danger")}>{value}</span>
       <span className="flex flex-col gap-0.5">
-        <span className={cn("text-[13px] font-medium", look === "plain" && "text-muted")}>{label}</span>
+        {onClick ? (
+          // The label is the tile's one button, stretched over the whole tile.
+          <button type="button" onClick={onClick} className={cn("text-start text-[13px] font-medium after:absolute after:inset-0 after:rounded-2xl", look === "plain" && "text-muted")}>
+            {label}
+          </button>
+        ) : (
+          <span className={cn("text-[13px] font-medium", look === "plain" && "text-muted")}>{label}</span>
+        )}
         {note && <span className={cn("text-xs", look === "plain" && (danger ? "text-danger" : "text-muted"))}>{note}</span>}
       </span>
     </li>

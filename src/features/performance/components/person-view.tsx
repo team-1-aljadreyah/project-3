@@ -68,14 +68,14 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label={tr("مسندة", "Assigned")} value={num(perf.assigned)} note={tr("في الفترة", "in the period")} />
         <Stat label={tr("منجزة", "Done")} value={num(perf.done)} note={tr(`الإنجاز ${pct(perf.completion)}`, `${pct(perf.completion)} done`)} />
-        <Stat label={tr("متأخرة", "Late")} value={num(perf.late)} danger={perf.late > 0} note={tr("بعد موعد التسليم", "after the due day")} />
+        <Stat label={tr("متأخرة", "Late")} value={num(perf.late)} danger={perf.late > 0} note={tr("بعد موعد التسليم", "after the due day")} href={detail.blocked.length > 0 ? "#blocked-title" : undefined} />
         <Stat label={tr("في الموعد", "On time")} value={perf.on_time === null ? "-" : pct(perf.on_time)} note={tr("من المنجزة ذات الموعد", "of the done ones with a due day")} />
-        <Stat label={tr("متوقفة", "Blocked")} value={num(perf.blocked)} danger={perf.blocked > 0} note={tr("الآن", "now")} />
+        <Stat label={tr("متوقفة", "Blocked")} value={num(perf.blocked)} danger={perf.blocked > 0} note={tr("الآن", "now")} href={detail.blocked.length > 0 ? "#blocked-title" : undefined} />
       </div>
 
       {detail.blocked.length > 0 && (
         <section aria-labelledby="blocked-title" className="rounded-xl border border-line bg-card p-4">
-          <h2 id="blocked-title" className="mb-2 flex items-center gap-2 font-semibold">
+          <h2 id="blocked-title" className="mb-2 flex scroll-mt-24 items-center gap-2 font-semibold">
             <Ban size={16} aria-hidden="true" className="text-danger" />
             {tr("المهام المتوقفة وأسبابها", "Blocked tasks and why")}
           </h2>

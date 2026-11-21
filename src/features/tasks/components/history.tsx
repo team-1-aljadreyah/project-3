@@ -1,4 +1,4 @@
-import { Avatar, PRIORITY } from "@/shared/ui";
+import { Avatar, PRIORITY, PersonName } from "@/shared/ui";
 import type { Project } from "@/features/projects";
 import type { Priority, User } from "@/shared/api/types";
 import { useFmt, type Fmt } from "@/shared/lib/i18n";
@@ -79,7 +79,7 @@ export function History({ events, project, people }: { events: TaskEvent[]; proj
             {actor && <Avatar user={actor} size="sm" className="mt-0.5" />}
             <div className="flex min-w-0 flex-col gap-0.5 text-sm">
               <p>
-                <b className="font-semibold">{name}</b> {eventText(e, fmt, project, people)}
+                <b className="font-semibold">{actor ? <PersonName person={actor} projects={[project]} /> : name}</b> {eventText(e, fmt, project, people)}
               </p>
               {e.note && <p className="text-[13px] text-muted">«{e.note}»</p>}
               <time dateTime={e.at} title={fmt.dateTime(e.at)} className="text-xs text-faint">

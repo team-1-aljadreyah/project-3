@@ -2,12 +2,13 @@ import { AlertTriangle, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { announcementsApi } from "@/features/announcements";
 import { authApi } from "@/features/auth";
-import { PROJECT_STATE } from "@/features/projects";
+import { PROJECT_STATE, projectsApi } from "@/features/projects";
+import { personHref } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
-import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
+import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
 import { LeadSphere } from "../components/lead-sphere";
@@ -27,7 +28,13 @@ export function DashboardPage() {
   const user = useUser();
   const allowed = canSeeReports(user);
   const load = useLoad(
-    () => (allowed ? Promise.all([reportsApi.overview(), authApi.users(), announcementsApi.announcements()]) : Promise.resolve(null)),
+    () => (allowed ? Promise.all([
+            reportsApi.overview(),
+            authApi.users(),
+            announcementsApi.announcements(),
+            // A PM's person links need the projects they run (personHref).
+            user.role === "pm" ? projectsApi.projects() : Promise.resolve([]),
+          ]) : Promise.resolve(null)),
     [allowed],
   );
 
@@ -48,7 +55,7 @@ export function DashboardPage() {
   if (load.state.status === "error") return <ErrorBox error={load.state.error} onRetry={load.reload} />;
   if (!load.data) return null;
 
-  const [o, users, announcements] = load.data;
+  const [o, users, announcements, projectsForLinks] = load.data;
   const t = totals(o);
   const monitor = user.role === "monitor";
   const people = new Map(users.map((u) => [u.id, u]));
@@ -67,14 +74,14 @@ export function DashboardPage() {
         <CeoHero
           date={day(o.today)}
           numbers={[
-            { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active) },
-            { label: tr("الإنجاز", "Progress"), value: pct(t.ratio) },
-            { label: tr("مهام تأخرت", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0 },
+            { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active), href: "/" },
+            { label: tr("الإنجاز", "Progress"), value: pct(t.ratio), href: "/reports" },
+            { label: tr("مهام تأخرت", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0, href: "#attention-title" },
           ]}
         />
       ) : user.role === "lead" ? (
         // The team leader: a slide with the team's tasks as spheres in a glass one.
-        <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} />
+        <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
       ) : monitor ? (
         // Monitoring and evaluation: a banner, the summary cards and every project against its plan.
         <MonitorSummary user={user} o={o} t={t} />
@@ -93,18 +100,21 @@ export function DashboardPage() {
       {!monitor && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Stat
+            href="/"
             label={tr("المشاريع النشطة", "Active projects")}
             value={num(t.projects.active)}
             note={tr(`مكتملة ${num(t.projects.done)} · متوقفة ${num(t.projects.paused)} · مخطط لها ${num(t.projects.planned)}`, `${t.projects.done} done · ${t.projects.paused} paused · ${t.projects.planned} planned`)}
           />
-          <Stat label={tr("الإنجاز الكلي", "Overall progress")} value={pct(t.ratio)} note={tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`)} />
+          <Stat href="/reports" label={tr("الإنجاز الكلي", "Overall progress")} value={pct(t.ratio)} note={tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`)} />
           <Stat
+            href="/reports"
             label={tr("مهام متأخرة", "Late tasks")}
             value={num(t.tasks.late)}
             danger={t.tasks.late > 0}
             note={tr(`المتبقي ${num(t.tasks.left)} · متوقفة ${num(t.tasks.blocked)}`, `${t.tasks.left} left · ${t.tasks.blocked} blocked`)}
           />
           <Stat
+            href={o.bugs.late > 0 ? "/bugs?show=late" : "/bugs"}
             label={tr("أخطاء مفتوحة", "Open bugs")}
             value={num(o.bugs.open)}
             danger={o.bugs.late > 0}
@@ -161,11 +171,12 @@ export function DashboardPage() {
           ) : (
             <ul className="flex flex-col gap-3">
               {o.teams.map((team) => (
-                <li key={team.team_id} className="flex flex-col gap-1.5">
+                // The whole row opens the people report of that team.
+                <li key={team.team_id} className="relative -mx-2 flex flex-col gap-1.5 rounded-lg px-2 py-1 hover:bg-card-2">
                   <div className="flex justify-between gap-2 text-sm">
-                    <span dir="auto" className="font-medium">
+                    <Link href={`/reports?tab=people&team=${team.team_id}`} dir="auto" className="font-medium after:absolute after:inset-0 hover:underline">
                       {lang === "en" && team.name_en ? team.name_en : team.name}
-                    </span>
+                    </Link>
                     <span className="text-muted">
                       {tr(`${num(team.members)} أعضاء · مفتوحة ${num(team.open)} · متأخرة ${num(team.late)}`, `${team.members} people · ${team.open} open · ${team.late} late`)}
                     </span>
@@ -185,9 +196,12 @@ export function DashboardPage() {
             {o.people.slice(0, 6).map((r) => {
               const u = people.get(r.user_id);
               return (
-                <li key={r.user_id} className="flex items-center gap-2.5 py-2 text-sm">
+                // The whole row opens the person's performance, when this viewer may open it.
+                <li key={r.user_id} className="relative flex items-center gap-2.5 py-2 text-sm">
                   {u && <Avatar user={u} size="sm" />}
-                  <span className="min-w-0 flex-1 truncate">{nameOf(r.user_id)}</span>
+                  <MaybeLink href={u && personHref(user, u, projectsForLinks)} cover className="min-w-0 flex-1 truncate">
+                    {nameOf(r.user_id)}
+                  </MaybeLink>
                   <span className="text-xs text-muted">{tr(`مفتوحة ${num(r.open)} · منجزة ${num(r.done)}`, `${r.open} open · ${r.done} done`)}</span>
                   {r.late > 0 && <Pill tone="blocked">{tr(`متأخرة ${num(r.late)}`, `${r.late} late`)}</Pill>}
                 </li>

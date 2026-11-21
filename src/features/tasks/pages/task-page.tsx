@@ -12,7 +12,7 @@ import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
-import { Avatar, Button, ErrorBox, Field, LoadingBlock, PriorityPill, Select, Skeleton, StatusPill } from "@/shared/ui";
+import { Avatar, Button, ErrorBox, Field, LoadingBlock, PriorityPill, Select, Skeleton, StatusPill, PersonName } from "@/shared/ui";
 import { tasksApi } from "../api";
 import { ApprovalBanner } from "../components/approval-banner";
 import { Comments } from "../components/comments";
@@ -83,7 +83,6 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
   const phase = project.phases.find((ph) => ph.id === task.phase_id);
   const today = todayIso();
   const late = lateDays(project, task, today);
-  const nameOf = (u?: User) => (u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-");
   const projectName = lang === "en" && project.name_en ? project.name_en : project.name;
   usePageTitle(task.title);
   const mayMove = canMoveTask(user, project, task);
@@ -205,7 +204,7 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
             <dd className="flex items-center gap-2">
               {assignee ? (
                 <>
-                  <Avatar user={assignee} size="sm" /> {nameOf(assignee)}
+                  <Avatar user={assignee} size="sm" /> <PersonName person={assignee} projects={[project]} />
                 </>
               ) : (
                 <span className="text-faint">{tr("غير مُسندة", "Unassigned")}</span>
@@ -220,13 +219,21 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
             {phase && (
               <>
                 <dt className="text-muted">{tr("المرحلة", "Phase")}</dt>
-                <dd>{phase.name}</dd>
+                <dd>
+                  <Link href={`/projects/${project.id}`} className="hover:underline">
+                    {phase.name}
+                  </Link>
+                </dd>
               </>
             )}
             {sprint && (
               <>
                 <dt className="text-muted">{tr("الدورة", "Sprint")}</dt>
-                <dd>{sprint.name}</dd>
+                <dd>
+                  <Link href={`/projects/${project.id}`} className="hover:underline">
+                    {sprint.name}
+                  </Link>
+                </dd>
               </>
             )}
             <dt className="text-muted">{tr("البدء", "Start")}</dt>
@@ -234,7 +241,7 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
             <dt className="text-muted">{tr("التسليم", "Due")}</dt>
             <dd className={late > 0 ? "font-medium text-danger" : undefined}>{day(task.due)}</dd>
             <dt className="text-muted">{tr("أنشأها", "Created by")}</dt>
-            <dd>{nameOf(creator)}</dd>
+            <dd>{creator ? <PersonName person={creator} projects={[project]} /> : "-"}</dd>
             <dt className="text-muted">{tr("آخر تحديث", "Updated")}</dt>
             <dd>{fmt.ago(task.updated_at)}</dd>
           </dl>

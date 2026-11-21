@@ -5,6 +5,7 @@ import type { Team } from "@/shared/api/types";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
+import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, matches } from "@/shared/lib/utils";
@@ -16,13 +17,15 @@ import { canAdminister, isLocked, SETTING_RANGE } from "../rules";
 import type { AdminUser, Settings } from "../types";
 
 type Tab = "users" | "teams" | "settings";
+const TAB_KEYS = ["users", "teams", "settings"] as const;
 
 /** The system admin's page (the brief: users, roles and permissions, settings, data health), under an overview of the week. */
 export function AdminPage() {
   const { tr } = useFmt();
   usePageTitle(tr("إدارة النظام", "Administration"));
   const me = useUser();
-  const [tab, setTab] = useState<Tab>("users");
+  // In the address, so a link can open a tab: /admin?tab=teams.
+  const [tab, setTab] = useQueryParam<Tab>("tab", "users", TAB_KEYS);
   if (!canAdminister(me)) return <Empty title={tr("هذه الصفحة لمسؤول النظام والمدير التنفيذي", "This page is for the system admin and the CEO")} />;
 
   const tabs: { key: Tab; ar: string; en: string }[] = [
@@ -278,10 +281,10 @@ function SettingsTab() {
           {tr("صحة البيانات", "Data health")}
         </h2>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label={tr("حسابات نشطة", "Active accounts")} value={num(health.users_active)} note={tr(`موقوفة ${num(health.users_stopped)} · مقفلة ${num(health.users_locked)}`, `${health.users_stopped} stopped · ${health.users_locked} locked`)} />
-          <Stat label={tr("المشاريع والمهام", "Projects and tasks")} value={num(health.projects)} note={tr(`${num(health.tasks)} مهمة`, `${health.tasks} tasks`)} />
+          <Stat href="/admin?tab=users" label={tr("حسابات نشطة", "Active accounts")} value={num(health.users_active)} note={tr(`موقوفة ${num(health.users_stopped)} · مقفلة ${num(health.users_locked)}`, `${health.users_stopped} stopped · ${health.users_locked} locked`)} />
+          <Stat href="/" label={tr("المشاريع والمهام", "Projects and tasks")} value={num(health.projects)} note={tr(`${num(health.tasks)} مهمة`, `${health.tasks} tasks`)} />
           <Stat label={tr("الملفات", "Files")} value={num(health.files)} note={`${(health.files_bytes / 1024 / 1024).toFixed(1)} MB`} />
-          <Stat label={tr("سجل العمليات", "Audit log")} value={num(health.audit_entries)} note={tr("سطر محفوظ", "lines kept")} />
+          <Stat href="/audit" label={tr("سجل العمليات", "Audit log")} value={num(health.audit_entries)} note={tr("سطر محفوظ", "lines kept")} />
         </div>
         <p className="text-xs text-faint">{tr("النسخ الاحتياطي يديره فريق DevOps على الخادم (سؤال مفتوح للعميل).", "Backups are run by DevOps on the server (an open question for the client).")}</p>
       </section>

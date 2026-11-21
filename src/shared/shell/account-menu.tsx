@@ -1,4 +1,4 @@
-import { Languages, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
+import { Gauge, Languages, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/shared/ui";
@@ -67,6 +67,21 @@ export function AccountMenu({ user }: { user: User }) {
             <p className="text-[13px] text-muted">{tr(ROLES[user.role].ar, ROLES[user.role].en)}</p>
           </div>
           <div className="flex flex-col pt-2">
+            {/* Everyone with tasks can open their own numbers and final reviews (not the CEO or the admin: no tasks). */}
+            {user.role !== "ceo" && user.role !== "admin" && (
+              <button
+                type="button"
+                role="menuitem"
+                className={itemClass}
+                onClick={() => {
+                  setOpen(false);
+                  router.push(`/performance/${user.id}`);
+                }}
+              >
+                <Gauge size={16} aria-hidden="true" />
+                {tr("أدائي", "My performance")}
+              </button>
+            )}
             <button type="button" role="menuitem" className={itemClass} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
               {theme === "dark" ? tr("الوضع النهاري", "Light mode") : tr("الوضع الليلي", "Dark mode")}

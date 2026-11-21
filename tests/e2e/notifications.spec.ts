@@ -33,8 +33,8 @@ test("My tasks lists Sara's tasks, the late ones first, and each row opens its t
   await expect(page).toHaveURL(/\/my-tasks$/);
   const late = page.getByRole("region", { name: /متأخرة/ });
   await expect(late.getByRole("link", { name: /TSK-109/ })).toBeVisible();
-  // The first group on the page is the late one.
-  await expect(page.getByRole("heading", { level: 2 }).first()).toHaveText(/متأخرة/);
+  // The first task group on the page is the late one (the summary above it has its own headings).
+  await expect(page.locator("h2[id^=group-]").first()).toHaveText(/متأخرة/);
   await late.getByRole("link", { name: /TSK-109/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "صفحة إعلانات الشركة" })).toBeVisible();
 });

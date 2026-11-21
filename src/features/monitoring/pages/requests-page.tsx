@@ -94,6 +94,8 @@ export function RequestsPage() {
       {mine.length === 0 ? (
         <Empty title={tr("لا طلبات بعد", "No requests yet")} body={tr("أرسل أول طلب إلى المدير التنفيذي.", "Send your first request to the CEO.")} />
       ) : (
+        <>
+        <h2 className="sr-only">{tr("طلباتي", "My requests")}</h2>
         <ul aria-label={tr("طلباتي", "My requests")} className="flex flex-col gap-3">
           {mine.map((n) => (
             <li key={n.id}>
@@ -101,6 +103,7 @@ export function RequestsPage() {
             </li>
           ))}
         </ul>
+        </>
       )}
 
       <Dialog

@@ -14,7 +14,7 @@ import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { today as todayIso } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
-import { Avatar, Button, Dialog, ErrorBox, Field, LoadingBlock, Pill, PriorityPill, Skeleton, Textarea, errorText, useToast } from "@/shared/ui";
+import { Avatar, Button, Dialog, ErrorBox, Field, LoadingBlock, Pill, PriorityPill, Skeleton, Textarea, errorText, useToast, PersonName } from "@/shared/ui";
 import { bugsApi } from "../api";
 import { BugEditDialog } from "../components/bug-edit-dialog";
 import { BUG_STATUS, MOVE_LABEL, SEVERITY } from "../labels";
@@ -197,7 +197,7 @@ function BugView({ bug, project, task, people, history }: Loaded) {
                     {actor && <Avatar user={actor} size="sm" />}
                     <div className="flex flex-col gap-0.5">
                       <p className="text-sm">
-                        <b className="font-semibold">{nameOf(e.actor_id)}</b> {eventText(e, fmt, peopleById)}
+                        <b className="font-semibold">{actor ? <PersonName person={actor} projects={[project]} /> : nameOf(e.actor_id)}</b> {eventText(e, fmt, peopleById)}
                       </p>
                       {e.note && (
                         <p className="text-[13px] text-muted">
@@ -241,9 +241,9 @@ function BugView({ bug, project, task, people, history }: Loaded) {
               </>
             )}
             <dt className="text-muted">{tr("المطور", "Developer")}</dt>
-            <dd>{nameOf(bug.assignee_id)}</dd>
+            <dd>{bug.assignee_id && peopleById.get(bug.assignee_id) ? <PersonName person={peopleById.get(bug.assignee_id)!} projects={[project]} /> : nameOf(bug.assignee_id)}</dd>
             <dt className="text-muted">{tr("سجّلها", "Reported by")}</dt>
-            <dd>{nameOf(bug.reported_by)}</dd>
+            <dd>{peopleById.get(bug.reported_by) ? <PersonName person={peopleById.get(bug.reported_by)!} projects={[project]} /> : nameOf(bug.reported_by)}</dd>
             <dt className="text-muted">{tr("الإصلاح المتوقع", "Expected fix")}</dt>
             <dd className={lateBy > 0 ? "font-medium text-danger" : undefined}>{day(bug.due)}</dd>
             <dt className="text-muted">{tr("سُجّلت", "Reported")}</dt>

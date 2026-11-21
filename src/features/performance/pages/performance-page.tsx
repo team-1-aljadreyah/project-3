@@ -73,9 +73,12 @@ function PeopleList() {
                 {tr("أداء الفرق", "Team performance")}
               </h2>
               {load.data[0].teams.map((t) => (
-                <article key={t.team_id} className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 text-sm">
+                // The whole card opens the people report of that team.
+                <article key={t.team_id} className="relative flex flex-col gap-2 rounded-xl border border-line bg-card p-4 text-sm transition-colors focus-within:border-accent hover:border-accent">
                   <div className="flex justify-between gap-2">
-                    <b dir="auto">{lang === "en" && t.name_en ? t.name_en : t.name}</b>
+                    <Link href={`/reports?tab=people&team=${t.team_id}`} dir="auto" className="font-bold after:absolute after:inset-0 after:rounded-xl hover:underline">
+                      {lang === "en" && t.name_en ? t.name_en : t.name}
+                    </Link>
                     <span className="text-muted">{tr(`${num(t.members)} أعضاء`, `${t.members} people`)}</span>
                   </div>
                   <ProgressBar value={t.completion} planned={t.planned} label={tr(`إنجاز ${t.name}`, `${t.name_en ?? t.name} done`)} />
@@ -111,9 +114,10 @@ function PeopleList() {
                   {load.data[0].people.map((r) => {
                     const u = people.get(r.user_id);
                     return (
-                      <tr key={r.user_id} className="hover:bg-card-2">
+                      // The whole row opens the person (the name is the link, stretched over the row).
+                      <tr key={r.user_id} className="relative hover:bg-card-2">
                         <td className={td}>
-                          <Link href={`/performance/${r.user_id}`} className="flex items-center gap-2 font-medium hover:underline">
+                          <Link href={`/performance/${r.user_id}`} className="flex items-center gap-2 font-medium after:absolute after:inset-0 hover:underline">
                             {u && <Avatar user={u} size="sm" />}
                             {u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-"}
                           </Link>
