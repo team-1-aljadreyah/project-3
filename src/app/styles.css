@@ -6,18 +6,19 @@
 /* The design (board D, 16 November 2026), recoloured on 19 November 2026 with the palette Yasser chose
    (colorhunt.co/palette/7c0e44aa5e7ad49a9af2dace): wine #7C0E44, mauve #AA5E7A, dusty rose #D49A9A, blush #F2DACE.
    Mauve is never used for text (too light on white): it draws the strong lines in dark mode.
-   A light blush page, wine-black text, ONE strong colour (wine) for actions, and a soft colour per task-status family
-   (kept as they were, so a status never looks like a button). Every text pair here is at least 4.5:1 (WCAG AA).
-   Every colour on the site comes from these tokens. */
+   A soft off-white page (since 19 November 2026: the blush page read as pink; off-white is close to white but easier on
+   the eyes than pure white), white cards, wine-black text, ONE strong colour (wine) for actions, blush for soft accents,
+   and a soft colour per task-status family (kept as they were, so a status never looks like a button). Every text pair
+   here is at least 4.5:1 (WCAG AA). Every colour on the site comes from these tokens. */
 :root {
-  --bg: #faf1ec;            /* page: a light blush (from #F2DACE) */
+  --bg: #f9f7f4;            /* page: a warm off-white, like paper (not pure white: less glare) */
   --card: #ffffff;          /* cards, the top bar */
-  --card-2: #fdf7f4;        /* inner boxes */
+  --card-2: #faf8f6;        /* inner boxes */
   --chip: #f2dace;          /* blush: neutral chips, empty bars */
-  --text: #2a1620;          /* wine-black ink (15:1 on the page) */
-  --muted: #6b5560;         /* second lines (6.1:1 on the page, 5.1:1 on blush) */
-  --faint: #7a6470;         /* placeholders (5.4:1 on white) */
-  --line: #ecd9d1;
+  --text: #2a1620;          /* wine-black ink (15.9:1 on the page) */
+  --muted: #6b5560;         /* second lines (6.3:1 on the page, 5.1:1 on blush) */
+  --faint: #7a6470;         /* placeholders (5.4:1 on white, 5.1:1 on the page) */
+  --line: #e9e3de;          /* a warm grey, no pink */
   --line-strong: #d49a9a;   /* dusty rose */
 
   --accent: #7c0e44;        /* wine: buttons, links, the active tab (white on it: 10.5:1) */
@@ -409,5 +410,101 @@ body {
   }
   .intro {
     display: none;
+  }
+}
+
+/* ── The role pages' banners (features/reports/components). Always dark, whatever the theme. ── */
+
+/* Words that arrive one after the other (the label, the headline, the numbers, the button). */
+.hero-in {
+  animation: settle 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.hero-in:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.hero-in:nth-child(2) {
+  animation-delay: 0.25s;
+}
+.hero-in:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.hero-in:nth-child(4) {
+  animation-delay: 0.55s;
+}
+
+/* The project manager's task calendar: a day off (the weekend) is hatched (pm-plan.tsx). */
+.day-off {
+  background-image: repeating-linear-gradient(135deg, transparent 0 7px, var(--line) 7px 8px);
+}
+
+/* The team leader's slide: wine and rose glows on the night colour, and a glass sphere that clears when the page opens
+   to show the small spheres inside (lead-sphere.tsx). */
+.sphere-slide {
+  color: #fff;
+  background:
+    radial-gradient(42% 75% at 0% 60%, rgb(124 14 68 / 0.8) 0%, transparent 70%),
+    radial-gradient(36% 60% at 100% 100%, rgb(212 154 154 / 0.5) 0%, transparent 72%),
+    radial-gradient(30% 42% at 60% 0%, rgb(170 94 122 / 0.28) 0%, transparent 70%),
+    #170d12;
+}
+.sphere-cover,
+.sphere-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.sphere-cover {
+  animation: sphere-open 1.1s 0.5s ease forwards;
+}
+@keyframes sphere-open {
+  to {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+.sphere-bubble {
+  animation: bubble-in 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+/* The shares at the sides arrive once the sphere has cleared. */
+.sphere-late {
+  animation: settle 0.7s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* The monitoring officer's banner: wine to mauve (monitor-summary.tsx draws the waves). */
+.wave-banner {
+  background: linear-gradient(115deg, #4a0828 0%, #7c0e44 48%, #aa5e7a 100%);
+}
+
+/* The CEO's banner: a wine night sky, a rose glow on the horizon, small stars (ceo-hero.tsx draws the ridge). */
+.night-hero {
+  color: #fff;
+  background:
+    radial-gradient(55% 80% at 74% 100%, rgb(242 218 206 / 0.42) 0%, rgb(212 154 154 / 0.3) 22%, rgb(124 14 68 / 0.3) 48%, transparent 72%),
+    linear-gradient(180deg, #100910 0%, #1a0d17 42%, #34142a 100%);
+}
+.night-stars {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* One small tile of stars, repeated; they thin out toward the horizon. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='230'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='26' r='1' opacity='.9'/%3E%3Ccircle cx='74' cy='112' r='.7' opacity='.6'/%3E%3Ccircle cx='121' cy='44' r='1.2' opacity='.8'/%3E%3Ccircle cx='163' cy='171' r='.7' opacity='.5'/%3E%3Ccircle cx='205' cy='78' r='.9' opacity='.75'/%3E%3Ccircle cx='246' cy='18' r='.7' opacity='.55'/%3E%3Ccircle cx='289' cy='139' r='1.1' opacity='.85'/%3E%3Ccircle cx='322' cy='61' r='.7' opacity='.5'/%3E%3Ccircle cx='48' cy='196' r='.8' opacity='.6'/%3E%3Ccircle cx='138' cy='214' r='.6' opacity='.45'/%3E%3Ccircle cx='226' cy='203' r='.9' opacity='.7'/%3E%3Ccircle cx='96' cy='70' r='.6' opacity='.5'/%3E%3Ccircle cx='268' cy='96' r='.6' opacity='.45'/%3E%3Ccircle cx='310' cy='188' r='.7' opacity='.55'/%3E%3C/g%3E%3C/svg%3E");
+  mask-image: linear-gradient(to bottom, #000 25%, transparent 76%);
+}
+.night-stars-far {
+  background-position: 170px 115px;
+  background-size: 255px 172px;
+  animation: twinkle 4.5s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 0.8;
   }
 }

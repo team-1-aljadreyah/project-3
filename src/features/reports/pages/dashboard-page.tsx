@@ -9,7 +9,11 @@ import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
-import { totals } from "../compute";
+import { CeoHero } from "../components/ceo-hero";
+import { LeadSphere } from "../components/lead-sphere";
+import { MonitorSummary } from "../components/monitor-summary";
+import { PmPlan } from "../components/pm-plan";
+import { teamShares, totals } from "../compute";
 import { canSeeReports } from "../rules";
 
 /**
@@ -46,78 +50,106 @@ export function DashboardPage() {
 
   const [o, users, announcements] = load.data;
   const t = totals(o);
+  const monitor = user.role === "monitor";
   const people = new Map(users.map((u) => [u.id, u]));
   const nameOf = (id: number) => {
     const u = people.get(id);
     return u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-";
   };
   const projectName = (p: { name: string; name_en?: string }) => (lang === "en" && p.name_en ? p.name_en : p.name);
+  const ownTeam = o.teams.find((team) => team.team_id === user.team_id);
+  const teamName = ownTeam ? (lang === "en" && ownTeam.name_en ? ownTeam.name_en : ownTeam.name) : tr("فريقك", "Your team");
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{tr("لوحة القيادة", "Dashboard")}</h1>
-          <p className="text-sm text-muted">{tr(`الأرقام حتى ${day(o.today)}، للمشاريع التي تراها.`, `Numbers up to ${day(o.today)}, for the projects you can see.`)}</p>
+      {/* Each job opens the page its own way. The CEO: a night banner with the page's name and today's numbers. */}
+      {user.role === "ceo" ? (
+        <CeoHero
+          date={day(o.today)}
+          numbers={[
+            { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active) },
+            { label: tr("الإنجاز", "Progress"), value: pct(t.ratio) },
+            { label: tr("مهام تأخرت", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0 },
+          ]}
+        />
+      ) : user.role === "lead" ? (
+        // The team leader: a slide with the team's tasks as spheres in a glass one.
+        <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} />
+      ) : monitor ? (
+        // Monitoring and evaluation: a banner, the summary cards and every project against its plan.
+        <MonitorSummary user={user} o={o} t={t} />
+      ) : (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold">{tr("لوحة القيادة", "Dashboard")}</h1>
+            <p className="text-sm text-muted">{tr(`الأرقام حتى ${day(o.today)}، للمشاريع التي تراها.`, `Numbers up to ${day(o.today)}, for the projects you can see.`)}</p>
+          </div>
+          <ButtonLink href="/reports" variant="secondary" pill>
+            {tr("كل التقارير", "All reports")}
+          </ButtonLink>
         </div>
-        <ButtonLink href="/reports" variant="secondary" pill>
-          {tr("كل التقارير", "All reports")}
-        </ButtonLink>
-      </div>
+      )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat
-          label={tr("المشاريع النشطة", "Active projects")}
-          value={num(t.projects.active)}
-          note={tr(`مكتملة ${num(t.projects.done)} · متوقفة ${num(t.projects.paused)} · مخطط لها ${num(t.projects.planned)}`, `${t.projects.done} done · ${t.projects.paused} paused · ${t.projects.planned} planned`)}
-        />
-        <Stat label={tr("الإنجاز الكلي", "Overall progress")} value={pct(t.ratio)} note={tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`)} />
-        <Stat
-          label={tr("مهام متأخرة", "Late tasks")}
-          value={num(t.tasks.late)}
-          danger={t.tasks.late > 0}
-          note={tr(`المتبقي ${num(t.tasks.left)} · متوقفة ${num(t.tasks.blocked)}`, `${t.tasks.left} left · ${t.tasks.blocked} blocked`)}
-        />
-        <Stat
-          label={tr("أخطاء مفتوحة", "Open bugs")}
-          value={num(o.bugs.open)}
-          danger={o.bugs.late > 0}
-          note={tr(`متأخرة ${num(o.bugs.late)} · حرجة ${num(o.bugs.critical_open)}`, `${o.bugs.late} late · ${o.bugs.critical_open} critical`)}
-        />
-      </div>
+      {!monitor && (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Stat
+            label={tr("المشاريع النشطة", "Active projects")}
+            value={num(t.projects.active)}
+            note={tr(`مكتملة ${num(t.projects.done)} · متوقفة ${num(t.projects.paused)} · مخطط لها ${num(t.projects.planned)}`, `${t.projects.done} done · ${t.projects.paused} paused · ${t.projects.planned} planned`)}
+          />
+          <Stat label={tr("الإنجاز الكلي", "Overall progress")} value={pct(t.ratio)} note={tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`)} />
+          <Stat
+            label={tr("مهام متأخرة", "Late tasks")}
+            value={num(t.tasks.late)}
+            danger={t.tasks.late > 0}
+            note={tr(`المتبقي ${num(t.tasks.left)} · متوقفة ${num(t.tasks.blocked)}`, `${t.tasks.left} left · ${t.tasks.blocked} blocked`)}
+          />
+          <Stat
+            label={tr("أخطاء مفتوحة", "Open bugs")}
+            value={num(o.bugs.open)}
+            danger={o.bugs.late > 0}
+            note={tr(`متأخرة ${num(o.bugs.late)} · حرجة ${num(o.bugs.critical_open)}`, `${o.bugs.late} late · ${o.bugs.critical_open} critical`)}
+          />
+        </div>
+      )}
 
-      <section aria-labelledby="attention-title" className="rounded-xl border border-line bg-card p-4">
-        <h2 id="attention-title" className="mb-3 flex items-center gap-2 font-semibold">
-          <AlertTriangle size={17} aria-hidden="true" className="text-danger" />
-          {tr("مشاريع تحتاج إلى قرار", "Projects that need a decision")}
-        </h2>
-        {t.attention.length === 0 ? (
-          <p className="text-sm text-muted">{tr("كل المشاريع في موعدها وعلى خطتها.", "Every project is on time and on plan.")}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {t.attention.map((p) => (
-              <li key={p.id}>
-                {/* The whole row opens the project's board (click anywhere). */}
-                <Link href={`/projects/${p.id}`} className="flex flex-col gap-2 rounded-lg border border-line p-3 hover:border-accent sm:flex-row sm:items-center">
-                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                    <span dir="auto" className="font-medium">
-                      {projectName(p)}
+      {/* The project manager: the task calendar and the board over all their projects. */}
+      {user.role === "pm" && <PmPlan today={o.today} people={people} />}
+
+      {!monitor && (
+        <section aria-labelledby="attention-title" className="rounded-xl border border-line bg-card p-4">
+          <h2 id="attention-title" className="mb-3 flex items-center gap-2 font-semibold">
+            <AlertTriangle size={17} aria-hidden="true" className="text-danger" />
+            {tr("مشاريع تحتاج إلى قرار", "Projects that need a decision")}
+          </h2>
+          {t.attention.length === 0 ? (
+            <p className="text-sm text-muted">{tr("كل المشاريع في موعدها وعلى خطتها.", "Every project is on time and on plan.")}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {t.attention.map((p) => (
+                <li key={p.id}>
+                  {/* The whole row opens the project's board (click anywhere). */}
+                  <Link href={`/projects/${p.id}`} className="flex flex-col gap-2 rounded-lg border border-line p-3 hover:border-accent sm:flex-row sm:items-center">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                      <span dir="auto" className="font-medium">
+                        {projectName(p)}
+                      </span>
+                      {p.overdue && <Pill tone="blocked">{tr(`تجاوز موعده ${day(p.end)}`, `Past its end, ${day(p.end)}`)}</Pill>}
+                      {p.behind && <Pill tone="review">{tr("متأخر عن الخطة", "Behind the plan")}</Pill>}
                     </span>
-                    {p.overdue && <Pill tone="blocked">{tr(`تجاوز موعده ${day(p.end)}`, `Past its end, ${day(p.end)}`)}</Pill>}
-                    {p.behind && <Pill tone="review">{tr("متأخر عن الخطة", "Behind the plan")}</Pill>}
-                  </span>
-                  <span className="flex w-full items-center gap-2 text-xs text-muted sm:w-72">
-                    <ProgressBar value={p.ratio} planned={p.planned_ratio} label={tr(`إنجاز ${projectName(p)}`, `${projectName(p)} progress`)} className="flex-1" />
-                    <span className="num shrink-0">
-                      {pct(p.ratio)} / {pct(p.planned_ratio)}
+                    <span className="flex w-full items-center gap-2 text-xs text-muted sm:w-72">
+                      <ProgressBar value={p.ratio} planned={p.planned_ratio} label={tr(`إنجاز ${projectName(p)}`, `${projectName(p)} progress`)} className="flex-1" />
+                      <span className="num shrink-0">
+                        {pct(p.ratio)} / {pct(p.planned_ratio)}
+                      </span>
                     </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <section aria-labelledby="teams-title" className="rounded-xl border border-line bg-card p-4">

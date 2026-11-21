@@ -4,7 +4,8 @@
 import { bugLateDays, isOpen, type Bug } from "@/features/bugs";
 import { countTasks, isDone, keysOfTone, lateDays, plannedRatio, sprintNumbers, type Project, type Sprint } from "@/features/projects";
 import type { Task } from "@/features/tasks";
-import type { Team, User } from "@/shared/api/types";
+import type { StatusTone, Team, User } from "@/shared/api/types";
+import { today as dayFrom, matches } from "@/shared/lib/utils";
 import type { BugCounts, Overview, PersonRow, ProjectRow, SprintRow, TeamRow } from "./types";
 
 /** How far behind the plan a project may be before it counts as "behind" (points of progress). */
@@ -117,4 +118,129 @@ export function totals(o: Overview) {
     ratio: total ? done / total : 0,
     attention: o.projects.filter((p) => p.overdue || p.behind),
   };
+}
+
+// ── The project manager's plan: the task calendar and the board over all their projects ──
+
+/** One task as the plan shows it: its project, its status family, how late it is and how far along. */
+export interface PlanTask {
+  task: Task;
+  project: Pick<Project, "id" | "name" | "name_en" | "statuses">;
+  tone: StatusTone;
+  /** Days past its due day (0 = not late). */
+  late: number;
+  /** Sub-tasks done out of all of them (0–1). A task with none counts by its status: done = 1, anything else = 0. */
+  progress: number;
+}
+
+export function planTasks(groups: { project: Project; tasks: Task[] }[], today: string): PlanTask[] {
+  return groups.flatMap(({ project, tasks }) =>
+    tasks.map((task) => {
+      const tone = project.statuses.find((s) => s.key === task.status)?.tone ?? "new";
+      const progress = task.subtasks_total ? task.subtasks_done / task.subtasks_total : tone === "done" ? 1 : 0;
+      return { task, project, tone, late: lateDays(project, task, today), progress };
+    }),
+  );
+}
+
+export interface CalendarDay {
+  date: string;
+  isToday: boolean;
+  /** Friday or Saturday (the weekend here): drawn hatched. */
+  dayOff: boolean;
+  /** The tasks due this day that are not done yet. */
+  tasks: PlanTask[];
+}
+
+/** The calendar strip: from `before` days ago to `after` days ahead. */
+export function calendarDays(items: PlanTask[], today: string, before = 3, after = 4): CalendarDay[] {
+  const from = new Date(today + "T00:00:00");
+  return Array.from({ length: before + after + 1 }, (_, i) => {
+    const date = dayFrom(i - before, from);
+    const weekday = new Date(date + "T00:00:00").getDay();
+    return { date, isToday: date === today, dayOff: weekday === 5 || weekday === 6, tasks: items.filter((t) => t.task.due === date && t.tone !== "done") };
+  });
+}
+
+export interface CalendarPill {
+  item: PlanTask;
+  /** The day's column (0 = the first day shown) and how many columns the pill may use. */
+  col: number;
+  span: number;
+  row: number;
+}
+
+/**
+ * Where each pill of the calendar goes. A pill starts in its day's column and may run over the next one (a title needs
+ * the room), so it takes the first row that is free there. Days with more tasks than rows say how many are left out.
+ */
+export function calendarPills(days: CalendarDay[], span = 2, maxRows = 4): { pills: CalendarPill[]; rows: number; more: number[] } {
+  const freeFrom: number[] = [];
+  const pills: CalendarPill[] = [];
+  const more = days.map(() => 0);
+  days.forEach((d, col) => {
+    for (const item of d.tasks) {
+      let row = freeFrom.findIndex((c) => c <= col);
+      if (row < 0) row = freeFrom.length;
+      if (row >= maxRows) {
+        more[col]++;
+        continue;
+      }
+      const width = Math.min(span, days.length - col);
+      freeFrom[row] = col + width;
+      pills.push({ item, col, span: width, row });
+    }
+  });
+  return { pills, rows: Math.max(2, freeFrom.length), more };
+}
+
+/** The board's four columns, by status family. */
+export const PLAN_COLUMNS = ["todo", "doing", "review", "done"] as const;
+export type PlanColumn = (typeof PLAN_COLUMNS)[number];
+const COLUMN_OF: Record<StatusTone, PlanColumn> = { new: "todo", todo: "todo", progress: "doing", testing: "doing", blocked: "doing", review: "review", done: "done" };
+
+/** Every task in its column: the late ones first, then the nearest due day. */
+export function planColumns(items: PlanTask[]): Record<PlanColumn, PlanTask[]> {
+  const out: Record<PlanColumn, PlanTask[]> = { todo: [], doing: [], review: [], done: [] };
+  for (const t of items) out[COLUMN_OF[t.tone]].push(t);
+  for (const key of PLAN_COLUMNS) out[key].sort((a, b) => b.late - a.late || (a.task.due ?? "9999").localeCompare(b.task.due ?? "9999"));
+  return out;
+}
+
+// ── The team leader's slide: how the team's tasks split ──
+
+export interface TeamShares {
+  /** Every task of the team's people. `done + doing + review + blocked` add up to it. */
+  total: number;
+  done: number;
+  /** Open, and neither waiting for a review nor blocked. */
+  doing: number;
+  review: number;
+  blocked: number;
+  open: number;
+  late: number;
+}
+
+/** The tasks of one team's people, split four ways, and how many are late. Without a team: everyone in the numbers. */
+export function teamShares(o: Pick<Overview, "people">, teamId?: number): TeamShares {
+  const rows = o.people.filter((r) => teamId === undefined || r.team_id === teamId);
+  const sum = (pick: (r: PersonRow) => number) => rows.reduce((s, r) => s + pick(r), 0);
+  const done = sum((r) => r.done);
+  const open = sum((r) => r.open);
+  const review = sum((r) => r.in_review);
+  const blocked = sum((r) => r.blocked);
+  return { total: done + open, done, doing: Math.max(0, open - review - blocked), review, blocked, open, late: sum((r) => r.late) };
+}
+
+// ── Monitoring and evaluation: following every project against its plan ──
+
+export type FollowUpFilter = "all" | "behind" | "overdue" | "on-plan";
+
+/** The follow-up list: the projects a filter keeps, searched by name or code, the ones that need a decision first. */
+export function followUp(projects: ProjectRow[], filter: FollowUpFilter, query: string): ProjectRow[] {
+  const keep = (p: ProjectRow) => (filter === "behind" ? p.behind : filter === "overdue" ? p.overdue : filter === "on-plan" ? !p.behind && !p.overdue : true);
+  const needs = (p: ProjectRow) => Number(p.overdue || p.behind);
+  return projects
+    .filter((p) => keep(p) && matches(query, p.name, p.name_en, p.code))
+    .sort((a, b) => needs(b) - needs(a) || b.late - a.late);
 }

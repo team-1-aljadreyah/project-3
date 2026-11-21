@@ -10,13 +10,14 @@ import { useLoad } from "@/shared/lib/use-load";
 import { cn, matches } from "@/shared/lib/utils";
 import { Avatar, Button, Dialog, Empty, ErrorBox, errorText, Field, Input, LoadingBlock, Pill, Select, Skeleton, Stat, useToast } from "@/shared/ui";
 import { adminApi } from "../api";
+import { AdminOverview } from "../components/admin-overview";
 import { UserDialog } from "../components/user-dialog";
 import { canAdminister, isLocked, SETTING_RANGE } from "../rules";
 import type { AdminUser, Settings } from "../types";
 
 type Tab = "users" | "teams" | "settings";
 
-/** The system admin's page (the brief: users, roles and permissions, settings, data health). */
+/** The system admin's page (the brief: users, roles and permissions, settings, data health), under an overview of the week. */
 export function AdminPage() {
   const { tr } = useFmt();
   usePageTitle(tr("إدارة النظام", "Administration"));
@@ -32,6 +33,8 @@ export function AdminPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       <h1 className="text-2xl font-semibold">{tr("إدارة النظام", "Administration")}</h1>
+      {/* The numbers, the week's activity, the newest audit lines and the last changed accounts, before the sections. */}
+      <AdminOverview me={me.id} />
       <div role="tablist" aria-label={tr("أقسام الإدارة", "Administration sections")} className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1 [scrollbar-width:none]">
         {tabs.map((t) => (
           <button

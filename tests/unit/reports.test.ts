@@ -1,7 +1,7 @@
 // The dashboard and reports: the counting (pure), the CSV helper, and the demo backend as different people.
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Project } from "@/features/projects/types";
-import { projectRow, totals, velocity } from "@/features/reports/compute";
+import { calendarDays, calendarPills, followUp, planColumns, planTasks, projectRow, teamShares, totals, velocity } from "@/features/reports/compute";
 import type { SprintRow } from "@/features/reports/types";
 import type { Task } from "@/features/tasks/types";
 import { ApiError } from "@/shared/api/errors";
@@ -61,6 +61,89 @@ describe("counting", () => {
   it("CSV: quotes what needs it, and never lets a cell become a formula", () => {
     expect(toCsv([["a,b", 'say "hi"', 3], ["=SUM(A1)", "-1", undefined]])).toBe('"a,b","say ""hi""",3\r\n\'=SUM(A1),\'-1,');
     expect(toCsv([[-1, "سارة"]])).toBe("-1,سارة"); // a real number stays a number
+  });
+});
+
+describe("the project manager's plan", () => {
+  // Thursday 19 November 2026: the strip runs from Monday 16 to Monday 23, with Friday 20 and Saturday 21 off.
+  const day = "2026-11-19";
+  const item = (id: number, status: string, due?: string, sub: [number, number] = [0, 0]) => ({ ...task(status, due), id, subtasks_done: sub[0], subtasks_total: sub[1] });
+
+  it("each task gets its status family, how late it is, and its progress from its sub-tasks", () => {
+    const [late, half, done] = planTasks([{ project: project(), tasks: [item(1, "in_progress", "2026-11-17"), item(2, "todo", "2026-11-25", [1, 2]), item(3, "completed", "2026-11-10")] }], day);
+    expect([late.tone, late.late, late.progress]).toEqual(["progress", 2, 0]);
+    expect([half.tone, half.late, half.progress]).toEqual(["todo", 0, 0.5]);
+    expect([done.tone, done.late, done.progress]).toEqual(["done", 0, 1]);
+  });
+
+  it("the board: four columns by family, the late tasks first, then the nearest due day", () => {
+    const items = planTasks(
+      [{ project: project(), tasks: [item(1, "new", "2026-11-25"), item(2, "todo", "2026-11-17"), item(3, "blocked", "2026-11-22"), item(4, "testing"), item(5, "in_review"), item(6, "completed")] }],
+      day,
+    );
+    const columns = planColumns(items);
+    expect(columns.todo.map((t) => t.task.id)).toEqual([2, 1]);
+    expect(columns.doing.map((t) => t.task.id)).toEqual([3, 4]);
+    expect(columns.review.map((t) => t.task.id)).toEqual([5]);
+    expect(columns.done.map((t) => t.task.id)).toEqual([6]);
+  });
+
+  it("the calendar: eight days around today, the weekend marked, only the tasks that are not done", () => {
+    const items = planTasks([{ project: project(), tasks: [item(1, "todo", day), item(2, "completed", day), item(3, "todo", "2026-11-30")] }], day);
+    const days = calendarDays(items, day);
+    expect(days.map((d) => d.date)).toEqual(["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21", "2026-11-22", "2026-11-23"]);
+    expect(days.filter((d) => d.dayOff).map((d) => d.date)).toEqual(["2026-11-20", "2026-11-21"]);
+    expect(days.find((d) => d.isToday)?.tasks.map((t) => t.task.id)).toEqual([1]);
+  });
+
+  it("the pills: a pill may run over the next day, so the next one takes another row; too many say how many are left out", () => {
+    const tasks = [item(1, "todo", "2026-11-17"), item(2, "todo", "2026-11-18"), item(3, "todo", "2026-11-19"), item(4, "todo", "2026-11-19"), item(5, "todo", "2026-11-19"), item(6, "todo", "2026-11-23")];
+    const strip = calendarPills(calendarDays(planTasks([{ project: project(), tasks }], day), day), 2, 2);
+    const at = (id: number) => strip.pills.find((p) => p.item.task.id === id);
+    expect([at(1)?.col, at(1)?.row]).toEqual([1, 0]);
+    expect([at(2)?.col, at(2)?.row]).toEqual([2, 1]);
+    expect([at(3)?.col, at(3)?.row]).toEqual([3, 0]);
+    // Two rows only: the other two tasks of the 19th don't fit.
+    expect(strip.more[3]).toBe(2);
+    // The last day has one column left.
+    expect(at(6)?.span).toBe(1);
+  });
+});
+
+describe("the team leader's slide", () => {
+  const people = [
+    { user_id: 5, team_id: 1, open: 4, done: 2, late: 1, blocked: 1, in_review: 1 },
+    { user_id: 6, team_id: 1, open: 2, done: 2, late: 0, blocked: 0, in_review: 0 },
+    { user_id: 9, team_id: 2, open: 5, done: 0, late: 3, blocked: 0, in_review: 0 },
+  ];
+
+  it("one team's tasks split four ways that add up, with the late ones counted", () => {
+    const s = teamShares({ people }, 1);
+    expect(s).toEqual({ total: 10, done: 4, doing: 4, review: 1, blocked: 1, open: 6, late: 1 });
+    expect(s.done + s.doing + s.review + s.blocked).toBe(s.total);
+  });
+
+  it("without a team it counts everyone; a team with no tasks is all zeros", () => {
+    expect(teamShares({ people }).total).toBe(15);
+    expect(teamShares({ people }, 7)).toEqual({ total: 0, done: 0, doing: 0, review: 0, blocked: 0, open: 0, late: 0 });
+  });
+});
+
+describe("following the projects (monitoring and evaluation)", () => {
+  const row = (id: number, name: string, over: Partial<ReturnType<typeof projectRow>> = {}) => ({ ...projectRow(project({ id, code: `PRJ-${id}`, name }), [], "2026-11-10"), behind: false, overdue: false, late: 0, ...over });
+  const rows = [row(1, "منصة الحجز"), row(2, "تطبيق المبيعات", { behind: true, late: 1 }), row(3, "حملة الشتاء", { overdue: true, late: 4 })];
+
+  it("the ones that need a decision come first, the most late tasks on top", () => {
+    expect(followUp(rows, "all", "").map((p) => p.id)).toEqual([3, 2, 1]);
+  });
+
+  it("the filter keeps one kind; the search reads the name and the code", () => {
+    expect(followUp(rows, "behind", "").map((p) => p.id)).toEqual([2]);
+    expect(followUp(rows, "overdue", "").map((p) => p.id)).toEqual([3]);
+    expect(followUp(rows, "on-plan", "").map((p) => p.id)).toEqual([1]);
+    expect(followUp(rows, "all", "المبيعات").map((p) => p.id)).toEqual([2]);
+    expect(followUp(rows, "all", "prj-3").map((p) => p.id)).toEqual([3]);
+    expect(followUp(rows, "on-plan", "المبيعات")).toEqual([]);
   });
 });
 

@@ -125,6 +125,12 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   frosted glass over it (`Frost`: a blurred picture made once, not a live blur, so it stays smooth). A tilting glass
   window shows a live task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always
   at the top.
+- **The dashboard** (`/dashboard`) opens with a section made for each job (`src/features/reports/components`): the CEO
+  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the project manager gets a task calendar (the days around
+  today) and a board of every task in their projects (`PmPlan`); the team leader gets a slide where a glass sphere
+  clears to show the team's tasks as smaller spheres, with the four shares beside it (`LeadSphere`); monitoring and
+  evaluation gets a banner with who is signed in, summary cards, and every project against its plan with a filter and a
+  search (`MonitorSummary`).
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
 
 ## Documentation
