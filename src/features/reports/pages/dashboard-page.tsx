@@ -1,7 +1,8 @@
-import { AlertTriangle, Megaphone } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Inbox, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { announcementsApi } from "@/features/announcements";
 import { authApi } from "@/features/auth";
+import { monitoringApi } from "@/features/monitoring";
 import { PROJECT_STATE, projectsApi } from "@/features/projects";
 import { personHref } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
@@ -34,6 +35,8 @@ export function DashboardPage() {
             announcementsApi.announcements(),
             // A PM's person links need the projects they run (personHref).
             user.role === "pm" ? projectsApi.projects() : Promise.resolve([]),
+            // The CEO: what waits in the inbox (requests, reports, problems) shows at the top.
+            user.role === "ceo" ? monitoringApi.inbox().catch(() => []) : Promise.resolve([]),
           ]) : Promise.resolve(null)),
     [allowed],
   );
@@ -55,7 +58,9 @@ export function DashboardPage() {
   if (load.state.status === "error") return <ErrorBox error={load.state.error} onRetry={load.reload} />;
   if (!load.data) return null;
 
-  const [o, users, announcements, projectsForLinks] = load.data;
+  const [o, users, announcements, projectsForLinks, inbox] = load.data;
+  const waiting = inbox.filter((n) => n.ceo_state === "new");
+  const requests = waiting.filter((n) => n.kind === "request").length;
   const t = totals(o);
   const monitor = user.role === "monitor";
   const people = new Map(users.map((u) => [u.id, u]));
@@ -95,6 +100,18 @@ export function DashboardPage() {
             {tr("كل التقارير", "All reports")}
           </ButtonLink>
         </div>
+      )}
+
+      {/* The CEO: new things in the inbox, one line that opens it. */}
+      {waiting.length > 0 && (
+        <Link href="/inbox" className="flex items-center gap-3 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm text-accent-ink hover:border-accent">
+          <Inbox size={18} aria-hidden="true" className="shrink-0" />
+          <span className="flex-1">
+            <b className="font-semibold">{tr(`في الوارد ما ينتظرك: ${num(waiting.length)}`, `Waiting in your inbox: ${waiting.length}`)}</b>
+            {requests > 0 && <span className="text-accent-ink/80">{tr(` · منها طلبات: ${num(requests)}`, ` · requests: ${requests}`)}</span>}
+          </span>
+          <ChevronLeft size={16} aria-hidden="true" className="shrink-0 ltr:rotate-180" />
+        </Link>
       )}
 
       {!monitor && (
