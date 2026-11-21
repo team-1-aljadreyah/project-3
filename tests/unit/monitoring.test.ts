@@ -109,3 +109,75 @@ describe("the demo backend", () => {
     expect((await fails(api.send(1)))?.status).toBe(404);
   });
 });
+
+const { performanceMock } = await import("@/features/performance/mock");
+const { draftSummary, againstPlan } = await import("@/features/monitoring/report");
+const { makeFmt } = await import("@/shared/lib/format");
+const { today } = await import("@/shared/lib/utils");
+
+describe("the report builder", () => {
+  const all = () => ({ from: "2000-01-01", to: today() });
+
+  it("a team report counts like the performance page: one row per member, the totals add up", async () => {
+    as(3);
+    const f = await api.reportFacts({ type: "team", id: 1 }, all());
+    expect(f.about).toMatchObject({ type: "team", id: 1, label: "فريق التطوير" });
+    expect(f.rows.map((r) => r.id).sort()).toEqual([4, 5, 6, 7]);
+    expect(f.assigned).toBe(f.rows.reduce((s, r) => s + r.assigned, 0));
+    expect(f.left).toBe(f.assigned - f.done);
+    expect(f.completion).toBeCloseTo(f.assigned ? f.done / f.assigned : 0);
+    // The same numbers as the performance page's team line for the same period.
+    const team = (await performanceMock.overview(all())).teams.find((t) => t.team_id === 1)!;
+    expect({ assigned: f.assigned, done: f.done, late: f.late, blocked: f.blocked }).toEqual({ assigned: team.assigned, done: team.done, late: team.late, blocked: team.blocked });
+  });
+
+  it("a person report has one row per project; a project report one row per person and the project's bugs", async () => {
+    as(3);
+    const person = await api.reportFacts({ type: "person", id: 5 }, all());
+    expect(person.rows.length).toBeGreaterThan(0);
+    expect(person.rows.every((r) => r.type === "project" && r.assigned > 0)).toBe(true);
+    const project = await api.reportFacts({ type: "project", id: 1 }, all());
+    expect(project.rows.every((r) => r.type === "person")).toBe(true);
+    const bugs = getDb().bugs.filter((b) => b.project_id === 1);
+    expect(project.bugs_open).toBe(bugs.filter((b) => b.status !== "closed").length);
+    expect(project.bugs_reported).toBe(bugs.length);
+    expect(project.planned).not.toBeNull();
+  });
+
+  it("only the monitoring officer and the CEO use it; a bad period or an unknown team is refused", async () => {
+    as(5);
+    expect((await fails(api.reportFacts({ type: "team", id: 1 }, all())))?.status).toBe(403);
+    as(1);
+    expect((await api.reportFacts({ type: "team", id: 1 }, all())).rows.length).toBe(4);
+    as(3);
+    expect((await fails(api.reportFacts({ type: "team", id: 1 }, { from: "2026-02-01", to: "2026-01-01" })))?.status).toBe(422);
+    expect((await fails(api.reportFacts({ type: "team", id: 99 }, all())))?.status).toBe(422);
+  });
+
+  it("a saved report keeps the numbers the server counted, and the CEO gets them with it", async () => {
+    as(3);
+    const r = await api.create({ kind: "report", title: "تقرير الفريق", body: "نص", about: { type: "team", id: 1 }, period: all(), send: true });
+    expect(r.facts).toMatchObject({ about: { type: "team", id: 1 }, period: all() });
+    as(1);
+    expect((await api.inbox()).find((n) => n.id === r.id)?.facts?.rows.length).toBe(4);
+    as(3);
+    expect((await fails(api.create({ kind: "feedback", title: "x", body: "y", about: { type: "person", id: 5 }, period: all() })))?.status).toBe(422);
+    expect((await fails(api.create({ kind: "report", title: "x", body: "y", about: { type: "general" }, period: all() })))?.status).toBe(422);
+  });
+
+  it("writes a first draft from the numbers, in Arabic or English", async () => {
+    as(3);
+    const f = await api.reportFacts({ type: "team", id: 1 }, all());
+    const ar = draftSummary(f, makeFmt("ar"));
+    expect(ar).toContain(`كان لدى فريق التطوير ${f.assigned} مهمة`);
+    expect(ar).toContain("الأخطاء:");
+    expect(draftSummary(f, makeFmt("en"))).toContain(`Development team had ${f.assigned} tasks`);
+  });
+
+  it("says where the work is against the plan: within 5 points is on plan", () => {
+    expect(againstPlan({ completion: 0.5, planned: null })).toBeNull();
+    expect(againstPlan({ completion: 0.52, planned: 0.5 })).toBe("on");
+    expect(againstPlan({ completion: 0.7, planned: 0.5 })).toBe("ahead");
+    expect(againstPlan({ completion: 0.3, planned: 0.5 })).toBe("behind");
+  });
+});

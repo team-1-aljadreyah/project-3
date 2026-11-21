@@ -18,7 +18,7 @@ export function TopNav({ user, actions }: { user: User; actions?: React.ReactNod
   const active = activeNavKey(path);
 
   return (
-    <header className="sticky top-3 z-30 mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-line bg-card px-2.5 py-2 shadow-card sm:mx-7">
+    <header className="sticky top-3 z-30 print:hidden mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-line bg-card px-2.5 py-2 shadow-card sm:mx-7">
       <Logo />
       <nav aria-label={tr("القائمة الرئيسية", "Main menu")} className="relative order-last -mx-1 w-full overflow-x-auto [scrollbar-width:none] lg:order-none lg:mx-0 lg:w-auto">
         <ul className="flex items-center gap-0.5 px-1">

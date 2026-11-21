@@ -1,7 +1,7 @@
 // Monitoring notes and the CEO's inbox. Pages call `monitoringApi`; the .env switch decides if it is the real server
 // or the demo backend (./mock.ts). Both follow `MonitoringApi`.
 import { http, lazyApi } from "@/shared/api";
-import type { MonitorNote, NoteAnswer, NoteInput } from "./types";
+import type { MonitorNote, NoteAbout, NoteAnswer, NoteInput, ReportFacts, ReportPeriod } from "./types";
 
 export interface MonitoringApi {
   /** The notes this person may see, newest first (the writer: hers; the CEO: all). */
@@ -13,6 +13,8 @@ export interface MonitoringApi {
   inbox(): Promise<MonitorNote[]>;
   /** The CEO answers a note: a reply and/or "seen" / "done". */
   answer(id: number, answer: NoteAnswer): Promise<MonitorNote>;
+  /** The report builder: the counted numbers about a team, a person or a project over a period. */
+  reportFacts(about: { type: Exclude<NoteAbout["type"], "general">; id: number }, period: ReportPeriod): Promise<ReportFacts>;
 }
 
 const data = <T>(p: Promise<{ data: T }>) => p.then((r) => r.data);
@@ -23,6 +25,7 @@ export const monitoringHttp: MonitoringApi = {
   send: (id) => data(http.post<MonitorNote>(`/monitoring/notes/${id}/send`, {})),
   inbox: () => data(http.get<MonitorNote[]>("/ceo/inbox")),
   answer: (id, answer) => data(http.post<MonitorNote>(`/ceo/inbox/${id}/answer`, answer)),
+  reportFacts: (about, period) => data(http.get<ReportFacts>("/monitoring/report-facts", { params: { type: about.type, id: about.id, ...period } })),
 };
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.

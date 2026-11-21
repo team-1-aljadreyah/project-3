@@ -126,6 +126,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes (the CEO sees all) |
 | 16 | `POST` | `/monitoring/notes` | monitor, ceo; employee (requests only) | Write a report, feedback or a problem; an employee's request |
 | 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
+| 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
 | 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done |
 
@@ -747,14 +748,28 @@ MonitorNote {
   subject? (≤120),                          // problems: what it is about, in her own words
   people?: [{ id, label, label_en? }],      // problems: the people involved (≤30, anyone active; names copied)
   author_id, created_at,
-  sent_at?, ceo_state?: "new" | "seen" | "done", ceo_reply? (≤2000), replied_at?
+  sent_at?, ceo_state?: "new" | "seen" | "done", ceo_reply? (≤2000), replied_at?,
+  facts?: ReportFacts                       // reports from the report builder: the numbers counted when it was saved
+}
+
+ReportFacts {
+  about, period: { from, to },              // "YYYY-MM-DD", both included
+  assigned, done, left, late, blocked,      // counted exactly like the performance page (section 13)
+  completion,                               // done / assigned, 0–1
+  on_time: number | null,                   // of the tasks finished in the period that had a due day: share by that day
+  planned: number | null,                   // average time gone (plannedRatio at period.to) of the projects involved
+  bugs_reported, bugs_closed,               // created_at / closed_at inside the period
+  bugs_open,                                // not "closed" now
+  rows: [{ type: "person" | "project", id, label, label_en?, assigned, done, late, blocked, completion }],
+  counted_at
 }
 ```
 
 | Call | Who | Notes |
 |---|---|---|
 | `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers; the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
-| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. |
+| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. A report from the builder also sends `period: { from, to }`: the server counts the numbers **again** itself (never trusts numbers from the browser) and keeps them in `facts`; `period` on another kind, or with `about: general`, is **422**. |
+| `GET /monitoring/report-facts?type=&id=&from=&to=` | `monitor`, `ceo` | The report builder. `type` is `team`, `person` or `project`. A team: its members' tasks in every project, one row per member (members with no task included). A person: their tasks, one row per project they have tasks in. A project: its tasks, one row per person with tasks in it. Bugs: a project's bugs; for a team or a person, the bugs assigned to them. Bad period or unknown `id`: **422** (`period`, `about`). Others: **403**. |
 | `POST /monitoring/notes/:id/send` | its writer, `ceo` | Sets `sent_at` = now and `ceo_state` = "new" (sending again brings it back to "new"). Notifies every active CEO: kind `note_sent`, `data.title`. |
 | `GET /ceo/inbox` | `ceo` | Every sent note, newest first. Others: **403**. |
 | `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again. |
