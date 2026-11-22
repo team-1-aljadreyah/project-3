@@ -175,6 +175,6 @@ test("the monitoring officer answers a request herself; the answer reaches the e
   await page.goto("/requests");
   const mine = page.getByRole("list", { name: "طلباتي" }).getByRole("article").filter({ hasText: "يوم إجازة الخميس" });
   await expect(mine.getByText("أجاب عنه مسؤول المتابعة")).toBeVisible();
-  await mine.getByRole("button", { name: "يوم إجازة الخميس" }).click();
+  // Her answer shows on the card, under "the monitoring officer's reply".
   await expect(mine.getByText("اطلبيها من مدير القسم مباشرة.")).toBeVisible();
 });
