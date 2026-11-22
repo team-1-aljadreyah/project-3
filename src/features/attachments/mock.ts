@@ -7,6 +7,7 @@ import { canManageProject } from "@/features/projects";
 import { chatMembers } from "@/mock/chat";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
+import { requireFeature } from "@/mock/site";
 import type { User } from "@/shared/api/types";
 import { canSeeProject, canTakePart } from "@/shared/lib/access";
 import type { AttachmentsApi } from "./api";
@@ -132,6 +133,7 @@ export const attachmentsMock: AttachmentsApi = {
  * audio of its oldest voice messages to stay small (see the top of this file).
  */
 async function addVoice(user: User, owner: AttachmentOwner, file: File, voice: VoiceMeta) {
+  requireFeature(user, "voice_messages");
   const db = getDb();
   if (owner.type !== "message") return invalid("voice", "التسجيل الصوتي يُرسل في المحادثات فقط.", "Voice recordings go in chats only.");
   if (db.attachments.some((a) => a.owner_type === "message" && a.owner_id === owner.id && a.voice)) {

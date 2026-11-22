@@ -3,7 +3,8 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  # The microphone is allowed to this site itself (chat voice messages), never to a page that frames it.
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
 
 # The built scripts and styles have a fingerprint in their name: they never change, so browsers may keep them.
 /_next/static/*
