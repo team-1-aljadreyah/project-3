@@ -34,6 +34,7 @@ the front end's 114 calls** are there (the 5 request and sharing calls, the 9 ra
 | Quick search | `GET /search?q=` | 18 |
 | Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
 | The admin's console: sessions, security, import | `GET /admin/sessions`, `DELETE /admin/sessions/:id`, `DELETE /admin/users/:id/sessions`, `POST /admin/users/:id/unlock`, `GET /admin/security/summary`, `POST /admin/users/import` | 14.1, 14.2 |
+| Passwords | `password` on `POST /admin/users` (required) and `PATCH /admin/users/:id` (optional), a `password` column in the import, `PUT /me/password`, `password_min` in `GET /site/live` | 14.5 |
 | Birthdays | `birth_date` on the users calls (who sees the year), a daily job for `birthday_soon` and `birthday_today` | 20 |
 | Quick ratings of teams and people, the team pages | `GET /teams/ratings/summary`, `GET /teams/:id`, `GET`/`POST /teams/:id/ratings`, `GET /people/ratings/summary`, `GET`/`POST /people/:id/ratings`, `PATCH`/`DELETE /ratings/:id` | 21 |
 | Push notifications (the installed app, when it is closed) | `POST`/`DELETE /me/push-subscriptions`, sending Web Push with VAPID keys | 22 |
@@ -187,7 +188,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 17 | `GET` | `/ceo/advanced` | ceo | The advanced settings in force (defaults merged in) |
 | 17 | `PUT` | `/ceo/advanced` | ceo | Save them (only what differs from the defaults; import, reset) |
 | 17 | `GET` | `/ceo/advanced/history` | ceo | Every save, from → to, newest first |
-| 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode, the custom roles, their own job (`me`) |
+| 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode, the custom roles, their own job (`me`), the shortest password allowed (`password_min`) |
+| 14.5 | `PUT` | `/me/password` | signed in | Change my own password `{current_password, password}` |
 | 17.1 | `PUT` | `/ceo/advanced` (`rules.roles`) | ceo | Make, change, copy or remove the CEO's custom roles (a role in use can't be removed: 409) |
 | 21 | `GET` | `/teams/ratings/summary` | signed in | The teams this person may see, each with its members count, its ratings in numbers (or null) and `can_rate` |
 | 21 | `GET` | `/teams/:id` | ceo, monitor, pm, admin; lead and employee: their own team | One team, its active members (the leader first), `can_see_ratings` and the members' task numbers (`tasks`, or null) |
@@ -826,6 +828,8 @@ the sign-in lock in `src/features/auth/mock.ts`, the audit helper in `src/mock/a
 
 - `name` required ≤ 120; `email` valid, stored lower case, **unique** (422 on `email`); `role` one of the six; `title` ≤ 80;
   `team_id` an existing team or null (422); `birth_date` optional, a real past day, age 16–80 (422; section 20).
+- **`password`: required on `POST`** (no account is ever made without one: 422 on `password`), optional on `PATCH` (a new
+  password for someone who forgot theirs). See 14.5.
 - **No account is deleted:** `active: false` stops it (it can't sign in: 403), `true` restarts it. The history stays.
 - **Guards (409):** an admin can't change their own role or stop themselves; at least one active admin always stays; a
   `pm` who manages projects that aren't `done` can't lose the role or be stopped (the message names the projects:
@@ -931,7 +935,8 @@ token expires: 401). The demo keeps the same records (`sessions` in `src/mock/se
 The page reads the CSV in the browser (`src/features/admin/csv-import.ts`: quotes, commas and new lines inside quotes,
 `;` or tab files, the BOM, column names in Arabic or English in any order) and sends the rows as JSON; the server never
 gets the file. Columns: `name` (required), `name_en`, `email` (required), `phone`, `job` (the role: a key or its Arabic
-or English name; empty = `employee`), `title`, `team` (a team's Arabic or English name; empty = none).
+or English name; empty = `employee`), `title`, `team` (a team's Arabic or English name; empty = none), `password`
+(required: the account's first password, at least `password_min`).
 
 **`POST /admin/users/import`** `{ rows: ImportRow[], dry_run: boolean }` → `ImportResult`
 `{ dry_run, rows: [{ line, problems: [{field, problem, other_line?}], user_id? }], created, skipped }`. `line` is the row's
@@ -947,6 +952,7 @@ place in `rows` (1 = the first). Every row is checked, and **every** problem of 
 | `role_not_allowed` | `ceo` or `admin`: never in bulk (made one by one with `POST /admin/users`) |
 | `title_too_long` | longer than 80 |
 | `team_unknown` | no team by that name |
+| `password_missing`, `password_short` | no password (no account is made without one), or shorter than `security.password_min` |
 
 - `dry_run: true` writes nothing (the preview). `dry_run: false` checks again (the data may have changed since the
   preview), creates **only the rows without problems**, in one transaction, and answers with `user_id` on each created
@@ -979,6 +985,25 @@ team leader who leads none), with their rules and log lines above. What it lists
 `src/features/admin/structure.ts`): active team leaders and employees in no team (the CEO, PMs, monitoring and the admin
 work across teams), teams whose leader is missing or stopped, a leader with no members, and team leaders who lead no
 team.
+
+### 14.5 Passwords (22 November 2026)
+
+The client: "there should be a password when creating one, and everyone should be able to change his password", and
+"it shouldn't be able to create a new user without its password". The rule (`src/shared/lib/password.ts`, the same on the
+server): at least `security.password_min` characters (the CEO's setting, 6–32, 8 by default), at most 128, not only
+spaces. **Keep only a hash** (bcrypt or argon2, Laravel's `Hash::make`), never the password itself; never send it back
+in any answer, never write it in the audit log or any other log.
+
+- **`POST /admin/users`**: `password` is **required**: 422 on `password` when missing or too short. The admin's form
+  can make a strong random one ("Make one", 12 characters) and shows it so it can be given to the person.
+- **`PATCH /admin/users/:id`** with `password`: sets a new password (someone forgot theirs). Log `user_changed` with
+  `changes: [{ field: "password" }]` (no `from`/`to`). *(Suggested: end that person's other sessions, 14.1.)*
+- **`POST /admin/users/import`**: each row has a `password` (see 14.2): `password_missing` / `password_short`.
+- **`PUT /me/password`** `{ current_password, password }` → `{ success: true, data: null }`, for **everyone** signed in:
+  422 on `current_password` when it is wrong, 422 on `password` when too short or the same as the current one. Log
+  `user_changed` on the person (`changes: [{ field: "password" }]`). Rate-limit it like the sign-in (a wrong current
+  password counts as a failed attempt).
+- **`GET /site/live`** also sends `password_min`, so the forms say how long a password must be before sending.
 
 ## 15. GitHub
 

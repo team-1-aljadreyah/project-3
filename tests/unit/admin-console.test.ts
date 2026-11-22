@@ -39,7 +39,7 @@ beforeEach(() => {
   setDbForTests(seed());
 });
 
-const row = (more: Partial<ImportRow> = {}): ImportRow => ({ name: "ليلى", name_en: "", email: "laila@demo.test", phone: "", role: "", title: "", team: "", ...more });
+const row = (more: Partial<ImportRow> = {}): ImportRow => ({ name: "ليلى", name_en: "", email: "laila@demo.test", phone: "", role: "", title: "", team: "", password: "Laila-Start-1", ...more });
 
 describe("reading a CSV", () => {
   it("quotes keep commas, quotes written twice and new lines; CRLF and LF; the BOM and empty lines go", () => {
@@ -65,15 +65,16 @@ describe("reading a CSV", () => {
   it("what our own CSV download writes reads back the same (also a phone that starts with +)", () => {
     const rows = [["name", "email", "phone"], ["علي, حسين", "ali@demo.test", "+9647700000000"]];
     const back = rowsFromCsv(toCsv(rows));
-    expect(back.rows).toEqual([row({ name: "علي, حسين", email: "ali@demo.test", phone: "+9647700000000" })]);
+    expect(back.rows).toEqual([row({ name: "علي, حسين", email: "ali@demo.test", phone: "+9647700000000", password: "" })]);
   });
 
   it("finds the columns by name in either language and in any order; tells unknown and missing columns", () => {
     const ar = rowsFromCsv("البريد الإلكتروني,الاسم,الفريق,ملاحظات\nhuda2@demo.test,هدى,فريق التطوير,x");
-    expect(ar.rows).toEqual([row({ name: "هدى", email: "huda2@demo.test", team: "فريق التطوير" })]);
+    expect(ar.rows).toEqual([row({ name: "هدى", email: "huda2@demo.test", team: "فريق التطوير", password: "" })]);
     expect(ar.unknown).toEqual(["ملاحظات"]);
-    expect(ar.missing).toEqual([]);
-    expect(rowsFromCsv("name,phone\nx,1").missing).toEqual(["email"]);
+    // The password column is required too: an account is never made without one.
+    expect(ar.missing).toEqual(["password"]);
+    expect(rowsFromCsv("name,phone\nx,1").missing).toEqual(["email", "password"]);
     expect(rowsFromCsv("a,b\n1,2").noHeader).toBe(true);
     expect(rowsFromCsv("").noHeader).toBe(true);
   });

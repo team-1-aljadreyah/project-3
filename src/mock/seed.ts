@@ -131,6 +131,8 @@ export interface MockDb {
   settings: Settings;
   /** `session_id`: the session the last good sign-in started (the audit log writes it on each line). */
   logins: { user_id: number; failed: number; locked_until?: string; last_login_at?: string; session_id?: string }[];
+  /** The demo only: passwords set by the admin or changed by their owner (id → password). Others use DEMO_PASSWORD. */
+  passwords?: Record<number, string>;
   /** Every sign-in session (one per good sign-in): the active ones and, with `ended_at`, the ended ones. */
   sessions: SessionRecord[];
   /** The GitHub link: each project's setting, and the pull requests and commits the server got from GitHub. */

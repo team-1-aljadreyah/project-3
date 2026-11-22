@@ -10,6 +10,7 @@ test("the admin adds a user, stops another, makes a team; the CEO reads it all i
   const dialog = page.getByRole("dialog", { name: "مستخدم جديد" });
   await dialog.getByLabel("الاسم", { exact: true }).fill("ليلى سمير");
   await dialog.getByLabel("البريد الإلكتروني").fill("laila@demo.test");
+  await dialog.getByLabel("كلمة المرور", { exact: true }).fill("Laila-Start-2026");
   await dialog.getByLabel("المسمى الوظيفي").fill("مصممة واجهات");
   await dialog.getByLabel("الفريق").selectOption({ label: "فريق التطوير" });
   await dialog.getByRole("button", { name: "احفظ" }).click();
@@ -84,10 +85,36 @@ test("wrong passwords lock the account; the sign-in page says so", async ({ page
   await page.goto("/login");
   for (let i = 0; i < 5; i++) {
     await page.getByLabel("البريد الإلكتروني").fill("employee@demo.test");
-    await page.getByLabel("كلمة المرور").fill("wrong-password");
+    await page.getByLabel("كلمة المرور", { exact: true }).fill("wrong-password");
     await page.getByRole("button", { name: "دخول", exact: true }).click();
     await expect(page.getByText("البريد أو كلمة المرور غير صحيحة.")).toBeVisible();
   }
   await page.getByRole("button", { name: "دخول", exact: true }).click();
   await expect(page.getByText(/الحساب مقفل مؤقتاً/)).toBeVisible();
+});
+
+test("a new account can't be saved without a password; the admin makes one, and the person signs in with it", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /حسن رعد/);
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "مستخدم جديد" }).click();
+  const dialog = page.getByRole("dialog", { name: "مستخدم جديد" });
+  await dialog.getByLabel("الاسم", { exact: true }).fill("رنا علي");
+  await dialog.getByLabel("البريد الإلكتروني").fill("rana@demo.test");
+  await dialog.getByLabel("المسمى الوظيفي").fill("محاسبة");
+  await dialog.getByRole("button", { name: "احفظ" }).click();
+  await expect(dialog.getByText("اكتب كلمة مرور.")).toBeVisible();
+  // "Make one": a strong password, shown so it can be given to the person.
+  await dialog.getByRole("button", { name: "أنشئ واحدة" }).click();
+  const made = await dialog.getByLabel("كلمة المرور", { exact: true }).inputValue();
+  expect(made).toHaveLength(12);
+  await dialog.getByRole("button", { name: "احفظ" }).click();
+  await expect(page.getByText("أُضيف المستخدم.")).toBeVisible();
+
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByLabel("البريد الإلكتروني").fill("rana@demo.test");
+  await page.getByLabel("كلمة المرور", { exact: true }).fill(made);
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await expect(page.getByRole("button", { name: /حسابي: رنا علي/ })).toBeVisible();
 });

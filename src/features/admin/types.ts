@@ -28,6 +28,11 @@ export interface UserInput {
    * day, not in the future, age 16–80 (birthDateProblem in shared/lib/birthday.ts; docs/backend.md section 20).
    */
   birth_date?: string | null;
+  /**
+   * The account's password: required for a new account (the shortest allowed is the CEO's setting), optional when
+   * changing one (sets a new password, for someone who forgot theirs). Never sent back.
+   */
+  password?: string;
 }
 
 /** Changes to a user. `active: false` stops the account (never deleted: their history stays). `unlock` ends a lock. */
@@ -135,6 +140,8 @@ export interface ImportRow {
   title: string;
   /** A team's name in Arabic or English. Empty = no team. */
   team: string;
+  /** The account's first password (required: an account is never made without one). */
+  password: string;
 }
 
 /** Why a row can't be imported (the page says it in words). */
@@ -148,7 +155,9 @@ export type ImportProblem =
   | "role_unknown"
   | "role_not_allowed"
   | "title_too_long"
-  | "team_unknown";
+  | "team_unknown"
+  | "password_missing"
+  | "password_short";
 
 /** The check of one row: its problems (none = it can be created) and, after a real run, the new account's id. */
 export interface ImportCheck {

@@ -2,10 +2,11 @@
 // (docs/backend.md, section 14). Only the demo build loads it.
 import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
-import { browserSessionId, currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
+import { browserSessionId, currentUser, fail, invalid, nowIso, passwordMin, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { Team, User } from "@/shared/api/types";
 import { birthDateProblem, birthdayView } from "@/shared/lib/birthday";
+import { passwordProblem } from "@/shared/lib/password";
 import { matches, today } from "@/shared/lib/utils";
 import type { AdminApi } from "./api";
 import { deviceWords, ipMatches, parseUserAgent, searchText, shortSession } from "./audit-detail";
@@ -93,6 +94,9 @@ export const adminMock: AdminApi = {
     const base = customRole(input);
     if (base) input = { ...input, role: base };
     checkUser({ ...input, name: input.name ?? "", email: input.email ?? "", role: input.role ?? ("" as never) });
+    // No account without a password (the client, 22 November 2026).
+    const problem = passwordProblem(input.password ?? "", passwordMin());
+    if (problem) invalid("password", problem.ar, problem.en);
     const db = getDb();
     const user: User = {
       ...(base && input.custom_role ? { custom_role: input.custom_role } : {}),
@@ -108,6 +112,7 @@ export const adminMock: AdminApi = {
       active: true,
     };
     db.users.push(user);
+    (db.passwords ??= {})[user.id] = input.password!;
     audit(actor.id, "user_created", { type: "user", id: user.id, label: user.name }, [
       { field: "role", to: user.role },
       ...(user.custom_role ? [{ field: "custom_role", to: roleLabel(user.custom_role) }] : []),
@@ -126,6 +131,10 @@ export const adminMock: AdminApi = {
     const base = customRole(patch);
     if (base) patch = { ...patch, role: base };
     checkUser(patch, id);
+    if (patch.password !== undefined) {
+      const problem = passwordProblem(patch.password, passwordMin());
+      if (problem) invalid("password", problem.ar, problem.en);
+    }
     const self = id === actor.id;
     const roleChanges = (patch.role !== undefined && patch.role !== user.role) || (patch.custom_role !== undefined && (patch.custom_role ?? undefined) !== user.custom_role);
     if (self && (roleChanges || patch.active === false)) {
@@ -142,6 +151,11 @@ export const adminMock: AdminApi = {
     }
 
     const changes: NonNullable<AuditEntry["changes"]> = [];
+    // A new password set by the admin (someone forgot theirs): the log says it changed, never the password.
+    if (patch.password) {
+      (db.passwords ??= {})[user.id] = patch.password;
+      changes.push({ field: "password" });
+    }
     const set = <K extends keyof User>(field: K, value: User[K] | undefined, label = String(field), show = (v: unknown) => (v === undefined ? undefined : String(v))) => {
       if (value === undefined || value === user[field]) return;
       changes.push({ field: label, from: show(user[field]), to: show(value) });
@@ -350,7 +364,7 @@ export const adminMock: AdminApi = {
     if (!Array.isArray(rows) || rows.length === 0) invalid("rows", "لا صفوف في الملف.", "The file has no rows.");
     if (rows.length > IMPORT_LIMIT) invalid("rows", `الحد ${IMPORT_LIMIT} صف في المرة الواحدة.`, `At most ${IMPORT_LIMIT} rows at a time.`);
     const db = getDb();
-    const checks: ImportCheck[] = checkImportRows(rows, { emails: db.users.map((u) => u.email), teams: db.teams });
+    const checks: ImportCheck[] = checkImportRows(rows, { emails: db.users.map((u) => u.email), teams: db.teams }, passwordMin());
     if (dryRun) return wait({ dry_run: true, rows: checks, created: 0, skipped: checks.filter((c) => c.problems.length).length });
     let created = 0;
     for (const check of checks) {
@@ -369,6 +383,7 @@ export const adminMock: AdminApi = {
         active: true,
       };
       db.users.push(user);
+      (db.passwords ??= {})[user.id] = row.password;
       check.user_id = user.id;
       created++;
       audit(actor.id, "user_created", { type: "user", id: user.id, label: user.name }, [
