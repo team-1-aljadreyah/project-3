@@ -690,6 +690,8 @@ body {
 .mc-layer {
   position: absolute;
   inset: 0;
+  /* The waving hand may reach a little past the drawing's edge. */
+  overflow: visible;
   width: 100%;
   height: 100%;
 }
@@ -731,13 +733,13 @@ body {
 }
 /* The waving arm's three joints: the shoulder, the elbow, the wrist. */
 .mc-wave-arm {
-  transform-origin: 33.3% 72.7%;
+  transform-origin: 22.4% 77.3%;
 }
 .mc-forearm {
-  transform-origin: 19.2% 84.9%;
+  transform-origin: 9.6% 89.5%;
 }
 .mc-hand {
-  transform-origin: 16% 66.3%;
+  transform-origin: 7.1% 71.5%;
 }
 @keyframes mc-breathe {
   50% {
