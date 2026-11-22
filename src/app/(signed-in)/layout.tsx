@@ -10,7 +10,7 @@
 import { Suspense } from "react";
 import { SiteRules } from "@/features/advanced";
 import { RequireAuth } from "@/features/auth";
-import { AlertsInvite, LiveAlerts, NotificationBell } from "@/features/notifications";
+import { AlertsInvite, AlertsSwitch, LiveAlerts, NotificationBell } from "@/features/notifications";
 import { ProfileDialog } from "@/features/profile";
 import { QuickSearch } from "@/features/search";
 import { InstallHint } from "@/shared/pwa";
@@ -29,6 +29,7 @@ export default function SignedInLayout({ children }: { children: React.ReactNode
           </>
         }
         profile={(o) => <ProfileDialog {...o} />}
+        switches={<AlertsSwitch />}
       >
         <InstallHint />
         <AlertsInvite />

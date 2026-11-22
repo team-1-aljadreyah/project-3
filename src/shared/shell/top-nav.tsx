@@ -14,7 +14,7 @@ import { Logo } from "./logo";
  * On a phone the tabs move to a second row that scrolls sideways. The nav is `relative` so the hidden
  * "(coming soon)" labels for screen readers stay inside it; without it they stretched the phone page sideways.
  */
-export function TopNav({ user, actions, profile }: { user: User; actions?: React.ReactNode; profile?: ProfileSlot }) {
+export function TopNav({ user, actions, profile, switches }: { user: User; actions?: React.ReactNode; profile?: ProfileSlot; switches?: React.ReactNode }) {
   const { tr } = useFmt();
   const path = usePathname();
   const active = activeNavKey(path);
@@ -75,7 +75,7 @@ export function TopNav({ user, actions, profile }: { user: User; actions?: React
       </nav>
       <div className="flex items-center gap-1">
         {actions}
-        <AccountMenu user={user} profile={profile} />
+        <AccountMenu user={user} profile={profile} switches={switches} />
       </div>
     </header>
   );

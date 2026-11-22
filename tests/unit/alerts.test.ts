@@ -86,6 +86,12 @@ describe("is it new, and should it alert", () => {
     expect(newAlerts(before, null, [chat("p-1", 8, AHMED, 4)], { ...ctx, device: { ...DEFAULT_DEVICE_PREFS, chat: false } })).toEqual([]);
   });
 
+  it("notifications switched off on this device (the account menu): no alert at all, the bell still lists everything", () => {
+    const off = { ...ctx, device: { ...DEFAULT_DEVICE_PREFS, on: false } };
+    expect(newAlerts(before, [note(2)], [chat("p-1", 8, AHMED, 4)], off)).toEqual([]);
+    expect(newAlerts(before, [note(2)], [chat("p-1", 8, AHMED, 4)], ctx).length).toBeGreaterThan(0);
+  });
+
   it("a mention in a chat that alerts anyway is not alerted twice", () => {
     const alerts = newAlerts(before, [note(2, { kind: "chat_mention", chat_key: "p-1" })], [chat("p-1", 8, AHMED, 1)], ctx);
     expect(alerts.map((a) => a.id)).toEqual(["c:p-1:8"]);

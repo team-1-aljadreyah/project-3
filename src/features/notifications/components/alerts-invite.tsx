@@ -18,7 +18,8 @@ export function AlertsInvite() {
   const permission = useNotificationPermission();
   const device = useDevicePrefs(me);
   const later = useInvitedRecently(me);
-  if (permission !== "default" || !device.system || later) return null;
+  // Not when the person switched notifications off on this device (the account menu).
+  if (permission !== "default" || !device.on || !device.system || later) return null;
 
   const turnOn = async () => {
     const answer = await askNotificationPermission();

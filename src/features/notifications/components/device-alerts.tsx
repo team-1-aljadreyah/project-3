@@ -1,4 +1,4 @@
-import { BellRing, MessageCircle, Play, Volume2 } from "lucide-react";
+import { Bell, BellRing, MessageCircle, Play, Volume2 } from "lucide-react";
 import { USE_MOCK } from "@/shared/lib/config";
 import { useFmt } from "@/shared/lib/i18n";
 import { useUser } from "@/shared/lib/session";
@@ -106,6 +106,15 @@ export function DeviceAlerts() {
   return (
     <div className="flex flex-col gap-2">
       <ul className="flex flex-col overflow-hidden rounded-xl border border-line bg-card">
+        <SwitchRow
+          icon={<Bell size={16} />}
+          title={tr("التنبيهات على هذا الجهاز", "Notifications on this device")}
+          hint={prefs.on ? tr("صوت وإشعار عند وصول جديد.", "A sound and a notification when something new arrives.") : tr("متوقفة: يبقى كل شيء في الجرس، بلا صوت ولا إشعار.", "Off: everything stays in the bell, with no sound or notification.")}
+          on={prefs.on}
+          onChange={(on) => set({ on })}
+        />
+      </ul>
+      <ul className={cn("flex flex-col overflow-hidden rounded-xl border border-line bg-card", !prefs.on && "pointer-events-none opacity-50")} aria-disabled={!prefs.on || undefined}>
         <SwitchRow
           icon={<BellRing size={16} />}
           title={tr("إشعارات النظام", "System notifications")}

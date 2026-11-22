@@ -175,3 +175,20 @@ test.describe("notifications blocked in the browser", () => {
     await expect(page.getByRole("complementary", { name: "التنبيهات" })).toHaveCount(0);
   });
 });
+
+test("anyone turns notifications off and on from the account menu; the notifications page shows the same", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  const group = page.getByRole("group", { name: "التنبيهات" });
+  await expect(group.getByRole("menuitemradio", { name: "تشغيل" })).toHaveAttribute("aria-checked", "true");
+  await group.getByRole("menuitemradio", { name: "إيقاف" }).click();
+  await expect(group.getByRole("menuitemradio", { name: "إيقاف" })).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  await page.goto("/notifications");
+  await expect(page.getByRole("switch", { name: /التنبيهات على هذا الجهاز/ })).not.toBeChecked();
+  // On again, from the menu.
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("group", { name: "التنبيهات" }).getByRole("menuitemradio", { name: "تشغيل" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("switch", { name: /التنبيهات على هذا الجهاز/ })).toBeChecked();
+});
