@@ -4,6 +4,8 @@ import type { Notification, NotificationData } from "@/features/notifications";
 import type { Project } from "@/features/projects";
 import type { Task } from "@/features/tasks";
 import { REQUIRED_NOTIFICATIONS, type NotificationKind } from "@/shared/api/notification-kinds";
+import type { Role } from "@/shared/api/types";
+import { birthdayReminder } from "@/shared/lib/birthday";
 import { daysBetween, today } from "@/shared/lib/utils";
 import { getDb } from "./db";
 import { nowIso } from "./helpers";
@@ -66,6 +68,30 @@ export function remindDueTasks(userId: number) {
     if (!kind) continue;
     const sent = db.notifications.some((n: Notification) => n.user_id === userId && n.kind === kind && n.task_id === task.id && n.data.due === task.due);
     if (!sent) notify([userId], kind, { project_id: project.id, task_id: task.id, data: { ...aboutTask(task, project), due: task.due } });
+  }
+}
+
+/** Who is told about birthdays: the monitoring officers (the client) and the CEO (the CEO rule). */
+export const BIRTHDAY_ROLES: Role[] = ["monitor", "ceo"];
+
+/**
+ * Birthday reminders (docs/backend.md section 20): a week before ("birthday_soon") and on the day ("birthday_today"),
+ * about every active person with a birth date, to the monitoring officers and the CEO (the CEO's notification table
+ * and each person's own choices can turn them off). Never about yourself. Once per person, year and kind: the
+ * birthday's day that year is kept in `due`, so opening the list again sends nothing new. A real server runs this
+ * each morning (Asia/Baghdad); the demo runs it when someone opens their notifications.
+ */
+export function remindBirthdays(userId: number) {
+  const db = getDb();
+  const me = db.users.find((u) => u.id === userId);
+  if (!me?.active || !BIRTHDAY_ROLES.includes(me.role)) return;
+  const day = today();
+  for (const person of db.users) {
+    if (!person.active || !person.birth_date || person.id === userId) continue;
+    const due = birthdayReminder(person.birth_date, day);
+    if (!due) continue;
+    const sent = db.notifications.some((n) => n.user_id === userId && n.kind === due.kind && n.data.person_id === person.id && n.data.due === due.date);
+    if (!sent) notify([userId], due.kind, { data: { person_id: person.id, person_name: person.name, person_name_en: person.name_en, due: due.date } });
   }
 }
 

@@ -27,7 +27,9 @@ export type NotificationKind =
   | "note_sent"
   | "note_answered"
   | "team_rated"
-  | "person_rated";
+  | "person_rated"
+  | "birthday_soon"
+  | "birthday_today";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -56,6 +58,8 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "note_answered",
   "team_rated",
   "person_rated",
+  "birthday_soon",
+  "birthday_today",
 ];
 
 /**

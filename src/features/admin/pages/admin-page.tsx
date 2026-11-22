@@ -1,4 +1,4 @@
-import { ChevronLeft, Lock, Plus } from "lucide-react";
+import { Cake, ChevronLeft, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
@@ -70,13 +70,16 @@ function UsersTab({ me }: { me: number }) {
   const load = useLoad(() => Promise.all([adminApi.users(), adminApi.teams()]));
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
+  // Only the accounts without a birth date (it is optional, but the birthday reminders need it).
+  const [noBirth, setNoBirth] = useState(false);
   const [editing, setEditing] = useState<{ user?: AdminUser } | null>(null);
   const now = new Date().toISOString();
 
   if (load.state.status === "loading") return <Skeleton className="h-72" />;
   if (load.state.status === "error") return <ErrorBox error={load.state.error} onRetry={load.reload} />;
   const [users, teams] = load.state.data;
-  const shown = users.filter((u) => (!role || u.role === role) && matches(q, u.name, u.name_en, u.email));
+  const missingBirth = users.filter((u) => u.active && !u.birth_date).length;
+  const shown = users.filter((u) => (!role || u.role === role) && (!noBirth || (u.active && !u.birth_date)) && matches(q, u.name, u.name_en, u.email));
   const teamName = (id?: number) => {
     const t = teams.find((x) => x.id === id);
     return t ? (lang === "en" && t.name_en ? t.name_en : t.name) : "-";
@@ -94,6 +97,20 @@ function UsersTab({ me }: { me: number }) {
             </option>
           ))}
         </Select>
+        {(missingBirth > 0 || noBirth) && (
+          <button
+            type="button"
+            aria-pressed={noBirth}
+            onClick={() => setNoBirth((x) => !x)}
+            className={cn(
+              "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm transition-colors",
+              noBirth ? "border-accent bg-accent-soft text-accent-ink" : "border-line text-muted hover:border-accent hover:text-text",
+            )}
+          >
+            <Cake size={15} aria-hidden="true" />
+            {tr(`بلا تاريخ ميلاد: ${missingBirth}`, `No birth date: ${missingBirth}`)}
+          </button>
+        )}
         <Button pill className="ms-auto" onClick={() => setEditing({})}>
           <Plus size={16} aria-hidden="true" />
           {tr("مستخدم جديد", "New user")}
@@ -113,6 +130,12 @@ function UsersTab({ me }: { me: number }) {
               </span>
               <Pill tone="todo">{roleName(u, lang)}</Pill>
               <span className="text-xs text-muted">{teamName(u.team_id)}</span>
+              {u.active && !u.birth_date && (
+                <span className="inline-flex items-center gap-1 text-xs text-faint" title={tr("تذكيرات أعياد الميلاد تحتاجه", "The birthday reminders need it")}>
+                  <Cake size={12} aria-hidden="true" />
+                  {tr("بلا تاريخ ميلاد", "No birth date")}
+                </span>
+              )}
               {!u.active && <Pill tone="blocked">{tr("موقوف", "Stopped")}</Pill>}
               {isLocked(u, now) && (
                 <Pill tone="review">

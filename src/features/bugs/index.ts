@@ -3,4 +3,5 @@ export { bugsApi, type BugsApi } from "./api";
 export { bugLateDays, isOpen } from "./rules";
 export { BugPage } from "./pages/bug-page";
 export { BugsPage } from "./pages/bugs-page";
+export { QuickActionsPage } from "./pages/quick-actions-page";
 export type * from "./types";

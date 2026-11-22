@@ -26,6 +26,13 @@ export interface User {
    * server gives a URL; the demo keeps the picture itself as a "data:" link. Only the person sets it (docs/backend.md §18).
    */
   avatar_url?: string;
+  /**
+   * The full birth date ("YYYY-MM-DD"). Only the person themself, the admin and the CEO get it (canSeeBirthDate in
+   * shared/lib/access.ts, docs/backend.md section 20); everyone else gets `birthday` alone, never the year.
+   */
+  birth_date?: string;
+  /** The birthday without the year ("MM-DD"): what colleagues see. Comes with every account that has a birth date. */
+  birthday?: string;
 }
 
 /**

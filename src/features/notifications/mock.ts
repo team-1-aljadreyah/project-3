@@ -2,7 +2,7 @@
 // Notifications are MADE by the other demo backends when something happens (src/mock/notify.ts); this file reads them.
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, wait } from "@/mock/helpers";
-import { remindDueTasks, remindLateBugs } from "@/mock/notify";
+import { remindBirthdays, remindDueTasks, remindLateBugs } from "@/mock/notify";
 import { NOTIFICATION_KINDS, REQUIRED_NOTIFICATIONS, type NotificationKind } from "@/shared/api/notification-kinds";
 import type { NotificationsApi } from "./api";
 
@@ -13,6 +13,7 @@ export const notificationsMock: NotificationsApi = {
     const before = db.notifications.length;
     remindDueTasks(user.id);
     remindLateBugs(user.id);
+    remindBirthdays(user.id);
     // Save only when a reminder was added, so reading the list doesn't refresh every open screen each time.
     if (db.notifications.length !== before) commit({ own: true });
     const mine = db.notifications.filter((n) => n.user_id === user.id).sort((a, b) => b.at.localeCompare(a.at) || b.id - a.id);

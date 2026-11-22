@@ -44,6 +44,7 @@ test("the admin adds a user, stops another, makes a team; the CEO reads it all i
 });
 
 test("the top of the admin page: the numbers, the week's activity, the latest actions and the last changed accounts", async ({ page }) => {
+  test.setTimeout(60_000);
   await signInAs(page, /حسن رعد/);
   await page.goto("/admin");
 

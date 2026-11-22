@@ -133,13 +133,15 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   window shows a live task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always
   at the top.
 - **The dashboard** (`/dashboard`) opens with a section made for each job (`src/features/reports/components`): the CEO
-  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the project manager gets a task calendar (the days around
+  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the department manager gets a task calendar (the days around
   today) and a board of every task in their projects (`PmPlan`); the team leader gets a slide where a glass sphere
   clears to show the team's tasks as smaller spheres, with the four shares beside it (`LeadSphere`); monitoring and
   evaluation gets a banner with who is signed in, summary cards, and every project against its plan with a filter and a
   search (`MonitorSummary`). In that banner a small character drawn in code (a monitoring officer with a ponytail,
   glasses and a tablet, `MonitorCharacter`) breathes, blinks and swipes her tablet, and waves when the mouse goes over
   her; she stands behind the profile card, so she never covers it.
+  The monitoring officer and the CEO also get "Upcoming birthdays" (the next 30 days, day and month only), and a
+  reminder in the bell a week before and on the day (`src/shared/lib/birthday.ts`, docs/backend.md section 20).
 - **Monitoring** (`src/features/monitoring`): the monitoring officer writes reports about teams and people, feedback
   on anyone and problems at `/monitoring` (or builds a report from the numbers at `/monitoring/report`), and sends any
   of them to the CEO. Every other job sends the CEO requests at `/requests` (nobody starts a chat with the CEO). The CEO
@@ -173,7 +175,8 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   256×256 WebP. It shows wherever the person's avatar shows (`Avatar`, `src/shared/ui/avatar.tsx`; their first letter
   when there is none). The admin and the CEO can remove a picture that is not appropriate (docs/backend.md section 19).
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
-  short greeting with the person's first name, job and the day lifts away into their page. It never blocks a click.
+  short greeting with the person's first name, job and the day (and «عيد ميلاد سعيد» on their birthday) lifts away
+  into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
 
 ## Documentation

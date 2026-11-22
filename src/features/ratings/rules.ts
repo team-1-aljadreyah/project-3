@@ -1,6 +1,6 @@
 // Quick ratings of teams and people: who sees a team, who rates whom, who reads which rating, the checks on a rating and
 // the numbers of a set of ratings. Pure functions: the pages show only what a person may do, and the demo backend
-// refuses the rest with the SAME functions (the real server must keep them, docs/backend.md section 20).
+// refuses the rest with the SAME functions (the real server must keep them, docs/backend.md section 21).
 //
 // The client (22 November 2026): "add a rating system for teams, and make sure the monitor can rate for whatever
 // reason", then "here [the performance page] it should be able to give a rating as a monitor". Assumptions, written in

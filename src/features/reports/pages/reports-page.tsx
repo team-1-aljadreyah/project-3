@@ -10,7 +10,7 @@ import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
-import { Button, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
+import { Button, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, PrintButton, ProgressBar, Select, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { velocity } from "../compute";
 import { canSeeReports } from "../rules";
@@ -91,10 +91,13 @@ export function ReportsPage() {
           {/* The whole line is there from the start (today's date until the server's comes), so nothing under it moves. */}
           <p className="text-sm text-muted">{tr(`حتى ${day(o?.today ?? todayIso())}، للمشاريع التي تراها.`, `Up to ${day(o?.today ?? todayIso())}, for the projects you can see.`)}</p>
         </div>
-        <Button variant="secondary" pill onClick={csv} disabled={!o || (tab === "sprints" && !chosen)}>
-          <Download size={15} aria-hidden="true" />
-          {tr("نزّل الجدول (CSV)", "Download the table (CSV)")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <PrintButton target={() => null} />
+          <Button variant="secondary" pill onClick={csv} disabled={!o || (tab === "sprints" && !chosen)}>
+            <Download size={15} aria-hidden="true" />
+            {tr("نزّل الجدول (CSV)", "Download the table (CSV)")}
+          </Button>
+        </div>
       </div>
 
       <div role="tablist" aria-label={tr("نوع التقرير", "Report")} className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1 [scrollbar-width:none]">

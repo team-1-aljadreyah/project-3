@@ -16,7 +16,7 @@ export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
   login_failed: { ar: "محاولة دخول خاطئة", en: "failed sign-in" },
   login_locked: { ar: "قُفل حساب", en: "account locked" },
   project_created: { ar: "أنشأ مشروعاً", en: "created a project" },
-  project_pm_changed: { ar: "غيّر مدير مشروع", en: "changed a project's PM" },
+  project_pm_changed: { ar: "غيّر مدير قسم", en: "changed a project's department manager" },
   sprint_closed: { ar: "أنهى دورة", en: "ended a sprint" },
   template_deleted: { ar: "حذف قالباً", en: "removed a template" },
   announcement_deleted: { ar: "حذف إعلاناً", en: "removed an announcement" },

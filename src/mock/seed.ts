@@ -169,6 +169,21 @@ export function seed(now = new Date()): MockDb {
     { id: 7, name: "زينب فاضل", name_en: "Zainab Fadhil", email: "zainab@demo.test", role: "employee", title: "مختبِرة جودة", team_id: 1, active: true },
     { id: 8, name: "حسن رعد", name_en: "Hassan Raad", email: "admin@demo.test", role: "admin", title: "مسؤول النظام", active: true },
   ];
+  // Invented birth dates (never real ones). Sara's birthday is today and Mustafa's is in exactly a week, from today's
+  // date like the other days here, so both reminders show; Huda's is 29 February. The years step by 4, so a 29 February
+  // today still lands on a real day.
+  const bornOn = (day: string, years: number) => `${Number(day.slice(0, 4)) - years}${day.slice(4)}`;
+  const BIRTH: Record<number, string> = {
+    1: "1978-06-14",
+    2: "1986-09-02",
+    3: "1992-02-29",
+    4: bornOn(d(7), 36),
+    5: bornOn(d(0), 28),
+    6: "1995-12-10",
+    7: "1998-01-03",
+    8: "1990-04-21",
+  };
+  for (const u of users) u.birth_date = BIRTH[u.id];
 
   // A non-software project with its own status (the brief: projects may add statuses).
   const campaignStatuses: TaskStatus[] = [
@@ -472,7 +487,7 @@ export function seed(now = new Date()): MockDb {
     // with one busy day, three days ago, when the admin wrote the team's English names. Nothing is dated today.
     // The tests count on this: no wrong password and no stopped account here, and no new account or team in the last 7
     // days. A removed template or announcement is no longer in the demo data, so its line only names it.
-    changed(at(13, 10, 20), 2, "title", "مدير مشروع"),
+    changed(at(13, 10, 20), 2, "title", "مدير قسم"),
     { id: ++auditId, actor_id: 8, action: "user_created", target: { type: "user", id: 3, label: "هدى ناصر" }, changes: [{ field: "role", to: "monitor" }], at: at(12, 9, 40) },
     changed(at(12, 9, 55), 3, "title", "مسؤولة المتابعة"),
     setting(at(11, 14, 10), "lock_after", 3, 5),

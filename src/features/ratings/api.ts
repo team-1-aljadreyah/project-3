@@ -1,5 +1,5 @@
 // Quick ratings (of teams and people) and the team pages. Pages call `ratingsApi`; the .env switch decides if it is the
-// real server or the demo backend (./mock.ts). Both follow `RatingsApi` (docs/backend.md section 20).
+// real server or the demo backend (./mock.ts). Both follow `RatingsApi` (docs/backend.md section 21).
 import { http, lazyApi } from "@/shared/api";
 import type { PersonRatingRow, Rating, RatingInput, RatingList, Subject, TeamDetail, TeamListRow } from "./types";
 

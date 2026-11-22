@@ -1,5 +1,5 @@
 // The demo backend for quick ratings (teams and people) and the team pages, with the rules the real server must keep
-// (docs/backend.md, section 20): who may do what comes from ./rules.ts. Only the demo build loads it.
+// (docs/backend.md, section 21): who may do what comes from ./rules.ts. Only the demo build loads it.
 import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, nowIso, wait } from "@/mock/helpers";

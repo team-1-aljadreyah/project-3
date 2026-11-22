@@ -1,10 +1,12 @@
-import { Trash2 } from "lucide-react";
+import { Cake, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { canRemovePicture, profileApi } from "@/features/profile";
 import { ApiError } from "@/shared/api";
 import type { Role, Team } from "@/shared/api/types";
+import { birthDateRange } from "@/shared/lib/birthday";
 import { useFmt } from "@/shared/lib/i18n";
 import { updateSessionUser, useUser } from "@/shared/lib/session";
+import { today } from "@/shared/lib/utils";
 import { Avatar, Button, Dialog, errorText, Field, Input, Select, useToast } from "@/shared/ui";
 import { adminApi } from "../api";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
@@ -12,9 +14,13 @@ import { useSiteLive } from "@/shared/lib/site";
 import { isLocked, ROLE_KEYS } from "../rules";
 import type { AdminUser, UserInput } from "../types";
 
-/** Adding a user, or changing one: name, email, role, title, team; stopping or restarting the account; unlocking it. */
+/**
+ * Adding a user, or changing one: name, email, role, title, team, birth date (optional, but suggested: the birthday
+ * reminders need it); stopping or restarting the account; unlocking it.
+ */
 export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: AdminUser; teams: Team[]; me: number; onClose: () => void; onSaved: () => void }) {
-  const { tr, lang } = useFmt();
+  const { tr, lang, day } = useFmt();
+  const range = birthDateRange(today());
   const toast = useToast();
   const [v, setV] = useState<UserInput>({
     name: user?.name ?? "",
@@ -25,6 +31,7 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
     custom_role: user?.custom_role ?? null,
     title: user?.title ?? "",
     team_id: user?.team_id ?? null,
+    birth_date: user?.birth_date ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -55,7 +62,11 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
     }
   };
   const save = () =>
-    run(() => (user ? adminApi.updateUser(user.id, v) : adminApi.createUser(v)), user ? tr("حُفظ المستخدم.", "User saved.") : tr("أُضيف المستخدم.", "User added."));
+    run(() => {
+      // An empty birth date is sent as null: none (or cleared).
+      const input = { ...v, birth_date: v.birth_date || null };
+      return user ? adminApi.updateUser(user.id, input) : adminApi.createUser(input);
+    }, user ? tr("حُفظ المستخدم.", "User saved.") : tr("أُضيف المستخدم.", "User added."));
 
   return (
     <Dialog
@@ -126,6 +137,36 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
               </option>
             ))}
           </Select>
+        </Field>
+        <Field
+          label={tr("تاريخ الميلاد", "Birth date")}
+          htmlFor="u-birth"
+          error={errors.birth_date}
+          hint={
+            v.birth_date ? (
+              tr(`يرى الزملاء اليوم والشهر فقط: ${day(v.birth_date)}`, `Colleagues see only the day and month: ${day(v.birth_date)}`)
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <Cake size={13} aria-hidden="true" className="shrink-0 text-accent" />
+                {tr("مستحسن: به تصل تذكيرات أعياد الميلاد.", "Suggested: the birthday reminders need it.")}
+              </span>
+            )
+          }
+        >
+          <Input
+            id="u-birth"
+            type="date"
+            dir="ltr"
+            min={range.min}
+            max={range.max}
+            value={v.birth_date ?? ""}
+            onChange={(e) => {
+              set("birth_date", e.target.value);
+              // A new date: the old error no longer applies (the server checks it again on save).
+              setErrors((o) => ({ ...o, birth_date: "" }));
+            }}
+            invalid={!!errors.birth_date}
+          />
         </Field>
       </form>
       {user?.avatar_url && canRemovePicture(actor, user) && (

@@ -46,7 +46,7 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
             <path d="M0 58C240 6 420 108 660 54S980 4 1200 40" fill="none" stroke="#fff" strokeOpacity="0.16" strokeWidth="1.5" />
           </svg>
           <h1 id="dashboard-title" className="text-sm font-semibold text-white">
-            {tr("لوحة القيادة", "Dashboard")}
+            {tr("لوحة التحكم", "Dashboard")}
           </h1>
           {/* Her character, at the end side away from the name. Her lower edge is the card's top edge (the card rises
               3rem into the banner), so she seems to stand behind it and never covers it. */}

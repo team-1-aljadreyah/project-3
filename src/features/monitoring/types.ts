@@ -37,6 +37,21 @@ export interface MonitorNote {
   replied_at?: string;
   /** A report made with the report builder: the numbers the server counted when it was saved (they don't change later). */
   facts?: ReportFacts;
+  /**
+   * Requests only: they reach the monitoring officer first (the client, 22 November 2026). "pending": with her;
+   * "forwarded": she sent it on to the CEO (then `sent_at` and the CEO's answer work as for any note); "answered": she
+   * answered it herself and it did not go to the CEO. Missing: it went straight to the CEO (her own requests, or when
+   * there is no monitoring officer).
+   */
+  triage?: "pending" | "forwarded" | "answered";
+  /** Her note to the CEO when she forwards a request (the CEO and she see it, not the person who asked). */
+  forward_note?: string;
+  /** Her answer when she answers a request herself (the person who asked sees it). */
+  monitor_reply?: string;
+  triaged_by?: number;
+  triaged_at?: string;
+  /** Anyone else she chose to send the note to (besides the CEO), with when each one opened it. */
+  shared_with?: { id: number; label: string; label_en?: string; at: string; seen_at?: string }[];
 }
 
 /** A period of days, both ends included ("YYYY-MM-DD"). */
@@ -100,6 +115,8 @@ export interface NoteInput {
   send?: boolean;
   /** A report from the report builder: the period of its numbers (the server counts them again and keeps them). */
   period?: ReportPeriod;
+  /** Send it also to these people (any active account except the writer and the CEO, who has `send`). */
+  share_ids?: number[];
 }
 
 /** The CEO's answer: a reply (optional) and the new state. */

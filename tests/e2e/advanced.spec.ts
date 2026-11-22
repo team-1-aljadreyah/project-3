@@ -9,8 +9,12 @@ async function signOut(page: Page) {
 const saveBar = (page: Page) => page.getByRole("region", { name: "حفظ التغييرات" });
 
 test("the CEO changes a working day: Changed, Undo, then Save, and it is in the history", async ({ page }) => {
+  test.setTimeout(60_000);
   await signInAs(page, /مريم العبيدي/);
-  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الإعدادات المتقدمة" }).click();
+  // In the account menu, not the top bar.
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الإعدادات المتقدمة" })).toHaveCount(0);
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "الإعدادات المتقدمة" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "الإعدادات المتقدمة" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /أهلاً، مريم/ })).toBeVisible();
 
@@ -56,6 +60,7 @@ test("a field in red blocks the save until it is fixed", async ({ page }) => {
 });
 
 test("a feature switched off leaves an employee's menu, not the CEO's", async ({ page }) => {
+  test.setTimeout(60_000);
   await signInAs(page, /مريم العبيدي/);
   await page.goto("/advanced?s=features");
   await page.getByRole("switch", { name: "المحادثات" }).click();

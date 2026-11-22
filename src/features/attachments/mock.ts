@@ -109,7 +109,7 @@ export const attachmentsMock: AttachmentsApi = {
     const owner = { type: a.owner_type, id: a.owner_id };
     // The person who added it, or the project's PM or the CEO (a chat file: only the person who sent it).
     if (a.uploaded_by !== user.id && !access(user, owner).canRemoveAny) {
-      return fail(403, "FORBIDDEN", "يحذف الملفَ من أضافه، أو مدير المشروع.", "Only the person who added it or the project manager can remove it.");
+      return fail(403, "FORBIDDEN", "يحذف الملفَ من أضافه، أو مدير القسم.", "Only the person who added it or the department manager can remove it.");
     }
     db.attachments = db.attachments.filter((x) => x.id !== id);
     log(owner, user.id, "attachment_removed", a.name);

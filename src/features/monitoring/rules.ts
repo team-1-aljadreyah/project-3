@@ -14,8 +14,18 @@ export const canWriteNotes = (user: Pick<User, "role">) => isCeo(user) || user.r
  */
 export const canSendRequests = (user: Pick<User, "role">) => !isCeo(user);
 
-/** See a note: its writer, and the CEO (who sees them all). */
-export const canSeeNote = (user: Pick<User, "id" | "role">, note: Pick<MonitorNote, "author_id">) => isCeo(user) || note.author_id === user.id;
+/**
+ * See a note: its writer, the CEO (who sees them all), the people it was sent to, and the monitoring officer for every
+ * request (requests reach her first).
+ */
+export const canSeeNote = (user: Pick<User, "id" | "role">, note: Pick<MonitorNote, "author_id" | "kind" | "shared_with">) =>
+  isCeo(user) || note.author_id === user.id || (user.role === "monitor" && note.kind === "request") || !!note.shared_with?.some((s) => s.id === user.id);
+
+/** Handle the requests waiting for the monitoring officer: send them on to the CEO, or answer them herself. */
+export const canTriageRequests = (user: Pick<User, "role">) => isCeo(user) || user.role === "monitor";
+
+/** Send a note to more people (not requests): its writer, and the CEO. */
+export const canShareNote = (user: Pick<User, "id" | "role">, note: Pick<MonitorNote, "author_id" | "kind">) => note.kind !== "request" && (isCeo(user) || note.author_id === user.id);
 
 /** Send a note to the CEO, whenever she wants: its writer (and the CEO). */
 export const canSendToCeo = (user: Pick<User, "id" | "role">, note: Pick<MonitorNote, "author_id">) => isCeo(user) || note.author_id === user.id;
