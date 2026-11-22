@@ -115,15 +115,16 @@ test.describe("on an iPhone", () => {
   });
 });
 
-test("the sign-in page has 'Download the app': steps for this browser, or the browser's own window when it offers one", async ({ page }) => {
+test("the sign-in page has 'Download the app': steps for this browser, or the browser's own window when it offers one", async ({ page }, info) => {
   await page.goto("/login");
   const download = page.getByRole("button", { name: "حمّل التطبيق" });
   // No offer from the browser yet: short steps for this browser (Chrome here).
   await download.click();
   const dialog = page.getByRole("dialog", { name: "ثبّت المنصة على جهازك" });
-  // The test browser is Chrome: its own steps, not Edge's.
-  await expect(dialog.getByText("Chrome على الحاسوب")).toBeVisible();
-  await expect(dialog.getByText(/«تثبيت الصفحة كتطبيق»/)).toBeVisible();
+  // The test browser is Chrome (as an Android phone in the phone run): its own steps, not Edge's.
+  const phone = info.project.name === "phone";
+  await expect(dialog.getByText(phone ? "Chrome على Android" : "Chrome على الحاسوب")).toBeVisible();
+  await expect(dialog.getByText(phone ? /«تثبيت التطبيق»/ : /«تثبيت الصفحة كتطبيق»/)).toBeVisible();
   await expect(dialog.getByText(/Edge/)).toHaveCount(0);
   await dialog.getByRole("button", { name: "حسناً" }).click();
 
