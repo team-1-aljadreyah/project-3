@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { User } from "@/shared/api/types";
+import { Greeting } from "@/shared/ui";
 import { useFmt } from "@/shared/lib/i18n";
 import type { TeamShares } from "../compute";
 
@@ -24,7 +26,7 @@ const SPOTS: [number, number][] = [
  * shares appear at the sides. Always dark, whatever the theme (styles in app/styles.css, `.sphere-slide`). Decoration
  * only: the numbers are also read out as the picture's label, and with "reduce motion" it is simply there.
  */
-export function LeadSphere({ shares, team, date, href }: { shares: TeamShares; team: string; date: string; /** The team's people report. */ href: string }) {
+export function LeadSphere({ user, shares, team, href }: { user: Pick<User, "name" | "name_en">; shares: TeamShares; team: string; /** The team's people report. */ href: string }) {
   const { tr, num, pct } = useFmt();
   const parts = PARTS.map((p) => ({ ...p, label: tr(p.ar, p.en), value: shares[p.key], share: shares.total ? shares[p.key] / shares.total : 0 }));
   const biggest = Math.max(1, ...parts.map((p) => p.value));
@@ -54,9 +56,10 @@ export function LeadSphere({ shares, team, date, href }: { shares: TeamShares; t
         <div className="flex flex-col justify-between gap-8">
           <div>
             <h1 id="dashboard-title" className="hero-in text-xs font-medium text-[#e6d3da]">
-              {tr("لوحة التحكم", "Dashboard")} · {date}
+              {tr("لوحة التحكم", "Dashboard")}
             </h1>
-            <p className="hero-in mt-3 text-4xl leading-tight font-light sm:text-[2.6rem] sm:leading-tight">
+            <Greeting user={user} size="md" className="mt-3" />
+            <p className="hero-in mt-4 text-4xl leading-tight font-light sm:text-[2.6rem] sm:leading-tight">
               {tr("أين يقف", "Where the team")}
               <br />
               {tr("فريقك اليوم", "stands today")}

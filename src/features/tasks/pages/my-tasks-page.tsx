@@ -8,7 +8,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { daysBetween, today as todayIso } from "@/shared/lib/utils";
-import { Empty, ErrorBox, LoadingBlock, PriorityPill, Skeleton, StatusPill } from "@/shared/ui";
+import { Empty, ErrorBox, Greeting, LoadingBlock, PriorityPill, Skeleton, StatusPill } from "@/shared/ui";
 import { tasksApi } from "../api";
 import { MySummary, MySummarySkeleton, type ListPlace } from "../components/my-summary";
 import { statusOf } from "../rules";
@@ -39,6 +39,7 @@ export function MyTasksPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+      <Greeting user={user} tone="plain" size="md" />
       <h1 className="text-2xl font-semibold">{tr("مهامي", "My tasks")}</h1>
       {load.state.status === "loading" && (
         <LoadingBlock className="flex flex-col gap-6">
