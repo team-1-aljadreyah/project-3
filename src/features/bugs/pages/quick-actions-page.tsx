@@ -16,12 +16,12 @@ import { BUG_STATUS, MOVE_LABEL, SEVERITY } from "../labels";
 import { BUG_LIMITS as L, bugLateDays, canManageBugs, isOpen, movesFor, SEVERITY_ORDER } from "../rules";
 import type { Bug, BugPatch, BugStatus, Severity } from "../types";
 
-type Queue = "unassigned" | "late" | "severe" | "testing" | "open";
-const QUEUES = ["unassigned", "late", "severe", "testing", "open"] as const;
+type Queue = "all" | "unassigned" | "late" | "severe" | "testing" | "open";
+const QUEUES = ["all", "unassigned", "late", "severe", "testing", "open"] as const;
 const PRIORITIES: Priority[] = ["high", "medium", "low"];
 
 /**
- * Quick actions (the client, 22 November 2026): every open bug on one line, for the monitoring officer (and the CEO) to
+ * Quick actions (the client, 22 November 2026): every bug on one line ("All", the first list, closed ones too), for the monitoring officer (and the CEO) to
  * act on without opening it: give it to a developer, change its severity, priority or fix day, and move it a step. The
  * bug tracker page stays as it is; this is the fast desk next to it. Every change is the same server call the bug's own
  * page makes, so it is in the bug's history and the people concerned are told.
@@ -54,7 +54,7 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
   const toast = useToast();
   const day = todayIso();
   const [bugs, setBugs] = useState(first);
-  const [queue, setQueueRaw] = useQueryParam<Queue>("q", "unassigned", QUEUES);
+  const [queue, setQueueRaw] = useQueryParam<Queue>("q", "all", QUEUES);
   // Rows changed here stay in view until another list is chosen, so nothing jumps away under the mouse.
   const [touched, setTouched] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState<number | null>(null);
@@ -66,12 +66,14 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
   const personOf = new Map(people.map((u) => [u.id, u]));
   const nameOf = (x: { name: string; name_en?: string }) => (lang === "en" && x.name_en ? x.name_en : x.name);
 
-  const mine = bugs.filter((b) => isOpen(b) || touched.has(b.id)).filter((b) => {
+  // Every bug she may handle, closed ones too (they show under "All", where one can be sent back).
+  const mine = bugs.filter((b) => {
     const p = projectOf.get(b.project_id);
     return p && canManageBugs(user, p);
   });
   const late = (b: Bug) => bugLateDays(b, day) > 0;
   const fits: Record<Queue, (b: Bug) => boolean> = {
+    all: () => true,
     unassigned: (b) => isOpen(b) && !b.assignee_id,
     late: (b) => late(b),
     severe: (b) => isOpen(b) && (b.severity === "critical" || b.severity === "high"),
@@ -81,7 +83,8 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
   const count = (q: Queue) => mine.filter(fits[q]).length;
   const shown = mine
     .filter((b) => fits[queue](b) || touched.has(b.id))
-    .sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity) || (a.due ?? "9999").localeCompare(b.due ?? "9999") || a.id - b.id);
+    // Open ones first, then the most severe, then the nearest fix day.
+    .sort((a, b) => Number(!isOpen(a)) - Number(!isOpen(b)) || SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity) || (a.due ?? "9999").localeCompare(b.due ?? "9999") || a.id - b.id);
 
   const setQueue = (q: Queue) => {
     setTouched(new Set());
@@ -124,6 +127,7 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
   };
 
   const QUEUE_LABEL: Record<Queue, { ar: string; en: string }> = {
+    all: { ar: "الكل", en: "All" },
     unassigned: { ar: "بلا مطوّر", en: "No developer" },
     late: { ar: "متأخرة", en: "Late" },
     severe: { ar: "حرجة وعالية", en: "Critical & high" },
@@ -167,7 +171,7 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
               )}
             >
               {tr(QUEUE_LABEL[q].ar, QUEUE_LABEL[q].en)}
-              <span className={cn("num min-w-5 rounded-md px-1 text-center text-xs", n > 0 && q !== "open" ? "bg-accent text-on-accent" : "bg-chip text-muted")}>{num(n)}</span>
+              <span className={cn("num min-w-5 rounded-md px-1 text-center text-xs", n > 0 && q !== "open" && q !== "all" ? "bg-accent text-on-accent" : "bg-chip text-muted")}>{num(n)}</span>
             </button>
           );
         })}
