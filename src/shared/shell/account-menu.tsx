@@ -52,12 +52,32 @@ function Segment({ on, label, onPick, children, lang }: { on: boolean; label?: s
   );
 }
 
+/** One labelled two-way switch of the account menu (Theme, Language, and the ones app/ passes in, like Notifications). */
+export function MenuSwitch({ icon, label, options }: { icon: React.ReactNode; label: string; options: { key: string; on: boolean; label: string; onPick: () => void }[] }) {
+  const id = useId();
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span id={id} className="flex items-center gap-2 text-[13px] text-muted">
+        {icon}
+        {label}
+      </span>
+      <div role="group" aria-labelledby={id} className="flex w-44 shrink-0 rounded-full bg-chip/70 p-0.5 dark:bg-chip">
+        {options.map((o) => (
+          <Segment key={o.key} on={o.on} onPick={o.onPick}>
+            {o.label}
+          </Segment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * The avatar at the end of the top bar opens the account card: who is signed in (the camera on the picture changes it),
  * day/night and the language as two small switches, the profile and "my performance", and signing out. A menu
  * (role="menu"): the arrows move between its items, Escape closes it and gives the focus back to the avatar.
  */
-export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSlot }) {
+export function AccountMenu({ user, profile, switches }: { user: User; profile?: ProfileSlot; /** More switches under Theme and Language (from app/). */ switches?: React.ReactNode }) {
   const { tr, lang } = useFmt();
   const theme = useTheme();
   const router = useRouter();
@@ -232,6 +252,7 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
                 </Segment>
               </div>
             </div>
+            {switches}
           </div>
 
           {/* My own pages. */}

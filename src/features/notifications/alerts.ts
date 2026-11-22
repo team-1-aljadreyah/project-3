@@ -8,6 +8,9 @@ import type { Notification, NotificationPrefs } from "./types";
 
 /** This device's alert settings (kept in this browser, for this person). */
 export interface DevicePrefs {
+  /** All alerts on this device (the account menu's switch). Off: no sound and no system notification; the bell still
+   * lists everything. */
+  on: boolean;
   /** System notifications (the phone's or computer's own), when the browser allows them. */
   system: boolean;
   /** Any sound at all. */
@@ -20,7 +23,7 @@ export interface DevicePrefs {
   chat: boolean;
 }
 
-export const DEFAULT_DEVICE_PREFS: DevicePrefs = { system: true, sound: true, chatSound: true, notifSound: true, chat: true };
+export const DEFAULT_DEVICE_PREFS: DevicePrefs = { on: true, system: true, sound: true, chatSound: true, notifSound: true, chat: true };
 
 /** The saved settings, with the defaults for anything missing or broken. */
 export function parseDevicePrefs(raw: string | null): DevicePrefs {
@@ -75,7 +78,7 @@ export function newAlerts(
   convs: Conversation[] | null,
   ctx: { me: number; viewing?: string | null; prefs: NotificationPrefs; device: DevicePrefs },
 ): Alert[] {
-  if (!prev) return [];
+  if (!prev || !ctx.device.on) return [];
   const chats: Alert[] = !ctx.device.chat
     ? []
     : (convs ?? [])

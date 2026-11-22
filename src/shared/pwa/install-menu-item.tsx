@@ -24,7 +24,7 @@ export function InstallMenuItem({ className, iconClassName, onPick }: { classNam
       <span className={iconClassName}>
         <Download size={16} aria-hidden="true" />
       </span>
-      <span className="flex flex-1 flex-col">
+      <span className="flex min-w-0 flex-1 flex-col">
         {tr("ثبّت التطبيق", "Install the app")}
         <span className="text-xs text-muted">{tr("على شاشتك الرئيسية، بنافذته الخاصة", "On your home screen, in its own window")}</span>
       </span>
