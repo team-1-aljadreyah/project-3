@@ -114,3 +114,29 @@ test.describe("on an iPhone", () => {
     await expect(hint).toHaveCount(0);
   });
 });
+
+test("the sign-in page has 'Download the app': steps for this browser, or the browser's own window when it offers one", async ({ page }) => {
+  await page.goto("/login");
+  const download = page.getByRole("button", { name: "حمّل التطبيق" });
+  // No offer from the browser yet: short steps for this browser (Chrome here).
+  await download.click();
+  const dialog = page.getByRole("dialog", { name: "ثبّت المنصة على جهازك" });
+  // The test browser is Chrome: its own steps, not Edge's.
+  await expect(dialog.getByText("Chrome على الحاسوب")).toBeVisible();
+  await expect(dialog.getByText(/«تثبيت الصفحة كتطبيق»/)).toBeVisible();
+  await expect(dialog.getByText(/Edge/)).toHaveCount(0);
+  await dialog.getByRole("button", { name: "حسناً" }).click();
+
+  // The browser offers it: the button opens the browser's own window, and once installed it goes away.
+  await page.evaluate(() => {
+    const offer = new Event("beforeinstallprompt", { cancelable: true });
+    Object.assign(offer, {
+      prompt: async () => void ((window as unknown as { prompted: boolean }).prompted = true),
+      userChoice: Promise.resolve({ outcome: "accepted" }),
+    });
+    window.dispatchEvent(offer);
+  });
+  await download.click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { prompted?: boolean }).prompted)).toBe(true);
+  await expect(download).toHaveCount(0);
+});

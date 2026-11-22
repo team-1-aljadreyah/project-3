@@ -10,6 +10,7 @@ import { Logo } from "@/shared/shell";
 import { BRAND } from "@/shared/lib/brand";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, Button, Field, Frost, Input, LightThreads, Reveal, errorText } from "@/shared/ui";
+import { InstallButton } from "@/shared/pwa";
 import { authApi } from "../api";
 import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview, introPlays } from "../components/front-door";
 import { safeNext } from "../safe-next";
@@ -93,9 +94,13 @@ export function LoginPage() {
         <span ref={logoRef} className={cn("inline-block rounded-xl", landed && "logo-land")}>
           <Logo />
         </span>
-        <Button variant="ghost" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
-          {lang === "ar" ? "English" : "العربية"}
-        </Button>
+        <span className="flex items-center gap-1">
+          {/* Install the app, before signing in too (the account menu offers it after). */}
+          <InstallButton />
+          <Button variant="ghost" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
+            {lang === "ar" ? "English" : "العربية"}
+          </Button>
+        </span>
       </header>
 
       <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pt-10 pb-20 sm:px-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:items-start lg:pt-16">

@@ -3,6 +3,7 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { takeKeys } from "@/shared/pwa/claim";
 import { iosCanAddToHome, isIos, isPhoneSize, workerAllowed, workerBuild } from "@/shared/pwa/detect";
+import { browserKind } from "@/shared/pwa/install";
 import { keyBytes } from "@/shared/pwa/push";
 
 const UA = {
@@ -114,5 +115,29 @@ describe("one tab alerts", () => {
 describe("push", () => {
   it("turns the backend's public key (base64url) into bytes", () => {
     expect([...keyBytes("AQID_w")]).toEqual([1, 2, 3, 255]);
+  });
+});
+
+describe("the install steps for each browser", () => {
+  const ua = {
+    chrome: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    edge: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    opera: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 OPR/116.0.0.0",
+    safariMac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+    firefox: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+    chromeAndroid: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+    samsung: "Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36",
+    firefoxAndroid: "Mozilla/5.0 (Android 14; Mobile; rv:133.0) Gecko/133.0 Firefox/133.0",
+  };
+  it("tells Chrome, Edge, Opera, Safari and Firefox apart, on computers and on Android", () => {
+    expect(browserKind(ua.chrome)).toBe("chrome");
+    expect(browserKind(ua.edge)).toBe("edge");
+    expect(browserKind(ua.opera)).toBe("opera");
+    expect(browserKind(ua.safariMac)).toBe("safari-mac");
+    expect(browserKind(ua.firefox)).toBe("firefox");
+    expect(browserKind(ua.chromeAndroid)).toBe("chrome-android");
+    expect(browserKind(ua.samsung)).toBe("samsung");
+    expect(browserKind(ua.firefoxAndroid)).toBe("firefox-android");
+    expect(browserKind("SomethingElse/1.0")).toBe("other");
   });
 });
