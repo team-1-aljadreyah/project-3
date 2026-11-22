@@ -136,7 +136,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 10 | `POST` | `/bugs/:id/status` | see §10 | Move a bug |
 | 10 | `GET` | `/bugs/:id/history` | see §2 | The bug's history |
 | 11 | `GET` | `/chats` | signed in | My chats (project, team, private; group chats: §11) |
-| 11 | `GET` | `/chats/:key/messages` | its members | Messages |
+| 11 | `GET` | `/chats/:key/messages` | its members | Messages, a page at a time (`?limit=30`, then `&before=<id>` when scrolling up) |
 | 11 | `POST` | `/chats/:key/messages` | its members | Send (with @mentions) |
 | 11 | `POST` | `/chats/:key/read` | its members | Read up to here |
 | 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (only the CEO and the monitor start one with the CEO: 403) |
@@ -393,7 +393,7 @@ Every change updates the task's `updated_at`.
 | `GET /bugs/:id/history` | can see its project | `BugEvent[]` |
 | `GET /bugs/:id/attachments`, `POST /bugs/:id/attachments` | as for tasks (section 8) | |
 | `GET /chats` | signed in | `Conversation[]`, my chats only, the newest message first |
-| `GET /chats/:key/messages` | the chat's members | `Message[]`, oldest first |
+| `GET /chats/:key/messages` | the chat's members | `Message[]`, oldest first. `?limit=N` (1–100): only the newest N. `?before=<id>&limit=N`: the N just older than that message. Neither: all. |
 | `POST /chats/:key/messages` | the chat's members | `Message` (section 11) |
 | `POST /chats/:key/read` | the chat's members | nothing |
 | `POST /chats/direct` `{user_id}` | signed in | `Conversation`: the existing private chat with that person, or a new one |
@@ -661,6 +661,11 @@ after the last one this person read.
 
 `Message`: `{id, chat, author_id, body, reply_to?, mentions, created_at, files}`. `files` are its attachments (section 8,
 owner type `message`).
+
+**Pages (22 November 2026):** a chat opens with its newest 30 messages (`GET /chats/:key/messages?limit=30`, also
+every 3 seconds while it is open), and scrolling to the top asks `?before=<oldest id shown>&limit=30` until a page comes
+back with fewer than 30. Always oldest first inside a page. A reply's original that is not loaded yet is reached by
+asking older pages the same way.
 
 **Sending** (`POST /chats/:key/messages {body, reply_to?, mentions?}`):
 

@@ -60,3 +60,9 @@ export interface GroupChange {
   name?: string;
   member_ids?: number[];
 }
+
+/** Which messages to load: the newest `limit`, or the `limit` just older than message `before` (docs/backend.md, section 11). */
+export interface MessagePage {
+  before?: number;
+  limit?: number;
+}

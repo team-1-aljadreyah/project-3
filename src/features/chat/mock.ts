@@ -75,9 +75,13 @@ export const chatMock: ChatApi = {
     return wait(list);
   },
 
-  async messages(key) {
+  async messages(key, page) {
     membersFor(currentUser(), key);
-    return wait(getDb().messages.filter((m) => m.chat === key).map(withFiles));
+    let list = getDb().messages.filter((m) => m.chat === key);
+    // A page: the messages older than `before`, then the newest `limit` of those (still oldest first).
+    if (page?.before) list = list.filter((m) => m.id < page.before!);
+    if (page?.limit) list = list.slice(-Math.max(1, Math.min(page.limit, 100)));
+    return wait(list.map(withFiles));
   },
 
   async send(key, input) {

@@ -10,14 +10,15 @@ import { usePoll } from "@/shared/lib/poll";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
-import { AvatarStack, Empty, ErrorBox, IconButton, LoadingBlock, PersonName, Skeleton } from "@/shared/ui";
+import { AvatarStack, Empty, ErrorBox, IconButton, LoadingBlock, Skeleton } from "@/shared/ui";
 import { chatApi } from "../api";
+import { ChatInfo } from "../components/chat-info";
 import { ConversationList } from "../components/conversation-list";
 import { GroupActions } from "../components/group-actions";
 import { GroupDialog } from "../components/group-dialog";
 import { NewDirectDialog } from "../components/new-direct-dialog";
 import { Thread } from "../components/thread";
-import { canCreateGroupChat, chatTitle, parseKey } from "../rules";
+import { canCreateGroupChat, chatTitle } from "../rules";
 import type { ChatKind, Conversation } from "../types";
 
 /**
@@ -35,6 +36,7 @@ export function ChatPage() {
   usePoll(load.reload, 10_000);
   const [starting, setStarting] = useState(false);
   const [grouping, setGrouping] = useState(false);
+  const [info, setInfo] = useState(false);
   const KIND: Record<ChatKind, string> = {
     project: tr("محادثة المشروع", "Project chat"),
     team: tr("محادثة الفريق", "Team chat"),
@@ -115,30 +117,31 @@ export function ChatPage() {
                   <Link href="/chat" aria-label={tr("رجوع إلى المحادثات", "Back to the chats")} className="rounded-lg p-1.5 text-muted hover:bg-chip md:hidden">
                     <ArrowRight size={18} aria-hidden="true" className="ltr:-scale-x-100" />
                   </Link>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span dir="auto" className="truncate font-semibold">
-                      {/* A project's chat opens its board; a private chat, the other person (when allowed). */}
-                      {open.kind === "project" ? (
-                        <Link href={`/projects/${parseKey(open.key)?.id}`} className="hover:underline">
-                          {title}
-                        </Link>
-                      ) : open.kind === "direct" && people.get(open.member_ids.find((id) => id !== me.id) ?? 0) ? (
-                        <PersonName person={people.get(open.member_ids.find((id) => id !== me.id)!)!}>{title}</PersonName>
-                      ) : (
-                        title
-                      )}
+                  {/* The name and the faces are one button: the chat's details and its members (and from there its
+                      project, team or person). */}
+                  <button
+                    type="button"
+                    onClick={() => setInfo(true)}
+                    aria-label={tr(`معلومات المحادثة وأعضاؤها: ${title}`, `About this chat and its members: ${title}`)}
+                    className="-my-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-1 text-start transition-colors hover:bg-chip/60"
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span dir="auto" className="truncate font-semibold">
+                        {title}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {KIND[open.kind]}
+                        {" · "}
+                        {tr(`${num(open.member_ids.length)} أعضاء`, `${num(open.member_ids.length)} members`)}
+                      </span>
                     </span>
-                    <span className="text-xs text-muted">
-                      {KIND[open.kind]}
-                      {" · "}
-                      {tr(`${num(open.member_ids.length)} أعضاء`, `${num(open.member_ids.length)} members`)}
+                    <span className="max-sm:hidden">
+                      <AvatarStack users={open.member_ids.flatMap((id) => people.get(id) ?? [])} max={4} />
                     </span>
-                  </span>
-                  <span className="max-sm:hidden">
-                    <AvatarStack users={open.member_ids.flatMap((id) => people.get(id) ?? [])} max={4} />
-                  </span>
+                  </button>
                   {open.kind === "group" && <GroupActions group={open} people={users} me={me} />}
                 </header>
+                <ChatInfo open={info} onClose={() => setInfo(false)} chat={open} title={title ?? ""} kindLabel={KIND[open.kind]} people={people} me={me} />
                 <Thread key={open.key} chatKey={open.key} people={people} members={open.member_ids.flatMap((id) => people.get(id) ?? [])} me={me} />
               </>
             )}
