@@ -515,6 +515,17 @@ body {
   animation: settle 0.7s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* A picture opening in the viewer (image-viewer.tsx). */
+.viewer-in {
+  animation: viewer-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes viewer-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 /* The department manager's slide (pm-orbit.tsx): the orbits draw themselves, the ring fills, the planets arrive and
    then turn slowly round the centre. */
 .orbit-path {
