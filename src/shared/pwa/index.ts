@@ -3,6 +3,7 @@
 export { PwaSupport } from "./service-worker";
 export { InstallMenuItem } from "./install-menu-item";
 export { InstallHint } from "./install-hint";
+export { InstallButton } from "./install-button";
 export { useInstallWay, installApp, type InstallWay } from "./install";
 export { isStandalone } from "./detect";
 export { playChime, type ChimeKind } from "./sound";

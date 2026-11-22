@@ -92,3 +92,38 @@ export function useIosHelpOpen() {
     () => false,
   );
 }
+
+function isInstalledNow() {
+  return installed || isStandalone();
+}
+
+/** The app is installed here, or this is the app's own window: nothing left to offer. */
+export function useIsInstalled(): boolean {
+  return useSyncExternalStore(subscribe, isInstalledNow, () => false);
+}
+
+/** Which browser (and on what), for the install steps when the browser cannot open its own install window now. */
+export type BrowserKind =
+  | "chrome"
+  | "edge"
+  | "opera"
+  | "safari-mac"
+  | "firefox"
+  | "chrome-android"
+  | "samsung"
+  | "firefox-android"
+  | "other";
+
+export function browserKind(ua: string): BrowserKind {
+  if (/Android/i.test(ua)) {
+    if (/SamsungBrowser\//.test(ua)) return "samsung";
+    if (/Firefox\//.test(ua)) return "firefox-android";
+    return "chrome-android";
+  }
+  if (/Firefox\//.test(ua)) return "firefox";
+  if (/Edg\//.test(ua)) return "edge";
+  if (/OPR\//.test(ua)) return "opera";
+  if (/Chrome\//.test(ua)) return "chrome";
+  if (/Macintosh/.test(ua) && /Safari\//.test(ua)) return "safari-mac";
+  return "other";
+}
