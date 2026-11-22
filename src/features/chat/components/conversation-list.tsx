@@ -6,6 +6,7 @@ import { cn } from "@/shared/lib/utils";
 import { Avatar } from "@/shared/ui";
 import { chatTitle } from "../rules";
 import type { Conversation } from "../types";
+import { messageSummary } from "../voice";
 
 /**
  * The person's chats, the newest first. Each whole row opens its chat (click anywhere), with the last message and
@@ -20,7 +21,7 @@ export function ConversationList({ list, people, me, active }: { list: Conversat
         const title = chatTitle(c, people, me, lang);
         const last = c.last_message;
         const other = c.kind === "direct" ? people.get(c.member_ids.find((id) => id !== me) ?? me) : undefined;
-        const preview = last ? (last.body || tr("ملف مرفق", "A file")) : tr("لا رسائل بعد", "No messages yet");
+        const preview = last ? messageSummary(last, tr) : tr("لا رسائل بعد", "No messages yet");
         return (
           <li key={c.key}>
             <Link

@@ -75,7 +75,7 @@ src/
 │   ├── announcements/ company announcements, who has and hasn't seen them
 │   ├── attachments/  file attachments (tasks, projects) and the project files page
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
-│   ├── chat/         project, team, private and group chats: replies, @mentions, files, unread counts
+│   ├── chat/         project, team, private and group chats: replies, @mentions, files, voice messages, unread counts
 │   ├── performance/  per person and team over a period, review criteria (CEO), reviews and their trend
 │   ├── profile/      my profile and my picture: pick, crop, the small square the browser sends
 │   ├── reports/      the CEO dashboard and the reports (by project, team and person, sprint), CSV download

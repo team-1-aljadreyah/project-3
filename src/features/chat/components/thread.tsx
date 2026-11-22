@@ -54,7 +54,7 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
         {messages && messages.length > 0 && (
           <ol aria-label={tr("الرسائل", "Messages")} className="flex flex-col gap-0.5">
             {messages.map((m) => (
-              <MessageItem key={m.id} m={m} replied={m.reply_to ? byId.get(m.reply_to) : undefined} people={people} mine={m.author_id === me.id} onReply={setReplyTo} />
+              <MessageItem key={m.id} m={m} replied={m.reply_to ? byId.get(m.reply_to) : undefined} people={people} mine={m.author_id === me.id} me={me.id} onReply={setReplyTo} />
             ))}
           </ol>
         )}

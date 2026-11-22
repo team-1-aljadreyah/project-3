@@ -36,8 +36,9 @@ the front end's 92 calls** are there. Still to build on the server (each is in i
 Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
 with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
-every job except the CEO (16). The front end now calls `POST /auth/logout` when someone signs out (the server already
-has it). `null` for an empty `name_en`, `phone` or `team_id` is fine: the front end treats it as empty.
+every job except the CEO (16); `POST /messages/:id/attachments` also takes a chat **voice message** (an audio file and a
+`voice` field with its length and waveform: 8, 11). The front end now calls `POST /auth/logout` when someone signs out
+(the server already has it). `null` for an empty `name_en`, `phone` or `team_id` is fine: the front end treats it as empty.
 
 **See every screen working before you build:** `npm ci`, then `NEXT_PUBLIC_USE_MOCK=true npm run dev`, open
 http://localhost:3000 and sign in with any one-tap demo account (password `123456`). Each screen there is exactly
@@ -104,7 +105,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 5 | `POST` | `/tasks/:taskId/comments` | takes part (§2) | Add a comment |
 | 5 | `GET` | `/tasks/:taskId/history` | see §2 | The task's history |
 | 8 | `GET` | `/{tasks\|bugs\|projects\|messages}/:id/attachments` | sees the owner | Files |
-| 8 | `POST` | `/{tasks\|bugs\|projects\|messages}/:id/attachments` | takes part | Upload one file (multipart) |
+| 8 | `POST` | `/{tasks\|bugs\|projects\|messages}/:id/attachments` | takes part | Upload one file (multipart); on a message, a voice recording with `voice` (§11) |
 | 8 | `DELETE` | `/attachments/:id` | uploader, its pm, ceo | Remove a file |
 | 7 | `GET` | `/notifications` | signed in | My notifications |
 | 7 | `POST` | `/notifications/:id/read` | its owner | Mark one read |
@@ -507,8 +508,10 @@ Shapes: `src/features/attachments/types.ts`. Rules (types and sizes): `src/featu
 (`src/features/attachments/mock.ts`) is the reference. Files belong to a **task**, a **project**, a **bug** (section 10) or a
 chat **message** (section 11, its own rules for who may add and remove).
 
-`Attachment`: `{id, owner_type: "task" | "project" | "bug" | "message", owner_id, name, size, mime, url, uploaded_by, at}`. `url` is where the site
+`Attachment`: `{id, owner_type: "task" | "project" | "bug" | "message", owner_id, name, size, mime, url, uploaded_by, at, voice?}`. `url` is where the site
 downloads it from (a short-lived signed link is fine). The site shows a preview for `image/png|jpeg|gif|webp` only.
+`voice` (`{duration_s, peaks}`) is there only on a chat voice message's recording (section 11, *Voice messages*): the site
+shows it as a player instead of a file.
 
 **Uploading** (`POST /tasks/:id/attachments` or `POST /projects/:id/attachments`, `multipart/form-data` with one field `file`):
 
@@ -521,6 +524,10 @@ downloads it from (a short-lived signed link is fine). The site shows a preview 
 - Keep the original `name` (≤ 200 letters) for showing it; store the file under a server-made name. Serve downloads with
   `Content-Disposition: attachment` so the browser downloads instead of opening them.
 - Log `attachment_added` in the task's or project's history (`to`: the name).
+
+**Voice recordings** go through the same call, on a chat message only, with a second form field `voice`. Their own types
+and limits (not the list above) are in section 11, *Voice messages*. An audio file sent **without** `voice` is refused like
+any type not in the list (422 on `file`).
 
 **Removing** (`DELETE /attachments/:id`): the person who uploaded it, the project's PM, or the `ceo` (403 otherwise). Log
 `attachment_removed` (`from`: the name). The history keeps the name even after the file is gone.
@@ -630,6 +637,46 @@ when a new message arrives in the open chat. Keep one mark per person per chat (
 **Files in a chat:** `POST /messages/:id/attachments` only by **the message's writer**; members see them; only the writer
 removes them (no PM override). The same types and sizes as section 8; **no history entry** (a chat isn't a task).
 
+**Voice messages** (the client: "voice messages in our chat"). A voice message is an ordinary message with **no text**
+and **one audio file**, sent with the same two calls as a message with files, so every chat rule above applies to it
+unchanged: members only (404 otherwise), the CEO private-chat rule (403), a read-only chat has no microphone, `reply_to`
+works, `mentions` don't apply (there is no text), and read marks and unread counts count it like any message.
+
+1. `POST /chats/:key/messages {body: "", reply_to?}` → the `Message` (as today).
+2. `POST /messages/:id/attachments`, `multipart/form-data` with two fields:
+   - `file`: the recording. The browser records with `MediaRecorder` in the best format it has: `audio/webm;codecs=opus`
+     (Chrome, Edge, Firefox), `audio/mp4` (AAC: Safari on iPhone and Mac), else `audio/ogg;codecs=opus`; mono, about
+     **32 kbps** (about 240 KB a minute). Named `voice-<date>.webm`, `.m4a` or `.ogg`.
+   - `voice`: a JSON text `{"duration_s": 12.4, "peaks": [0, 14, 100, …]}`: the length in seconds (one decimal) and
+     **48** whole numbers 0–100, the loudness of each slice from the start to the end, worked out in the browser, so a
+     bubble draws its bars and its length without downloading the audio.
+   - Answer: the `Attachment` with `voice` (`{duration_s, peaks}` as stored) and `mime` the **real** type.
+
+The server checks (each → **422** on the field in brackets, unless said):
+
+| Check | Rule |
+|---|---|
+| Owner | a `message` only (a task, bug or project → 422 on `voice`); only the message's **writer** (403); a member of its chat (404) |
+| One per message | a message that already has a recording (`file`) |
+| Type, by name | `webm weba ogg oga opus mp4 m4a aac mp3` (`file`) |
+| Type, by content | the first bytes must be WebM/Matroska `1A 45 DF A3`, Ogg `OggS`, MP4 `....ftyp` (check it has sound and no video), MP3 `ID3` or an MPEG frame, or AAC ADTS `FF F1`/`FF F9`. Store `mime` from **this**, not from the name or the browser: `audio/webm`, `audio/ogg`, `audio/mp4`, `audio/mpeg`, `audio/aac` (`file`) |
+| Size | not empty, at most **5 MB** (`file`) |
+| Length | `duration_s` more than 0 and at most **300** (5 minutes) (`voice`). The site stops recording at 5:00. The server may measure the real length (ffprobe) and keep that instead |
+| Waveform | `peaks`: exactly **48** whole numbers 0–100 (`voice`) |
+
+- Store the file like other files (a server-made name, `Content-Disposition: attachment` on download) and keep `voice`
+  beside it. No history entry (a chat isn't a task). Removing follows *Files in a chat* above.
+- Serve the audio so a browser can play it from its link: the right `Content-Type` and **range requests**
+  (`Accept-Ranges: bytes`), so Safari plays it and people can jump in it. The site loads it only when someone presses play.
+- The rules are in `src/features/attachments/rules.ts` (`MAX_VOICE_SECONDS`, `MAX_VOICE_BYTES`, `VOICE_EXTENSIONS`,
+  `sniffAudio`, `voiceProblem`); the demo backend's `addVoice` (`src/features/attachments/mock.ts`) is the reference.
+- *Later, if wanted:* one `multipart` call that makes the message and its recording together (no empty message is left if
+  the upload fails); a "voice message" text for new-message alerts (a voice message is a `Message` with `body: ""` whose
+  `files[]` has `voice`); and a "listened" mark kept on the server (today it is kept in the receiver's browser only).
+- *The demo* keeps the audio as a `data:` link in the browser's storage, at most 1.5 MB each, and only the newest **6**
+  recordings keep their audio (an older one keeps its bubble, length and bars; its `url` becomes empty), because the
+  browser's storage holds about 5 MB for all the demo data.
+
 **Group chats** (the client asked that the monitoring officer can "use chat and make group chats"):
 
 | Call | Body | Answer | Who |
@@ -654,7 +701,8 @@ removes them (no PM override). The same types and sizes as section 8; **no histo
 **Live:** the site reloads the open chat when data changes in this browser. With the real server, a WebSocket message
 `chat_message {chat}` (planned, like `notification`) will tell the site to load that chat and the list again.
 
-**Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats.
+**Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats,
+written versions of voice messages.
 
 ## 12. Dashboard and reports
 
