@@ -1,4 +1,4 @@
-import { Camera, ImagePlus, Trash2 } from "lucide-react";
+import { Cake, Camera, ImagePlus, Trash2 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { ROLES } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
@@ -146,6 +146,14 @@ export function ProfileDialog({ start = "view", onClose }: { start?: ProfileStar
                 <p dir="ltr" className="mt-1 max-w-full truncate text-sm text-muted">
                   {user.email}
                 </p>
+                {/* Your own birth date, with the year: only you, the admin and the CEO see the year. */}
+                {user.birth_date && (
+                  <p className="inline-flex flex-wrap items-center justify-center gap-x-1.5 text-xs text-muted sm:justify-start">
+                    <Cake size={13} aria-hidden="true" className="text-accent" />
+                    {new Intl.DateTimeFormat(lang === "ar" ? "ar-IQ-u-nu-latn" : "en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${user.birth_date}T00:00:00`))}
+                    <span className="text-faint">· {tr("يرى زملاؤك اليوم والشهر فقط", "Colleagues see only the day and month")}</span>
+                  </p>
+                )}
               </div>
             </div>
             <section aria-labelledby={`${fileId}-h`} className="rounded-xl border border-line bg-card-2 p-4">

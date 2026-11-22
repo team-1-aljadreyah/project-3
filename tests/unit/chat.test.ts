@@ -238,8 +238,14 @@ describe("group chats", () => {
 });
 
 describe("employees and the CEO", () => {
-  it("nobody opens a private chat with the CEO; the CEO can, and then the other person may answer", async () => {
-    for (const id of [2, 3, 4, 8]) {
+  it("only the monitoring officer opens a private chat with the CEO and writes freely there", async () => {
+    as(3);
+    const c = await api.startDirect(1);
+    expect((await api.send(c.key, { body: "تقرير اليوم جاهز." })).body).toBe("تقرير اليوم جاهز.");
+  });
+
+  it("nobody else opens a private chat with the CEO; the CEO can, and then the other person may answer", async () => {
+    for (const id of [2, 4, 8]) {
       as(id);
       expect((await fails(api.startDirect(1)))?.status, `job of ${id}`).toBe(403);
     }

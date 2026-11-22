@@ -46,7 +46,7 @@ const MESSAGES: Record<NonNullable<ReturnType<typeof criteriaProblem>>, [string,
 export const performanceMock: PerformanceApi = {
   async overview(period) {
     const user = currentUser();
-    if (!canSeePeoplePerf(user)) return fail(403, "FORBIDDEN", "هذه الصفحة للإدارة ومديري المشاريع والمتابعة وقادة الفرق.", "This page is for management, PMs, M&E and team leaders.");
+    if (!canSeePeoplePerf(user)) return fail(403, "FORBIDDEN", "هذه الصفحة للإدارة ومديري الأقسام والمتابعة وقادة الفرق.", "This page is for management, department managers, M&E and team leaders.");
     checkPeriod(period);
     const db = getDb();
     const projects = visibleProjects(user);

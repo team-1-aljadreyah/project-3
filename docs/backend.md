@@ -21,24 +21,28 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 92 calls** are there. Still to build on the server (each is in its section below; the demo backend in
+the front end's 106 calls** are there (the 5 request and sharing calls and the 9 rating calls of 22 November are new). Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
 |---|---|---|
 | Group chats | `POST /chats/groups`, `PATCH /chats/:key`, `POST /chats/:key/leave` | 11 |
-| Monitoring notes, requests, the CEO's inbox | `GET`/`POST /monitoring/notes`, `POST /monitoring/notes/:id/send`, `GET /ceo/inbox`, `POST /ceo/inbox/:id/answer` (with `reopen`), `GET /monitoring/report-facts` | 16 |
+| Monitoring notes, requests, the CEO's inbox | `GET`/`POST /monitoring/notes` (with `share_ids`), `POST /monitoring/notes/:id/send`, `GET /ceo/inbox`, `POST /ceo/inbox/:id/answer` (with `reopen`), `GET /monitoring/report-facts` | 16 |
+| Requests pass through monitoring; notes to anyone | `POST /monitoring/requests/:id/forward`, `POST /monitoring/requests/:id/answer`, `POST /monitoring/notes/:id/share`, `GET /monitoring/received`, `POST /monitoring/notes/:id/seen` | 16 |
 | The CEO's advanced settings and new roles | `GET`/`PUT /ceo/advanced`, `GET /ceo/advanced/history`, `GET /site/live` | 17, 17.1 |
 | Audit details | `GET /audit/:id`; `GET /audit` with `q`, `kind`, `ip`; `ip`, `user_agent`, `session_id`, `request_id` on every line | 14 |
 | Quick search | `GET /search?q=` | 18 |
 | Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
+| Birthdays | `birth_date` on the users calls (who sees the year), a daily job for `birthday_soon` and `birthday_today` | 20 |
+| Quick ratings of teams and people, the team pages | `GET /teams/ratings/summary`, `GET /teams/:id`, `GET`/`POST /teams/:id/ratings`, `GET /people/ratings/summary`, `GET`/`POST /people/:id/ratings`, `PATCH`/`DELETE /ratings/:id` | 21 |
 
-Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); error codes `FEATURE_OFF` (403) and
+Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); `Notification` gets `team_id` and the kinds `team_rated`, `person_rated` (7, 21); the audit log gets `rating_changed`, `rating_deleted` (14); the custom roles' actions get `give_ratings` (17.1); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
-with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
-every job except the CEO (16); `POST /messages/:id/attachments` also takes a chat **voice message** (an audio file and a
-`voice` field with its length and waveform: 8, 11). The front end now calls `POST /auth/logout` when someone signs out
-(the server already has it). `null` for an empty `name_en`, `phone` or `team_id` is fine: the front end treats it as empty.
+with the CEO as the other person is 403 for every job **except the `monitor`** (16); requests (`kind: "request"`) come from
+every job except the CEO and **reach the monitoring officer first** (16, since 22 November 2026); the `pm` job is now
+called «مدير القسم» / "Department manager" on every screen (the code `pm` is unchanged); `POST /messages/:id/attachments` also takes a chat **voice message** (an audio file and a
+`voice` field with its length and waveform: 8, 11). The front end now calls `POST /auth/logout` when someone signs out (the server already
+has it). `null` for an empty `name_en`, `phone` or `team_id` is fine: the front end treats it as empty.
 
 **See every screen working before you build:** `npm ci`, then `NEXT_PUBLIC_USE_MOCK=true npm run dev`, open
 http://localhost:3000 and sign in with any one-tap demo account (password `123456`). Each screen there is exactly
@@ -59,6 +63,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
 | 9 | The CEO's advanced settings and what they switch | 17 | let the CEO run the rules without a developer |
 | 10 | Profile pictures | 19 | let everyone put a face to their name |
+| 11 | Birthdays: the field, who sees the year, the daily reminders | 20 | remind monitoring of everyone's birthday |
+| 12 | Quick ratings of teams and people, the team pages | 21 | let monitoring rate any team or person, for any reason |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -74,7 +80,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 1 | `POST` | `/auth/login` | anyone | Sign in → `{ token, user }` |
 | 1 | `POST` | `/auth/logout` | signed in | Sign out: cancel this token (the front end calls it, then forgets the token) |
 | 1 | `GET` | `/me` | signed in | The signed-in person |
-| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`) for pickers and avatars |
+| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`, `birthday` "MM-DD") for pickers and avatars; the year (`birth_date`) only your own, or for the admin and the CEO (20) |
 | 19 | `PUT` | `/me/avatar` | signed in (only yourself) | Set or replace my picture (`multipart/form-data`, field `file`) → the updated `User` |
 | 19 | `DELETE` | `/me/avatar` | signed in (only yourself) | Remove my picture → the updated `User` |
 | 19 | `DELETE` | `/users/:id/avatar` | admin, ceo | Remove someone's picture that is not appropriate → that `User` |
@@ -128,7 +134,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 11 | `GET` | `/chats/:key/messages` | its members | Messages |
 | 11 | `POST` | `/chats/:key/messages` | its members | Send (with @mentions) |
 | 11 | `POST` | `/chats/:key/read` | its members | Read up to here |
-| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (nobody but the CEO starts one with the CEO: 403) |
+| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (only the CEO and the monitor start one with the CEO: 403) |
 | 11 | `POST` | `/chats/groups` | monitor, pm, lead, ceo | Make a group chat `{name, member_ids}` |
 | 11 | `PATCH` | `/chats/:key` | the group's maker, ceo | Rename a group, change its members |
 | 11 | `POST` | `/chats/:key/leave` | its members | Leave a group |
@@ -142,8 +148,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 13 | `PATCH` | `/reviews/:id` | its reviewer, ceo | Change a draft |
 | 13 | `POST` | `/reviews/:id/finalize` | its reviewer, ceo | Make it final (the person is told) |
 | 14 | `GET` | `/admin/users` | admin, ceo | Accounts with their sign-in state |
-| 14 | `POST` | `/admin/users` | admin, ceo | Add an account |
-| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock; give or clear a custom role (`custom_role`, §17.1) |
+| 14 | `POST` | `/admin/users` | admin, ceo | Add an account (an optional `birth_date`, §20) |
+| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock; give or clear a custom role (`custom_role`, §17.1); set or clear `birth_date` (§20) |
 | 14 | `GET` | `/teams` | signed in | Teams |
 | 14 | `POST` | `/admin/teams` | admin, ceo | Add a team |
 | 14 | `PATCH` | `/admin/teams/:id` | admin, ceo | Change a team |
@@ -155,9 +161,14 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 15 | `GET` | `/projects/:projectId/github` | its pm, ceo | GitHub settings |
 | 15 | `PUT` | `/projects/:projectId/github` | its pm, ceo | Save them |
 | 15 | `GET` | `/{tasks\|bugs}/:id/github` | see §2 | Linked pull requests and commits |
-| 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes (the CEO sees all) |
+| 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes and everyone's requests (the CEO sees all) |
 | 16 | `POST` | `/monitoring/notes` | monitor, ceo; every job but the ceo (requests only) | Write a report, feedback or a problem; a request to the CEO |
 | 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
+| 16 | `POST` | `/monitoring/notes/:id/share` | its writer, ceo | Send a report, feedback or problem to more people |
+| 16 | `GET` | `/monitoring/received` | signed in | The notes sent to me |
+| 16 | `POST` | `/monitoring/notes/:id/seen` | a person it was sent to | I opened it (the writer sees it) |
+| 16 | `POST` | `/monitoring/requests/:id/forward` | monitor, ceo | Send a waiting request on to the CEO (optional note) |
+| 16 | `POST` | `/monitoring/requests/:id/answer` | monitor, ceo | Answer a waiting request herself (it never reaches the CEO) |
 | 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
 | 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done, or reopen |
@@ -167,6 +178,15 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 17 | `GET` | `/ceo/advanced/history` | ceo | Every save, from → to, newest first |
 | 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode, the custom roles, their own job (`me`) |
 | 17.1 | `PUT` | `/ceo/advanced` (`rules.roles`) | ceo | Make, change, copy or remove the CEO's custom roles (a role in use can't be removed: 409) |
+| 21 | `GET` | `/teams/ratings/summary` | signed in | The teams this person may see, each with its members count, its ratings in numbers (or null) and `can_rate` |
+| 21 | `GET` | `/teams/:id` | ceo, monitor, pm, admin; lead and employee: their own team | One team, its active members (the leader first), `can_see_ratings` and the members' task numbers (`tasks`, or null) |
+| 21 | `GET` | `/teams/:id/ratings` | see §21 | The team's quick ratings this person may read, newest first, and `can_rate` |
+| 21 | `POST` | `/teams/:id/ratings` | monitor, ceo; pm: teams in their projects | Rate a team (the leader is told `team_rated` unless private) |
+| 21 | `GET` | `/people/ratings/summary` | signed in | The people whose ratings this person may read, each with the numbers and `can_rate` |
+| 21 | `GET` | `/people/:id/ratings` | see §21 | A person's quick ratings this person may read, and `can_rate` |
+| 21 | `POST` | `/people/:id/ratings` | monitor, ceo; pm: people in their projects (never yourself) | Rate a person (they are told `person_rated` unless private) |
+| 21 | `PATCH` | `/ratings/:id` | its writer (24 h), ceo | Change a rating |
+| 21 | `DELETE` | `/ratings/:id` | its writer (24 h), ceo | Remove a rating (always written in the audit log) |
 
 ### Who may do what (summary)
 
@@ -186,6 +206,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | Remove someone else's picture | ✓ | | | | | ✓ |
 | Monitoring notes | ✓ | | ✓ | | | |
 | The CEO's inbox | ✓ | | | | | |
+| Quick ratings: give (§21) | ✓ | teams and people in their projects | any team, anyone | | | |
+| Quick ratings: read | ✓ | the ones they may give | ✓ | their team's, their own | their team's, their own | |
 
 ---
 
@@ -208,7 +230,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 
 ## 2. Jobs and who sees what
 
-`role`: `ceo`, `pm` (project manager), `monitor` (monitoring & evaluation), `lead` (team leader), `employee`, `admin`.
+`role`: `ceo`, `pm` (department manager), `monitor` (monitoring & evaluation), `lead` (team leader), `employee`, `admin`.
 
 The server must filter, not only the pages:
 
@@ -490,8 +512,12 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `review_final` | a performance review of you is made final (data: `note` = the period) | the reviewed person |
 | `dependency_done` | the last unfinished task another task waited for is done (`task_id` = the waiting task; data: `note` = the finished task's code) | the waiting task's assignee |
 | `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
+| `birthday_soon` | a colleague's birthday is exactly 7 days away (data: `person_id`, `person_name`, `person_name_en`, `due`) | every active `monitor` and the `ceo`, once per person and year (section 20) |
+| `birthday_today` | a colleague's birthday is today (the same data) | the same, once per person and year (section 20) |
+| `team_rated` | a team gets a quick rating that isn't private, or one is made visible (`team_id`; data: `team_name`, `team_name_en`, `score`, `note` = the reason's start) | the team's leader (section 21) |
+| `person_rated` | a person gets a quick rating that isn't private, or one is made visible (data: `score`, `note` = the reason's start) | that person (section 21) |
 
-**Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
+**Reminders** (`task_due_soon`, `task_overdue`, and the birthdays of section 20) come from the calendar, not from an action: the real server should make
 them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
 
 **Preferences** (`PUT /notifications/preferences`, `{ [kind]: boolean }`; a missing kind means on): **required kinds can't be
@@ -563,10 +589,10 @@ due?, created_at, updated_at, closed_at?}`. `code` is made by the server (`BUG-�
 **Reporting** (`POST /projects/:id/bugs {title, description, severity, priority, phase_id?, task_id?, assignee_id?, due?}`):
 everyone who takes part in the project (403 for `admin`). `title` required ≤ 160; `severity` required; the phase and the task
 must be of this project, the developer a member (422 on the field). `assignee_id` and `due` are kept **only when a manager
-reports** (the PM or a team leader in the project); from anyone else they are ignored. Starts `assigned` when it has a
+reports** (the PM or a team leader in the project, or the `monitor`); from anyone else they are ignored. Starts `assigned` when it has a
 developer, else `reported`. Notify `bug_reported` and, with a developer, `bug_assigned`.
 
-**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders only. Log `severity`, `priority`, `due`, `assignee`, and
+**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders, and the `monitor` on every project (her «إجراءات سريعة» / Quick actions page, the client 22 November 2026: every open bug on one line, assign, severity, priority, day and the next move, all with these same calls). "Managers" below includes her. Log `severity`, `priority`, `due`, `assignee`, and
 `edited` for the title or description. Giving a `reported` bug a developer also moves it to `assigned` (logged).
 
 **The flow** (`POST /bugs/:id/status {status, note?}`), from the brief:
@@ -776,7 +802,7 @@ the sign-in lock in `src/features/auth/mock.ts`, the audit helper in `src/mock/a
 `POST /admin/users`; `PATCH /admin/users/:id`): the `admin` only (403).
 
 - `name` required ≤ 120; `email` valid, stored lower case, **unique** (422 on `email`); `role` one of the six; `title` ≤ 80;
-  `team_id` an existing team or null (422).
+  `team_id` an existing team or null (422); `birth_date` optional, a real past day, age 16–80 (422; section 20).
 - **No account is deleted:** `active: false` stops it (it can't sign in: 403), `true` restarts it. The history stays.
 - **Guards (409):** an admin can't change their own role or stop themselves; at least one active admin always stays; a
   `pm` who manages projects that aren't `done` can't lose the role or be stopped (the message names the projects:
@@ -826,7 +852,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 20):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 22):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -834,7 +860,8 @@ Written for:
 `user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
 `team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
-`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19), `rating_deleted` (every removed quick
+rating), `rating_changed` (the CEO changing someone else's; section 21). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
 
 ## 15. GitHub
 
@@ -869,6 +896,9 @@ MonitorNote {
   people?: [{ id, label, label_en? }],      // problems: the people involved (≤30, anyone active; names copied)
   author_id, created_at,
   sent_at?, ceo_state?: "new" | "seen" | "done", ceo_reply? (≤2000), replied_at?,
+  triage?: "pending" | "forwarded" | "answered",   // requests only: what the monitoring officer did with it
+  forward_note? (≤2000), monitor_reply? (≤2000), triaged_by?, triaged_at?,
+  shared_with?: [{ id, label, label_en?, at, seen_at? }],   // reports, feedback, problems sent to people other than the CEO
   facts?: ReportFacts                       // reports from the report builder: the numbers counted when it was saved
 }
 
@@ -887,25 +917,43 @@ ReportFacts {
 
 | Call | Who | Notes |
 |---|---|---|
-| `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers; the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
-| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. A report from the builder also sends `period: { from, to }`: the server counts the numbers **again** itself (never trusts numbers from the browser) and keeps them in `facts`; `period` on another kind, or with `about: general`, is **422**. |
+| `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers, and the `monitor` also every request (`kind: "request"`, for the Incoming requests tab); the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
+| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once to the CEO. `share_ids: number[]` (optional, ≤30, active people; the writer and the CEO are skipped) sends it to those people too (see below). A report from the builder also sends `period: { from, to }`: the server counts the numbers **again** itself (never trusts numbers from the browser) and keeps them in `facts`; `period` on another kind, or with `about: general`, is **422**. |
 | `GET /monitoring/report-facts?type=&id=&from=&to=` | `monitor`, `ceo` | The report builder. `type` is `team`, `person` or `project`. A team: its members' tasks in every project, one row per member (members with no task included). A person: their tasks, one row per project they have tasks in. A project: its tasks, one row per person with tasks in it. Bugs: a project's bugs; for a team or a person, the bugs assigned to them. Bad period or unknown `id`: **422** (`period`, `about`). Others: **403**. |
 | `POST /monitoring/notes/:id/send` | its writer, `ceo` | Sets `sent_at` = now and `ceo_state` = "new" (sending again brings it back to "new"). Notifies every active CEO: kind `note_sent`, `data.title`. |
+| `POST /monitoring/notes/:id/share` | its writer, `ceo` | Body: `{ user_ids: number[] }` (at least one: **422** `share_ids`). Not for requests (**403**). Adds each new person to `shared_with` (the writer, the CEO and people already there are skipped) and notifies them: kind `note_sent`, `data.title`, `data.queue: "received"`. |
+| `GET /monitoring/received` | signed in | The notes whose `shared_with` holds me, newest first (the "Received from monitoring" tab of the Requests page). |
+| `POST /monitoring/notes/:id/seen` | a person in `shared_with` | Sets my `seen_at` once (the writer sees who opened it). Not sent to me: **404**. |
+| `POST /monitoring/requests/:id/forward` | `monitor`, `ceo` | Body: `{ note? }` (≤2000, for the CEO's eyes). Only a `triage: "pending"` request (else **409 `BAD_STATE`**). Sets `triage: "forwarded"`, `triaged_by`, `triaged_at`, `forward_note`, then sends it to the CEO like `/send` (`sent_at`, `ceo_state: "new"`, `note_sent` to the CEOs). |
+| `POST /monitoring/requests/:id/answer` | `monitor`, `ceo` | Body: `{ reply }` (required, ≤2000: **422** `reply`). Only a pending request (**409**). Sets `triage: "answered"`, `monitor_reply`, `triaged_by`, `triaged_at`; it is **not** sent to the CEO. Notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply, `data.note_kind: "request"`. |
 | `GET /ceo/inbox` | `ceo` | Every sent note, newest first. Others: **403**. |
 | `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply?, reopen? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again; `reopen: true` (with "seen") takes a done note back to "seen". Done notes are never deleted: the inbox shows them under "Done" (the CEO's archive), so `GET /ceo/inbox` keeps returning them. |
 
 - A note you may not see answers **404** (like one that doesn't exist). Validation errors are **422** with per-field
   messages (`title`, `body`, `about`, `kind`, `reply`) in Arabic and English, like every other form.
 - `note_sent` and `note_answered` are **required** notifications (nobody can turn them off). `note_answered` carries
-  `data.note_kind` ("request" opens the Requests page).
+  `data.note_kind` ("request" opens the Requests page). `note_sent` carries `data.queue`: `"monitor"` (a request waiting
+  for the monitoring officer: opens `/monitoring?show=requests`), `"received"` (a note sent to me: opens
+  `/requests?tab=received`), or nothing (the CEO's inbox).
 
-**Requests (every job but the CEO, since 21 November 2026):** nobody starts a chat with the CEO. Anyone except the
-CEO sends a note with `kind: "request"`, a `subject` (required, anything) and `about: { type: "general" }`; it is sent
-to the CEO at once (as if `send: true`) and answered in `/ceo/inbox`. The CEO: **403** for `kind: "request"` (the one
-agreed exception to the CEO rule: requests go to the CEO).
+**Requests (every job but the CEO, since 21 November 2026):** anyone except the CEO sends a note with
+`kind: "request"`, a `subject` (required, anything) and `about: { type: "general" }`. The CEO: **403** for
+`kind: "request"` (the one agreed exception to the CEO rule: requests go to the CEO).
 
-**Private chats with the CEO:** `POST /chats/direct` with the CEO as the other person answers **403** for **every** job
-(only the CEO starts a private chat with someone). In a private chat the CEO started, the other person may send only
+**Requests pass through the monitoring officer (the client, 22 November 2026):** a new request is **not** sent to the
+CEO. It gets `triage: "pending"` (no `sent_at`) and every active `monitor` is notified (`note_sent`,
+`data.queue: "monitor"`). She then either **forwards** it to the CEO (`/forward`, with an optional note) or **answers**
+it herself (`/answer`). Once forwarded, the CEO's answer (`/ceo/inbox/:id/answer`) goes **straight to the writer**, not
+back to her. Two cases go straight to the CEO (as before: `sent_at` set at once, no `triage`): a request written by the
+`monitor` herself, and any request when there is no active `monitor`.
+
+**Reports to anyone (22 November 2026):** the monitoring officer chooses who gets a report, feedback or problem: the
+CEO (`send`), and/or any people (`share_ids` on create, or `/share` later). They find it on their Requests page under
+"Received from monitoring"; opening it calls `/seen`. Every report and list can be printed or saved as a PDF from the
+browser (no server call).
+
+**Private chats with the CEO (22 November 2026):** `POST /chats/direct` with the CEO as the other person answers **403**
+for every job **except the `monitor`**: only the monitoring officer speaks directly with the CEO (and writes freely there). In a private chat the CEO started, the other person may send only
 after the CEO has written there (403 before).
 
 ## 17. The CEO's advanced settings
@@ -1038,6 +1086,7 @@ rules first (everything above, unchanged), **and then against the role**: these 
 | `create_group_chat` | creating a group chat |
 | `write_reviews` | `POST /reviews`, `PATCH /reviews/:id`, `POST /reviews/:id/finalize`; and `can_review: false` in `GET /performance/people/:id` |
 | `report_bugs` | `POST /projects/:projectId/bugs` |
+| `give_ratings` | `POST /teams/:id/ratings`, `POST /people/:id/ratings`; and `can_rate: false` in the ratings calls (section 21) |
 
 The pages hide the matching buttons. **The CEO is never limited** (the CEO rule), and people without a custom role are
 unaffected. The menu hides the pages the role doesn't see (now). **Later:** refusing those pages' calls for the role
@@ -1096,9 +1145,142 @@ is not appropriate (the admin's user window has "Remove picture"). Anyone else �
 yourself this way is allowed too. Log **`picture_removed`** in the audit log (`target: {type: "user", id, label: name}`)
 when it is someone else's. The person can set a new one. *(Not decided with the client: whether the person is told.)*
 
-## 20. Still open with the client
+## 20. Birthdays
+
+The client (22 November 2026): "all the accounts should have a birth date, and when that day comes the monitor should be
+notified; also notified a week before". The date maths: `src/shared/lib/birthday.ts`; the privacy rule: `canSeeBirthDate`
+in `src/shared/lib/access.ts`, applied by `birthdayView`; the demo reminders: `remindBirthdays` in `src/mock/notify.ts`;
+the tests: `tests/unit/birthdays.test.ts` and `tests/e2e/birthdays.spec.ts`.
+
+**The field.** `User` gets **`birth_date?: "YYYY-MM-DD"`** (the full date) and **`birthday?: "MM-DD"`** (the day and
+month only). The admin and the CEO set it with `POST /admin/users` and `PATCH /admin/users/:id` (`birth_date`; `null`
+clears it). Nobody else can change it, not even the person (as with the name and the job).
+
+- **Optional, but asked for** *(our choice, to confirm with the client)*: the accounts already on the server have none,
+  and a required field would block every change to them until someone knows the date. The admin's form suggests it,
+  and the admin's list marks the active accounts without one, with a filter to find them. No date: no reminders.
+- **Checks (422 on `birth_date`, in the request's language):** a real day written `YYYY-MM-DD` (not 2026-02-30), not
+  after today, and an age **from 16 to 80** on today (the company's time zone). The check: `birthDateProblem`; the
+  messages: `BIRTH_DATE_ERRORS` in `src/features/admin/rules.ts`.
+- The audit log's `user_changed` line names the field (`birth_date`) but **writes neither the old nor the new date**.
+
+**Privacy (birthdays are personal).** Only the person themself, the `admin` and the `ceo` see the year (and so the age):
+
+| Call | `birth_date` (with the year) | `birthday` ("MM-DD") |
+|---|---|---|
+| `/auth/login`, `/me` (yourself) | yes | yes |
+| `/admin/users` (admin, ceo) | yes, everyone's | yes |
+| `/users` asked by the admin or the ceo | yes, everyone's | yes |
+| `/users` asked by anyone else | **only their own** | yes, everyone's who has a date |
+
+No other call returns either field, and no notification or export carries a year of birth (the reminders carry only the
+day of that year's birthday).
+
+**The reminders.** Two kinds, **not required** (each person may turn them off; the CEO's notification table, section 17,
+may stop them for a whole job):
+
+| `kind` | When | Data |
+|---|---|---|
+| `birthday_soon` | exactly **7 days before** the birthday | `person_id`, `person_name`, `person_name_en`, `due` = the day of the birthday that year |
+| `birthday_today` | **on the day** | the same |
+
+- **Who gets them:** every **active** `monitor` (the client) and the `ceo` (the CEO rule; *our choice*: she can untick her
+  job for these kinds in the notification table). Never the person whose birthday it is, and only about **active**
+  accounts. No `actor_id`.
+- **A daily job** each morning (for example 07:00) **in the company's time zone, Asia/Baghdad**: for every active person
+  with a birth date, take their next birthday on or after today; 0 days away → `birthday_today`, exactly 7 days away →
+  `birthday_soon`. The week before works across the year end: a 3 January birthday is reminded on 27 December.
+- **29 February:** in a year without one, the birthday is **28 February** (both reminders count from that day).
+- **No duplicates:** at most one notification per receiver, person, kind and `due`, so once a year each. A unique key on
+  (`user_id`, `kind`, `data.person_id`, `data.due`) makes running the job twice safe; after a missed morning, run it
+  for the missed day (with that day as "today"). The demo makes them when someone opens their notifications
+  (`GET /notifications`), with the same rule.
+- The site writes the sentence from `kind` and `data`, counted from today: «عيد ميلاد سارة علي بعد أسبوع (29 تشرين
+  الثاني)», «اليوم عيد ميلاد سارة علي». A click opens the person's performance page when the reader may open it, else
+  the birthdays card on the dashboard.
+
+**Where people see them** (no new call): the "Upcoming birthdays" card on the monitoring officer's and the CEO's
+dashboard (the next 30 days, from `GET /users`: day and month only), and «عيد ميلاد سعيد» in the person's own welcome
+splash on the day.
+
+## 21. Quick ratings of teams and people, and the team pages
+
+The client (22 November 2026): "add a rating system for teams, and make sure the monitor can rate for whatever reason",
+then, on the performance page, "here it should be able to give a rating as a monitor". A **quick rating** is a score
+with a reason, given at any time and for any reason, about a **team** or a **person**. It is not the periodic
+performance review of section 13 (the pages call them «تقييمات سريعة» and «التقييم الدوري»): reviews keep working as
+they are.
+
+Shapes: `src/features/ratings/types.ts`; rules, checks and the numbers: `src/features/ratings/rules.ts` (pure, tested in
+`tests/unit/ratings.test.ts`); the demo backend (the reference): `src/features/ratings/mock.ts`.
+
+```text
+Rating {
+  id, subject_type: "team" | "person", subject_id,        // the team's id or the person's user id
+  rater_id, score: 1..5,                                   // 1 ضعيف Poor · 2 مقبول Fair · 3 جيد Good · 4 جيد جداً Very good · 5 ممتاز Excellent
+  reason_type: "quality" | "deadlines" | "teamwork" | "attitude" | "incident" | "other",
+  reason (1–1000, trimmed),                                // in the rater's own words, required
+  project_id?, project_name?, project_name_en?,            // optional; the names are copied when it is written
+  period?: { from, to },                                   // optional, "YYYY-MM-DD", from ≤ to
+  private: boolean,                                        // only the CEO and the rater see it
+  created_at, edited_at?, edited_by?                       // edited_by: set when someone other than the rater changed it (the CEO)
+}
+RatingInput { score, reason_type, reason, project_id?: number | null, period?: { from, to } | null, private?: boolean }
+RatingSummary { count, average (1 decimal) | null, recent: {count, average}, before: {count, average},   // last 90 days / older
+                by_type: { [reason_type]: n }, by_score: [n1..n5], last?: { score, reason_type, created_at } }
+```
+
+One table holds both kinds (`subject_type`, `subject_id`), so a person's and a team's ratings follow the same rules.
+
+**Who (assumptions, to confirm with the client):**
+
+| | ceo | monitor | pm | lead | employee | admin |
+|---|---|---|---|---|---|---|
+| Rate a team | any | any | the teams with a member in a project they run | | | |
+| Rate a person | anyone | anyone | the people in the projects they run | | | |
+| Read a team's ratings | all | all | the teams they may rate | their own team's | their own team's | |
+| Read a person's ratings | all | all | the people they may rate | their own | their own | |
+| See a team page `/teams/:id` | all | all | all | their own team | their own team | all (members only) |
+
+- **Nobody rates themselves**, and the CEO and the system admin are never rated (403).
+- **Private** ratings are read only by the CEO and their writer: not by the team, its leader, the person, other raters
+  or PMs. Nobody is told about a private rating.
+- **Changing and removing:** the writer may change (`PATCH`) or remove (`DELETE`) a rating for **24 hours** after
+  `created_at`; after that it stays as history: **409 `BAD_STATE`** for the writer. The CEO may change or remove any
+  rating at any time (the CEO rule). Someone else who may read it: **403**. **Every removal** is written in the audit
+  log (`rating_deleted`, target the team (`team`) or the person (`user`), changes: the score, kind, reason and who wrote
+  it), and so is the CEO changing someone else's (`rating_changed`, before → after; the rating gets `edited_by`).
+- **Custom roles** (section 17.1): the action `give_ratings` («التقييمات السريعة للفرق والأشخاص», default: pm,
+  monitor). A role without it gets **403** on both `POST` calls, and `can_rate: false`.
+- Read-only mode (section 17) refuses the three changing calls (423) like any other change.
+
+**Calls:**
+
+| Call | Answer, rules |
+|---|---|
+| `GET /teams/ratings/summary` | `[{ team, member_count, ratings: RatingSummary \| null, can_rate }]`: the teams this person may see (see the table); `ratings` is null when they may not read the team's ratings, and counts only the ratings they may read (private ones only for the CEO and their writer). Declare it before `/teams/:id` (or keep `:id` numeric). |
+| `GET /teams/:id` | `{ team, members: User[], can_see_ratings, tasks: {open, late, blocked, done} \| null }`. Members are the active users with this `team_id`, the leader first. `tasks`: the members' tasks now, over the projects this person may see (done = a status of tone `done`; late = not done and `due` before today; blocked = tone `blocked`), only for the jobs that see the reports (ceo, pm, monitor, lead); null for others. A team they may not see: **404**. |
+| `GET /teams/:id/ratings` | `{ items: Rating[], can_rate }`, newest first, only the ones they may read. **404** for a team they may not see; **403** when they may see the team but not its ratings (the admin; a PM for a team outside their projects). |
+| `POST /teams/:id/ratings` | Body `RatingInput` → the new `Rating`. **403** for who may not rate it; **422** per field (`score`, `reason_type`, `reason`, `period`, `project_id`: a project this person may see). Unless private: notify the team's leader `team_rated`. |
+| `GET /people/ratings/summary` | `[{ user_id, ratings: RatingSummary, can_rate }]`: every active person (not the CEO or the admin) whose ratings this person may read. The performance page shows them in its «التقييم» column. |
+| `GET /people/:id/ratings` | `{ items, can_rate }` like a team's. Unknown user **404**; not allowed **403**. |
+| `POST /people/:id/ratings` | Like a team's. Unless private: notify the person `person_rated` (it opens `/performance/:id#ratings`). |
+| `PATCH /ratings/:id` | Body `RatingInput` → the changed `Rating` (`edited_at`). A private rating made visible notifies then. **404** if they may not read it, **403** / **409** as above. |
+| `DELETE /ratings/:id` | Removes it (an audit line). **404** / **403** / **409** as above. |
+
+**Notifications** (section 7): `team_rated` and `person_rated` are **not required** (people may turn them off), and the
+CEO's table of who gets what lists them like the others.
+
+**Where it shows:** `/teams` (the list: leader, people, average and trend, the last rating, "Rate"; a menu item for the
+ceo, pm and monitor), `/teams/:id` (people, the task numbers, the ratings: average, trend, by kind of reason, the list),
+the performance page (the team cards and an «التقييم» column per person, each with "Rate"), the person's performance
+page (a «تقييمات سريعة» section apart from the periodic reviews), and the monitoring officer's dashboard ("Rate a
+team"). Every team name on the dashboard, the performance page, the reports and the admin's teams opens `/teams/:id`.
+
+## 22. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
 the review criteria and who reviews whom (13), the sign-in lock and backups (14), how long the audit log keeps IP
-addresses and devices (14), GitHub one-way or two-way (15).
+addresses and devices (14), GitHub one-way or two-way (15), whether a birth date must be required and whether the CEO gets the birthday
+reminders too (20), who gives and reads quick ratings and the 24-hour window to change one (21).

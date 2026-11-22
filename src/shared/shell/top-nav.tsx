@@ -20,9 +20,11 @@ export function TopNav({ user, actions, profile }: { user: User; actions?: React
   const active = activeNavKey(path);
   // A feature the CEO switched off leaves the menu (never the CEO's menu).
   const hidden = hiddenNavKeys(useSiteLive(), user);
-  const items = navFor(user.role).filter((item) => !hidden.includes(item.key));
-  // A long menu (the CEO sees every item) is a little tighter, so it stays on one row on a computer.
-  const dense = items.length > 12;
+  // Items that live in the account menu (the avatar) are not repeated here.
+  const items = navFor(user.role).filter((item) => !hidden.includes(item.key) && !item.inAccountMenu);
+  // A long menu (the CEO sees every item; the PM and monitoring have ten) is a little tighter, so it stays on one row on
+  // a computer.
+  const dense = items.length > 9;
   // When the menu scrolls sideways, the page you are on is brought into view.
   const navRef = useRef<HTMLElement>(null);
   useEffect(() => {

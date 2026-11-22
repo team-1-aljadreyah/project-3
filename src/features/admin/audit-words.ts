@@ -16,7 +16,7 @@ export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
   login_failed: { ar: "محاولة دخول خاطئة", en: "failed sign-in" },
   login_locked: { ar: "قُفل حساب", en: "account locked" },
   project_created: { ar: "أنشأ مشروعاً", en: "created a project" },
-  project_pm_changed: { ar: "غيّر مدير مشروع", en: "changed a project's PM" },
+  project_pm_changed: { ar: "غيّر مدير قسم", en: "changed a project's department manager" },
   sprint_closed: { ar: "أنهى دورة", en: "ended a sprint" },
   template_deleted: { ar: "حذف قالباً", en: "removed a template" },
   announcement_deleted: { ar: "حذف إعلاناً", en: "removed an announcement" },
@@ -24,6 +24,8 @@ export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
   criteria_approved: { ar: "اعتمد معايير التقييم", en: "approved the review criteria" },
   review_finalized: { ar: "اعتمد تقييم أداء", en: "made a review final" },
   picture_removed: { ar: "أزال صورة شخصية", en: "removed a profile picture" },
+  rating_changed: { ar: "عدّل تقييماً سريعاً كتبه غيره", en: "changed someone else's quick rating" },
+  rating_deleted: { ar: "حذف تقييماً سريعاً", en: "removed a quick rating" },
 };
 
 /** The kind of an action: the part of the platform it is about. The admin page shows it as a small coloured label. */
@@ -47,6 +49,8 @@ export const ACTION_KIND: Record<AuditAction, AuditKind> = {
   criteria_approved: "review",
   review_finalized: "review",
   picture_removed: "account",
+  rating_changed: "review",
+  rating_deleted: "review",
 };
 
 /** Each kind in words, with its colour family (sign-in trouble is the red one). */
@@ -77,7 +81,8 @@ export function targetHref(target: { type: string; id?: number }): string | unde
     case "user":
       return "/admin?tab=users";
     case "team":
-      return "/admin?tab=teams";
+      // A team has its own page (its members and ratings); a line without an id opens the admin's teams tab.
+      return target.id ? `/teams/${target.id}` : "/admin?tab=teams";
     case "settings":
       return "/admin?tab=settings";
     default:

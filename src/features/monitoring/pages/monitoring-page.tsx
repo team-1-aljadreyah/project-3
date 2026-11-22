@@ -1,22 +1,26 @@
-import { Calculator, FileText, MessageSquareHeart, Plus, Send, TriangleAlert } from "lucide-react";
+import { Calculator, FileText, Forward, MessageSquareHeart, MessageSquareReply, Plus, Send, TriangleAlert, Users } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { adminApi } from "@/features/admin";
 import { authApi } from "@/features/auth";
 import { projectsApi } from "@/features/projects";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
+import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
-import { Button, Empty, ErrorBox, LoadingBlock, Skeleton, errorText, useToast } from "@/shared/ui";
+import { Button, Empty, ErrorBox, LoadingBlock, PrintButton, Skeleton, errorText, useToast } from "@/shared/ui";
 import { monitoringApi } from "../api";
 import { NoteCard } from "../components/note-card";
 import { NoteDialog } from "../components/note-dialog";
-import { canSendToCeo, canWriteNotes } from "../rules";
+import { RequestDialog } from "../components/request-dialog";
+import { ShareDialog } from "../components/share-dialog";
+import { canSendToCeo, canShareNote, canTriageRequests, canWriteNotes } from "../rules";
 import type { MonitorNote, NoteKind } from "../types";
 
-type Filter = "all" | NoteKind | "unsent";
+type Filter = "all" | NoteKind | "unsent" | "requests";
+const FILTERS = ["all", "report", "feedback", "problem", "unsent", "requests"] as const;
 
 /**
  * The monitoring officer's workspace: write reports about teams and people, feedback on anyone, and problems; keep them
@@ -30,7 +34,11 @@ export function MonitoringPage() {
   const allowed = canWriteNotes(user);
   const load = useLoad(() => (allowed ? Promise.all([monitoringApi.notes(), authApi.users(), adminApi.teams(), projectsApi.projects()]) : Promise.resolve(null)), [allowed]);
   const [writing, setWriting] = useState<NoteKind | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
+  // In the address, so her notification opens the requests waiting for her: /monitoring?show=requests.
+  const [filter, setFilter] = useQueryParam<Filter>("show", "all", FILTERS);
+  const [handling, setHandling] = useState<{ note: MonitorNote; mode: "forward" | "answer" } | null>(null);
+  const [sharing, setSharing] = useState<MonitorNote | null>(null);
+  const list = useRef<HTMLUListElement>(null);
   const [sending, setSending] = useState<number | null>(null);
   const [extra, setExtra] = useState<MonitorNote[]>([]);
 
@@ -68,9 +76,18 @@ export function MonitoringPage() {
     }
   };
 
-  const shown = notes.filter((n) => (filter === "all" ? true : filter === "unsent" ? !n.sent_at : n.kind === filter));
-  const count = (f: Filter) => notes.filter((n) => (f === "all" ? true : f === "unsent" ? !n.sent_at : n.kind === f)).length;
+  // Her own notes, and the requests that reached her (others' requests; hers go straight to the CEO).
+  const own = notes.filter((n) => n.kind !== "request");
+  const requests = notes
+    .filter((n) => n.kind === "request" && n.author_id !== user.id)
+    .sort((a, b) => Number(b.triage === "pending") - Number(a.triage === "pending") || b.created_at.localeCompare(a.created_at));
+  const pending = requests.filter((n) => n.triage === "pending").length;
+  const pick = (f: Filter) => (f === "requests" ? requests : own.filter((n) => (f === "all" ? true : f === "unsent" ? !n.sent_at && !n.shared_with?.length : n.kind === f)));
+  const shown = pick(filter);
+  const count = (f: Filter) => (f === "requests" ? pending : pick(f).length);
+  const done = (n: MonitorNote) => setExtra((x) => [...x.filter((y) => y.id !== n.id), n]);
   const tabs: { key: Filter; ar: string; en: string }[] = [
+    ...(canTriageRequests(user) ? [{ key: "requests" as const, ar: "الطلبات الواردة", en: "Incoming requests" }] : []),
     { key: "all", ar: "الكل", en: "All" },
     { key: "report", ar: "التقارير", en: "Reports" },
     { key: "feedback", ar: "الملاحظات", en: "Feedback" },
@@ -93,7 +110,7 @@ export function MonitoringPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold">{tr("المتابعة", "Monitoring")}</h1>
-          <p className="text-sm text-muted">{tr("اكتب تقاريرك وملاحظاتك، وأرسل ما تشائين إلى المدير التنفيذي متى شئت.", "Write your reports and feedback, and send anything to the CEO whenever you like.")}</p>
+          <p className="text-sm text-muted">{tr("اكتب تقاريرك وملاحظاتك وأرسلها إلى من تشاء، وتصلك طلبات الجميع قبل المدير التنفيذي.", "Write your reports and feedback and send them to anyone; everyone's requests reach you before the CEO.")}</p>
         </div>
         <Button pill onClick={() => setWriting("report")}>
           <Plus size={16} aria-hidden="true" />
@@ -132,29 +149,58 @@ export function MonitoringPage() {
             onClick={() => setFilter(t.key)}
             className={cn("rounded-full border px-3 py-1.5 text-sm", filter === t.key ? "border-accent bg-accent-soft font-medium text-accent-ink" : "border-line text-muted hover:text-text")}
           >
-            {tr(t.ar, t.en)} <span className="num">{num(count(t.key))}</span>
+            {tr(t.ar, t.en)} <span className={cn("num", t.key === "requests" && pending > 0 && "rounded-full bg-accent px-1.5 text-on-accent")}>{num(count(t.key))}</span>
           </button>
         ))}
+        {shown.length > 0 && <PrintButton target={() => list.current} label={tr("اطبع القائمة أو احفظها PDF", "Print the list or save as PDF")} className="ms-auto" />}
       </div>
 
       {shown.length === 0 ? (
-        <Empty title={tr("لا شيء هنا بعد", "Nothing here yet")} body={tr("ما تكتبينه يظهر هنا.", "What you write shows here.")} />
+        filter === "requests" ? (
+          <Empty title={tr("لا طلبات تنتظرك", "No requests waiting for you")} body={tr("طلبات الجميع إلى المدير التنفيذي تصل إليك هنا أولاً.", "Everyone's requests to the CEO reach you here first.")} />
+        ) : (
+          <Empty title={tr("لا شيء هنا بعد", "Nothing here yet")} body={tr("ما تكتبينه يظهر هنا.", "What you write shows here.")} />
+        )
       ) : (
         <>
-        <h2 className="sr-only">{tr("ما كتبته", "What you wrote")}</h2>
-        <ul aria-label={tr("ما كتبته", "What you wrote")} className="flex flex-col gap-3">
+        <h2 className="sr-only">{filter === "requests" ? tr("الطلبات الواردة", "Incoming requests") : tr("ما كتبته", "What you wrote")}</h2>
+        <ul ref={list} aria-label={filter === "requests" ? tr("الطلبات الواردة", "Incoming requests") : tr("ما كتبته", "What you wrote")} className="flex flex-col gap-3">
           {shown.map((n) => (
             <li key={n.id}>
               <NoteCard
                 note={n}
                 author={n.author_id !== user.id ? nameOf(n.author_id) : undefined}
                 actions={
-                  canSendToCeo(user, n) &&
-                  n.ceo_state !== "done" && (
-                    <Button size="sm" variant={n.sent_at ? "secondary" : "primary"} pill disabled={sending === n.id} onClick={() => send(n)}>
-                      <Send size={14} aria-hidden="true" />
-                      {n.sent_at ? tr("أرسلها مرة أخرى", "Send again") : tr("أرسل إلى المدير التنفيذي", "Send to the CEO")}
-                    </Button>
+                  n.kind === "request" ? (
+                    // A request waiting for her: send it on to the CEO, or answer it herself.
+                    n.triage === "pending" &&
+                    canTriageRequests(user) && (
+                      <>
+                        <Button size="sm" variant="secondary" pill onClick={() => setHandling({ note: n, mode: "answer" })}>
+                          <MessageSquareReply size={14} aria-hidden="true" />
+                          {tr("أجب بنفسك", "Answer yourself")}
+                        </Button>
+                        <Button size="sm" pill onClick={() => setHandling({ note: n, mode: "forward" })}>
+                          <Forward size={14} aria-hidden="true" className="rtl:-scale-x-100" />
+                          {tr("أرسل إلى المدير التنفيذي", "Send to the CEO")}
+                        </Button>
+                      </>
+                    )
+                  ) : (
+                    <>
+                      {canShareNote(user, n) && (
+                        <Button size="sm" variant="secondary" pill onClick={() => setSharing(n)}>
+                          <Users size={14} aria-hidden="true" />
+                          {tr("أرسل إلى آخرين", "Send to others")}
+                        </Button>
+                      )}
+                      {canSendToCeo(user, n) && n.ceo_state !== "done" && (
+                        <Button size="sm" variant={n.sent_at ? "secondary" : "primary"} pill disabled={sending === n.id} onClick={() => send(n)}>
+                          <Send size={14} aria-hidden="true" />
+                          {n.sent_at ? tr("أرسلها مرة أخرى", "Send again") : tr("أرسل إلى المدير التنفيذي", "Send to the CEO")}
+                        </Button>
+                      )}
+                    </>
                   )
                 }
               />
@@ -163,6 +209,9 @@ export function MonitoringPage() {
         </ul>
         </>
       )}
+
+      <RequestDialog note={handling?.note ?? null} mode={handling?.mode ?? "forward"} onClose={() => setHandling(null)} onDone={done} />
+      <ShareDialog note={sharing} people={people} me={user.id} onClose={() => setSharing(null)} onDone={done} />
 
       <NoteDialog
         open={writing !== null}

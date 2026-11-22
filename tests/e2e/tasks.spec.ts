@@ -98,7 +98,7 @@ test("an employee asks to approve 'done'; the PM approves", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1, name: "صفحة إعلانات الشركة" })).toBeVisible();
   await expect(page.getByRole("button", { name: "تعديل" })).toHaveCount(0);
   await page.getByLabel("الحالة").selectOption({ label: "مكتملة" });
-  await expect(page.getByText("أُرسل طلب اعتماد الإكمال إلى مدير المشروع.")).toBeVisible();
+  await expect(page.getByText("أُرسل طلب اعتماد الإكمال إلى مدير القسم.")).toBeVisible();
   await expect(page.getByText(/بانتظار اعتماد الإكمال:/)).toBeVisible();
   const url = page.url();
 

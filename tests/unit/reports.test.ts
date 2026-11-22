@@ -64,7 +64,7 @@ describe("counting", () => {
   });
 });
 
-describe("the project manager's plan", () => {
+describe("the department manager's plan", () => {
   // Thursday 19 November 2026: the strip runs from Monday 16 to Monday 23, with Friday 20 and Saturday 21 off.
   const day = "2026-11-19";
   const item = (id: number, status: string, due?: string, sub: [number, number] = [0, 0]) => ({ ...task(status, due), id, subtasks_done: sub[0], subtasks_total: sub[1] });

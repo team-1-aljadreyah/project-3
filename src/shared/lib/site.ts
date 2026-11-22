@@ -56,6 +56,7 @@ export type ActionKey =
   | "see_reports"
   | "export_csv"
   | "report_bugs"
+  | "give_ratings"
   | "bug_severity";
 
 /** The jobs a custom role can start like (never the CEO, never the system admin). */
@@ -90,7 +91,7 @@ export interface CustomRole {
  * The actions the server already refuses for a custom role whose tick is off (and the page hides the button). The
  * others are kept and enforced later.
  */
-export const ENFORCED_ACTIONS: ActionKey[] = ["create_project", "reassign_task", "change_due", "post_announcement", "create_group_chat", "write_reviews", "report_bugs"];
+export const ENFORCED_ACTIONS: ActionKey[] = ["create_project", "reassign_task", "change_due", "post_announcement", "create_group_chat", "write_reviews", "report_bugs", "give_ratings"];
 
 /** What one signed-in person gets from `GET /site/live`. */
 export interface SiteLive {

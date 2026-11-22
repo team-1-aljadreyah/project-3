@@ -25,7 +25,11 @@ export type NotificationKind =
   | "account_locked"
   | "github_pr_merged"
   | "note_sent"
-  | "note_answered";
+  | "note_answered"
+  | "team_rated"
+  | "person_rated"
+  | "birthday_soon"
+  | "birthday_today";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_assigned",
@@ -52,6 +56,10 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "github_pr_merged",
   "note_sent",
   "note_answered",
+  "team_rated",
+  "person_rated",
+  "birthday_soon",
+  "birthday_today",
 ];
 
 /**

@@ -4,7 +4,7 @@ import { signInAs } from "./helpers";
 // "Press on anything and it takes you somewhere": numbers, rows and names open their pages, and a page opened from a
 // link is already on the right tab or filter (kept in the address).
 
-test("the CEO's dashboard: a number opens the bugs already filtered, a team opens its people, a person their work", async ({ page }) => {
+test("the CEO's dashboard: a number opens the bugs already filtered, a team opens its page and its people, a person their work", async ({ page }) => {
   test.setTimeout(60_000);
   await signInAs(page, /مريم العبيدي/);
   await page.goto("/dashboard");
@@ -15,7 +15,10 @@ test("the CEO's dashboard: a number opens the bugs already filtered, a team open
   await expect(page.getByRole("button", { name: filter })).toHaveAttribute("aria-pressed", "true");
 
   await page.goto("/dashboard");
+  // A team opens its own page; its report button opens the people report already on that team.
   await page.getByRole("link", { name: "فريق التطوير" }).click();
+  await expect(page).toHaveURL(/\/teams\/1$/);
+  await page.getByRole("link", { name: "تقرير الفريق" }).click();
   await expect(page).toHaveURL(/\/reports\?tab=people&team=1/);
   await expect(page.getByRole("tab", { name: "حسب الفريق والموظف" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByLabel("اختر الفريق")).toHaveValue("1");
