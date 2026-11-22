@@ -115,7 +115,7 @@ export function MonitorCharacter({ className }: { className?: string }) {
             <stop offset="1" stopColor="#D7A6A0" />
           </linearGradient>
           {/* The waving arm's sleeve, shaded along the arm (in the drawing's own units, so a straight stroke gets it). */}
-          <linearGradient id="mc-sleeve-arm" gradientUnits="userSpaceOnUse" x1="30" y1="120" x2="62" y2="150">
+          <linearGradient id="mc-sleeve-arm" gradientUnits="userSpaceOnUse" x1="16" y1="128" x2="48" y2="158">
             <stop offset="0" stopColor="#FBEDE6" />
             <stop offset="1" stopColor="#E2B5AE" />
           </linearGradient>
@@ -325,22 +325,25 @@ export function MonitorCharacter({ className }: { className?: string }) {
         */}
         <div className="mc-stack mc-wave-arm">
           <Layer>
-            {/* The upper arm: a soft sleeve from the shoulder to the elbow, outlined like the top. */}
-            <path d="M64 133L42 154" {...LINE} stroke="#D49A9A" strokeOpacity="0.75" strokeWidth="14" />
-            <path d="M64 133L42 154" {...LINE} stroke="url(#mc-sleeve-arm)" strokeWidth="12.4" />
-            <path d="M58 132Q52 138 47 145" {...LINE} stroke="#FFF6F1" strokeOpacity="0.55" strokeWidth="2" />
+            {/* The upper arm: a soft sleeve from the shoulder (on the edge of her top, not under the scarf) to the elbow,
+                outlined like the top. */}
+            <path d="M47 141L27 162" {...LINE} stroke="#D49A9A" strokeOpacity="0.75" strokeWidth="14" />
+            <path d="M47 141L27 162" {...LINE} stroke="url(#mc-sleeve-arm)" strokeWidth="12.4" />
+            <path d="M43 141Q37 147 32 153" {...LINE} stroke="#FFF6F1" strokeOpacity="0.55" strokeWidth="2" />
           </Layer>
           <div className="mc-stack mc-forearm">
             <Layer>
               {/* The forearm in its sleeve, up to a cuff at the wrist. */}
-              <path d="M42 154L37 123" {...LINE} stroke="#D49A9A" strokeOpacity="0.75" strokeWidth="12" />
-              <path d="M42 154L37 123" {...LINE} stroke="url(#mc-sleeve-arm)" strokeWidth="10.4" />
-              <path d="M37.6 126L36.6 119.5" stroke="#E7BBB4" strokeWidth="11.6" strokeLinecap="round" />
-              <path d="M32 124.5Q37 126.5 42.4 124" {...LINE} stroke="#C98C8C" strokeOpacity="0.7" strokeWidth="1" />
+              <path d="M27 162L23 131" {...LINE} stroke="#D49A9A" strokeOpacity="0.75" strokeWidth="12" />
+              <path d="M27 162L23 131" {...LINE} stroke="url(#mc-sleeve-arm)" strokeWidth="10.4" />
+              <path d="M23.6 134L22.6 127.5" stroke="#E7BBB4" strokeWidth="11.6" strokeLinecap="round" />
+              <path d="M18 132.5Q23 134.5 28.4 132" {...LINE} stroke="#C98C8C" strokeOpacity="0.7" strokeWidth="1" />
             </Layer>
             <div className="mc-stack mc-hand">
               <Layer>
-                {/* The hand, palm out: four fingers a little apart, the thumb toward her face, soft lines. */}
+                {/* The hand, palm out: four fingers a little apart, the thumb toward her face, soft lines. Drawn where
+                    it was first made and moved to the wrist. */}
+                <g transform="translate(-14 8)">
                 <g strokeLinecap="round">
                   <g stroke="#E2A78F" strokeWidth="4.4">
                     <path d="M31 108.5L28.6 99.5" />
@@ -365,6 +368,7 @@ export function MonitorCharacter({ className }: { className?: string }) {
                 />
                 <path d="M33.4 112.6Q36.6 114.6 40 112.2" {...LINE} stroke="#DCA088" strokeOpacity="0.8" strokeWidth="0.8" />
                 <ellipse cx="34.6" cy="107.6" rx="2.4" ry="1.5" fill="#FFF1E8" opacity="0.6" />
+                </g>
               </Layer>
             </div>
           </div>
