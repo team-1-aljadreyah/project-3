@@ -7,7 +7,13 @@ test("the monitoring officer gives a bug a developer and closes a tested one fro
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "إجراءات سريعة" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "إجراءات سريعة" })).toBeVisible();
 
-  // "No developer" first: BUG-4 is there; giving it Sara also makes it "assigned", and the row stays in view.
+  // "All" first: every bug, the closed one too.
+  const all = page.getByRole("list", { name: "الكل" });
+  await expect(all.getByRole("article", { name: "سجل العمليات لا يعرض اسم المستخدم" }).getByText("مغلقة")).toBeVisible();
+
+  // "No developer": BUG-4 is there; giving it Sara also makes it "assigned", and the row stays in view.
+  await page.getByRole("button", { name: /بلا مطوّر/ }).click();
+  await expect(page).toHaveURL(/q=unassigned/);
   const noDev = page.getByRole("list", { name: "بلا مطوّر" });
   const bug4 = noDev.getByRole("article", { name: "رسالة خطأ بالإنجليزية في واجهة عربية" });
   await bug4.getByLabel("مطوّر BUG-4").selectOption({ label: "سارة علي" });
