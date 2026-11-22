@@ -83,6 +83,7 @@ export function DashboardPage() {
       {/* Each job opens the page its own way. The CEO: a night banner with the page's name and today's numbers. */}
       {user.role === "ceo" ? (
         <CeoHero
+          user={user}
           date={day(o.today)}
           numbers={[
             { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active), href: "/" },
@@ -92,7 +93,7 @@ export function DashboardPage() {
         />
       ) : user.role === "lead" ? (
         // The team leader: a slide with the team's tasks as spheres in a glass one.
-        <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
+        <LeadSphere user={user} shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
       ) : user.role === "pm" ? (
         // The department manager: a greeting, and their projects turning round the department's progress.
         <PmOrbit user={user} projects={o.projects} date={day(o.today)} />

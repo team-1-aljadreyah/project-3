@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { User } from "@/shared/api/types";
+import { Greeting } from "@/shared/ui";
 import { useFmt } from "@/shared/lib/i18n";
 
 /**
@@ -6,7 +8,7 @@ import { useFmt } from "@/shared/lib/i18n";
  * platform is for, today's numbers and the way to the reports. The words arrive one after the other. Always dark,
  * whatever the theme (styles in app/styles.css, `.night-hero`). Decoration only: with "reduce motion" it is simply there.
  */
-export function CeoHero({ date, numbers }: { date: string; numbers: { label: string; value: string; alert?: boolean; href: string }[] }) {
+export function CeoHero({ user, date, numbers }: { user: Pick<User, "name" | "name_en">; date: string; numbers: { label: string; value: string; alert?: boolean; href: string }[] }) {
   const { tr } = useFmt();
   return (
     <section aria-labelledby="dashboard-title" className="night-hero relative isolate overflow-hidden rounded-3xl px-5 py-14 text-center sm:py-20">
@@ -21,6 +23,7 @@ export function CeoHero({ date, numbers }: { date: string; numbers: { label: str
         <h1 id="dashboard-title" className="hero-in rounded-full border border-white/15 bg-white/10 px-3.5 py-1 text-xs font-medium text-[#f2dace]">
           {tr("لوحة التحكم", "Dashboard")} · {date}
         </h1>
+        <Greeting user={user} size="md" className="items-center text-center" />
         <p className="hero-in text-3xl leading-tight font-semibold text-white sm:text-5xl sm:leading-tight">
           {tr("كل ما في الشركة،", "Everything in the company,")}
           <br />

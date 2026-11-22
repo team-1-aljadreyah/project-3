@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Greeting } from "@/shared/ui";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import type { ProjectRow } from "../types";
@@ -30,9 +31,6 @@ export function PmOrbit({ user, projects, date }: { user: Pick<User, "id" | "nam
   const behind = mine.filter((p) => p.behind || p.overdue).length;
   const ratio = total ? done / total : 0;
   const biggest = Math.max(1, ...mine.map((p) => p.total));
-  const first = (lang === "en" && user.name_en ? user.name_en : user.name).split(" ")[0];
-  const hour = new Date().getHours();
-  const hello = hour < 12 ? tr("صباح الخير", "Good morning") : hour < 18 ? tr("نهارك سعيد", "Good afternoon") : tr("مساء الخير", "Good evening");
   const nameOf = (p: ProjectRow) => (lang === "en" && p.name_en ? p.name_en : p.name);
 
   // Up to three planets on each orbit, spaced around it.
@@ -53,12 +51,7 @@ export function PmOrbit({ user, projects, date }: { user: Pick<User, "id" | "nam
             <h1 id="dashboard-title" className="hero-in text-xs font-medium text-[#e6d3da]">
               {tr("لوحة التحكم", "Dashboard")} · {date}
             </h1>
-            <p className="hero-in mt-3 text-4xl leading-tight font-light sm:text-[2.6rem] sm:leading-tight">
-              {hello}
-              {tr("،", ",")}
-              <br />
-              <span className="font-normal text-[#f2dace]">{first}</span>
-            </p>
+            <Greeting user={user} className="mt-3" />
             <p className="hero-in mt-3 max-w-72 text-sm leading-relaxed text-[#e6d3da]">
               {mine.length ? (
                 <>

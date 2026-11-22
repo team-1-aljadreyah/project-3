@@ -9,6 +9,7 @@ import { Avatar, ButtonLink, Input, Pill, ProgressBar, Select } from "@/shared/u
 import { followUp, type FollowUpFilter, type totals } from "../compute";
 import type { Overview } from "../types";
 import { MonitorCharacter } from "./monitor-character";
+import { Greeting } from "@/shared/ui";
 
 const FILTERS: { key: FollowUpFilter; ar: string; en: string }[] = [
   { key: "all", ar: "كل المشاريع", en: "All projects" },
@@ -48,6 +49,7 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
           <h1 id="dashboard-title" className="text-sm font-semibold text-white">
             {tr("لوحة التحكم", "Dashboard")}
           </h1>
+          <Greeting user={user} className="mt-2 max-w-[60%]" />
           {/* Her character, at the end side away from the name. Her lower edge is the card's top edge (the card rises
               3rem into the banner), so she seems to stand behind it and never covers it. */}
           <MonitorCharacter className="absolute end-4 bottom-12 h-[5.25rem] sm:end-8 sm:h-[6.25rem] lg:end-12 lg:h-[8.5rem]" />
