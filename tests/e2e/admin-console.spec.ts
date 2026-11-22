@@ -12,10 +12,10 @@ test("the admin imports 3 rows with one bad email: 2 are created, 1 is skipped w
 
   await page.getByLabel("محتوى ملف CSV").fill(
     [
-      "الاسم,English name,email,phone,job,title,team",
-      'كرار محمد,Karrar Mohammed,karrar@demo.test,07700000001,موظف,"مطور، واجهات",فريق التطوير',
-      "نور سالم,Noor Salem,noor-at-demo.test,,employee,محاسبة,",
-      "ريم عادل,Reem Adel,reem@demo.test,,Team leader,قائدة فريق,",
+      "الاسم,English name,email,phone,job,title,team,password",
+      'كرار محمد,Karrar Mohammed,karrar@demo.test,07700000001,موظف,"مطور، واجهات",فريق التطوير,Karrar-Start-26',
+      "نور سالم,Noor Salem,noor-at-demo.test,,employee,محاسبة,,Noor-Start-2026",
+      "ريم عادل,Reem Adel,reem@demo.test,,Team leader,قائدة فريق,,Reem-Start-2026",
     ].join("\n"),
   );
   await page.getByRole("button", { name: "افحص الصفوف" }).click();
@@ -101,6 +101,7 @@ test("the structure page assigns a team to a person with none", async ({ page })
   const dialog = page.getByRole("dialog", { name: "مستخدم جديد" });
   await dialog.getByLabel("الاسم", { exact: true }).fill("ليلى سمير");
   await dialog.getByLabel("البريد الإلكتروني").fill("laila@demo.test");
+  await dialog.getByLabel("كلمة المرور").fill("Laila-Start-2026");
   await dialog.getByLabel("المسمى الوظيفي").fill("مصممة واجهات");
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(page.getByText("أُضيف المستخدم.")).toBeVisible();

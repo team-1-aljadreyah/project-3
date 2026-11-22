@@ -10,6 +10,8 @@ export interface ProfileApi {
   removeMyPicture(): Promise<User>;
   /** Removes someone's picture (the CEO and the admin, for a picture that is not appropriate). Answers that person. */
   removePictureOf(userId: number): Promise<User>;
+  /** Changes my own password: `PUT /me/password {current_password, password}` (422 on a wrong current one). */
+  changeMyPassword(current: string, password: string): Promise<void>;
 }
 
 const data = <T>(p: Promise<{ data: T }>) => p.then((r) => r.data);
@@ -23,6 +25,7 @@ export const profileHttp: ProfileApi = {
   },
   removeMyPicture: () => data(http.delete<User>("/me/avatar")),
   removePictureOf: (userId) => data(http.delete<User>(`/users/${userId}/avatar`)),
+  changeMyPassword: (current, password) => data(http.put<void>("/me/password", { current_password: current, password })),
 };
 
 // Written out in full on purpose (see shared/api/demo.ts): the real build drops the demo backend.
