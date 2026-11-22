@@ -40,6 +40,17 @@ test("the department manager's dashboard: the task calendar and the board over t
   await expect(page).toHaveURL(/\/tasks\/\d+$/);
 });
 
+test("the department manager's dashboard opens with a greeting and their projects turning round the progress", async ({ page }) => {
+  await signInAs(page, /أحمد كريم/);
+  await page.goto("/dashboard");
+  const slide = page.getByRole("region", { name: /لوحة التحكم/ });
+  await expect(slide.getByText("أحمد", { exact: true })).toBeVisible();
+  // The picture says the same in words, and each project in the list opens it.
+  await expect(slide.getByRole("img", { name: /مشاريع قسمك: .*منصة الحجز الإلكتروني/ })).toBeVisible();
+  await slide.getByRole("link", { name: "منصة الحجز الإلكتروني" }).click();
+  await expect(page).toHaveURL(/\/projects\/\d+$/);
+});
+
 test("the team leader's dashboard opens with the team's slide: the sphere's numbers are also in words", async ({ page }) => {
   await signInAs(page, /مصطفى جواد/);
   await page.goto("/dashboard");

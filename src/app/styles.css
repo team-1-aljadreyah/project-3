@@ -512,6 +512,60 @@ body {
   animation: settle 0.7s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* The department manager's slide (pm-orbit.tsx): the orbits draw themselves, the ring fills, the planets arrive and
+   then turn slowly round the centre. */
+.orbit-path {
+  animation: orbit-draw 1.2s ease both;
+}
+@keyframes orbit-draw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.orbit-sun {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bubble-in 0.9s 0.2s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.orbit-ring {
+  animation: orbit-fill 1.4s 0.5s cubic-bezier(0.3, 0.8, 0.3, 1) both;
+}
+@keyframes orbit-fill {
+  from {
+    stroke-dashoffset: var(--ring-from);
+  }
+  to {
+    stroke-dashoffset: var(--ring-to);
+  }
+}
+.orbit-turn {
+  transform-box: view-box;
+  transform-origin: 160px 160px;
+  animation: orbit-spin linear infinite;
+}
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.orbit-planet {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bubble-in 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.orbit-late {
+  animation: settle 0.7s 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* Still under "reduce motion" (the general rule would make the endless turn flicker). */
+@media (prefers-reduced-motion: reduce) {
+  .orbit-turn {
+    animation: none;
+  }
+}
+
 /* The monitoring officer's banner: wine to mauve (monitor-summary.tsx draws the waves). */
 .wave-banner {
   background: linear-gradient(115deg, #4a0828 0%, #7c0e44 48%, #aa5e7a 100%);
