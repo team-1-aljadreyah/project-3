@@ -52,7 +52,7 @@ test("the admin signs a session out, and unlocks a locked account from the overv
   await page.goto("/login");
   for (let i = 0; i < 5; i++) {
     await page.getByLabel("البريد الإلكتروني").fill("employee@demo.test");
-    await page.getByLabel("كلمة المرور").fill("wrong-password");
+    await page.getByLabel("كلمة المرور", { exact: true }).fill("wrong-password");
     await page.getByRole("button", { name: "دخول", exact: true }).click();
     await expect(page.getByText("البريد أو كلمة المرور غير صحيحة.")).toBeVisible();
   }
@@ -101,7 +101,7 @@ test("the structure page assigns a team to a person with none", async ({ page })
   const dialog = page.getByRole("dialog", { name: "مستخدم جديد" });
   await dialog.getByLabel("الاسم", { exact: true }).fill("ليلى سمير");
   await dialog.getByLabel("البريد الإلكتروني").fill("laila@demo.test");
-  await dialog.getByLabel("كلمة المرور").fill("Laila-Start-2026");
+  await dialog.getByLabel("كلمة المرور", { exact: true }).fill("Laila-Start-2026");
   await dialog.getByLabel("المسمى الوظيفي").fill("مصممة واجهات");
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(page.getByText("أُضيف المستخدم.")).toBeVisible();

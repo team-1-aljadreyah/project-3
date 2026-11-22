@@ -140,7 +140,7 @@ test("anyone changes their own password from their profile; the new one signs in
   await page.getByRole("button", { name: /حسابي/ }).click();
   await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
   await page.getByLabel("البريد الإلكتروني").fill("employee@demo.test");
-  await page.getByLabel("كلمة المرور").fill("Sara-Mine-2026");
-  await page.getByRole("button", { name: "دخول" }).click();
+  await page.getByLabel("كلمة المرور", { exact: true }).fill("Sara-Mine-2026");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
   await expect(page.getByRole("button", { name: /حسابي: سارة علي/ })).toBeVisible();
 });
