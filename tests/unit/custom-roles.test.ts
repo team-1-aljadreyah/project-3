@@ -157,7 +157,7 @@ describe("the demo backend", () => {
     await tasksMock.updateTask(task.id, { title: "عنوان جديد" }); // other changes still work
     // The PM role: give it to a new PM account.
     as(8);
-    const pm = await adminMock.createUser({ name: "نور", email: "noor@demo.test", role: "employee", custom_role: "role-pm", title: "" });
+    const pm = await adminMock.createUser({ name: "نور", email: "noor@demo.test", role: "employee", custom_role: "role-pm", title: "", password: "Start-Pass-1" });
     expect(pm.role).toBe("pm");
     as(pm.id);
     const project = { name: "مشروع", description: "", pm_id: pm.id, start: "2026-12-01", end: "2027-01-01", priority: "low" as const, uses_sprints: false, member_ids: [] };

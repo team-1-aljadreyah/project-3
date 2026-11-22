@@ -7,6 +7,7 @@ import { currentLocale } from "@/shared/lib/boot";
 import { canSeeProject } from "@/shared/lib/access";
 import { getToken } from "@/shared/lib/session";
 import { getDb } from "./db";
+import { PASSWORD_MIN_DEFAULT } from "@/shared/lib/password";
 
 /** A short wait, so loading states show in the demo like on a real network. */
 export const wait = <T>(value: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(structuredClone(value)), ms));
@@ -40,6 +41,11 @@ export function setBrowserSessionId(id: string | null) {
     if (id) localStorage.setItem(SESSION_KEY, id);
     else localStorage.removeItem(SESSION_KEY);
   } catch {}
+}
+
+/** The shortest password allowed now (the CEO's security.password_min). */
+export function passwordMin(): number {
+  return getDb().advanced?.security?.password_min ?? PASSWORD_MIN_DEFAULT;
 }
 
 export function currentUser(): User {

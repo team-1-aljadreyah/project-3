@@ -25,7 +25,7 @@ export const authMock: AuthApi = {
       const until = new Date(login.locked_until).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
       return fail(429, "RATE_LIMITED", `الحساب مقفل مؤقتاً بعد محاولات خاطئة، حتى ${until}. أو اطلب من مسؤول النظام فتحه.`, `The account is locked after wrong passwords, until ${until}. Or ask the system admin to unlock it.`);
     }
-    if (!user || password !== DEMO_PASSWORD) {
+    if (!user || password !== (getDb().passwords?.[user.id] ?? DEMO_PASSWORD)) {
       audit(undefined, "login_failed", { type: "login", id: user?.id, label: id.slice(0, 120) }, undefined, { userId: user?.id });
       if (user && login) {
         login.failed++;

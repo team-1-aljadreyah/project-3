@@ -245,7 +245,9 @@ function Importer({ teams }: { teams: Team[] }) {
                             ? tr("حتى 120 حرفاً.", "Up to 120 characters.")
                             : c.key === "title"
                               ? tr("حتى 80 حرفاً.", "Up to 80 characters.")
-                              : tr("اختياري.", "Optional.")}
+                              : c.key === "password"
+                                ? tr("كلمة المرور الأولى للحساب، يغيّرها صاحبه من ملفه الشخصي. لا يُنشأ حساب بلا كلمة مرور.", "The account's first password; the person changes it in their profile. No account is made without one.")
+                                : tr("اختياري.", "Optional.")}
                   </dd>
                 </div>
               ))}

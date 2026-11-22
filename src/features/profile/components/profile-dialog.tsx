@@ -5,6 +5,7 @@ import { useFmt } from "@/shared/lib/i18n";
 import { updateSessionUser, useUser } from "@/shared/lib/session";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, Button, Dialog, errorText, useToast } from "@/shared/ui";
+import { ChangePassword } from "./change-password";
 import { profileApi } from "../api";
 import { makeSquare, readPicture } from "../picture";
 import { centredCrop, PICTURE, PICTURE_ACCEPT, pickProblem, type Crop } from "../rules";
@@ -190,6 +191,7 @@ export function ProfileDialog({ start = "view", onClose }: { start?: ProfileStar
                 </div>
               )}
             </section>
+            <ChangePassword />
           </div>
         )}
 

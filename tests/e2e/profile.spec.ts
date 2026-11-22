@@ -119,3 +119,28 @@ test("a picture one person sets is what everyone else sees: the dashboard, the b
   await page.goto("/tasks/1");
   await expect(page.locator("dd").filter({ hasText: "سارة علي" }).locator("img")).toHaveAttribute("src", /^data:image\//);
 });
+
+test("anyone changes their own password from their profile; the new one signs in", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /سارة علي/);
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "ملفي الشخصي" }).click();
+  const dialog = page.getByRole("dialog", { name: "ملفي الشخصي" });
+  await dialog.getByRole("button", { name: /غيّر كلمة المرور/ }).click();
+  await dialog.getByLabel("كلمة المرور الحالية").fill("wrong-one");
+  await dialog.getByLabel("كلمة المرور الجديدة").fill("Sara-Mine-2026");
+  await dialog.getByLabel("أعد كتابة الجديدة").fill("Sara-Mine-2026");
+  await dialog.getByRole("button", { name: "احفظ كلمة المرور" }).click();
+  await expect(dialog.getByText("كلمة المرور الحالية غير صحيحة.")).toBeVisible();
+  await dialog.getByLabel("كلمة المرور الحالية").fill("123456");
+  await dialog.getByRole("button", { name: "احفظ كلمة المرور" }).click();
+  await expect(page.getByText("تغيّرت كلمة المرور.")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByLabel("البريد الإلكتروني").fill("employee@demo.test");
+  await page.getByLabel("كلمة المرور", { exact: true }).fill("Sara-Mine-2026");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await expect(page.getByRole("button", { name: /حسابي: سارة علي/ })).toBeVisible();
+});

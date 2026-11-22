@@ -3,7 +3,9 @@
 // keeps the file in its file storage and answers its address.
 import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
-import { currentUser, fail, invalid, wait } from "@/mock/helpers";
+import { currentUser, fail, invalid, passwordMin, wait } from "@/mock/helpers";
+import { DEMO_PASSWORD } from "@/mock/seed";
+import { passwordProblem } from "@/shared/lib/password";
 import type { ProfileApi } from "./api";
 import { canRemovePicture, PICTURE, pictureKind, uploadProblem } from "./rules";
 
@@ -18,6 +20,21 @@ function base64(bytes: Uint8Array) {
 const stored = (id: number) => getDb().users.find((u) => u.id === id);
 
 export const profileMock: ProfileApi = {
+  async changeMyPassword(current, password) {
+    const user = currentUser();
+    const db = getDb();
+    // The current one must be right (the demo keeps a password per account; others use the demo password).
+    if (current !== (db.passwords?.[user.id] ?? DEMO_PASSWORD)) return invalid("current_password", "كلمة المرور الحالية غير صحيحة.", "The current password is wrong.");
+    const problem = passwordProblem(password ?? "", passwordMin());
+    if (problem) return invalid("password", problem.ar, problem.en);
+    if (password === current) return invalid("password", "اختر كلمة مرور غير الحالية.", "Choose a password other than the current one.");
+    (db.passwords ??= {})[user.id] = password;
+    // The log says it changed, never the password.
+    audit(user.id, "user_changed", { type: "user", id: user.id, label: user.name }, [{ field: "password" }]);
+    commit();
+    return wait(undefined);
+  },
+
   async setMyPicture(picture) {
     const me = currentUser();
     const bytes = new Uint8Array(await picture.arrayBuffer());

@@ -6,6 +6,7 @@ import type { Role, Team } from "@/shared/api/types";
 import { ROLES } from "@/shared/lib/access";
 import { ADMIN_LIMITS, isEmail } from "./rules";
 import type { ImportCheck, ImportProblem, ImportRow } from "./types";
+import { PASSWORD_MIN_DEFAULT, passwordProblem } from "@/shared/lib/password";
 
 /** The most rows one import may send (the server answers 422 on `rows` above it). */
 export const IMPORT_LIMIT = 500;
@@ -19,6 +20,7 @@ export const IMPORT_COLUMNS: { key: keyof ImportRow; ar: string; en: string; req
   { key: "role", ar: "الدور", en: "Job", names: ["job", "role", "الدور", "الوظيفة"] },
   { key: "title", ar: "المسمى الوظيفي", en: "Job title", names: ["title", "job title", "المسمى", "المسمى الوظيفي"] },
   { key: "team", ar: "الفريق", en: "Team", names: ["team", "الفريق"] },
+  { key: "password", ar: "كلمة المرور", en: "Password", required: true, names: ["password", "pass", "كلمة المرور", "كلمة السر", "الرمز السري"] },
 ];
 
 /** The jobs an import may give. The CEO and the system admin are made one by one in the users list, never in bulk. */
@@ -122,8 +124,8 @@ export function rowsFromCsv(text: string): ParsedImport {
 export function templateRows(): string[][] {
   return [
     IMPORT_COLUMNS.map((c) => c.key === "role" ? "job" : c.key),
-    ["نور الهدى سالم", "Noor Al-Huda Salem", "noor.salem@example.test", "07700000001", "employee", "محاسبة", ""],
-    ["كرار محمد", "Karrar Mohammed", "karrar.m@example.test", "", "موظف", "مطور واجهات", "فريق التطوير"],
+    ["نور الهدى سالم", "Noor Al-Huda Salem", "noor.salem@example.test", "07700000001", "employee", "محاسبة", "", "Noor-Start-2026"],
+    ["كرار محمد", "Karrar Mohammed", "karrar.m@example.test", "", "موظف", "مطور واجهات", "فريق التطوير", "Karrar-Start-2026"],
   ];
 }
 
@@ -153,7 +155,7 @@ export function teamFromText(text: string, teams: Pick<Team, "id" | "name" | "na
  * know that an import may give (not the CEO or the admin), a title ≤ 80, and a team that exists. Every problem of a row
  * is listed, so a person fixes the file once. `emails`: the accounts' emails now (any case).
  */
-export function checkImportRows(rows: ImportRow[], existing: { emails: string[]; teams: Pick<Team, "id" | "name" | "name_en">[] }): ImportCheck[] {
+export function checkImportRows(rows: ImportRow[], existing: { emails: string[]; teams: Pick<Team, "id" | "name" | "name_en">[] }, passwordMin = PASSWORD_MIN_DEFAULT): ImportCheck[] {
   const taken = new Set(existing.emails.map(lower));
   const firstLine = new Map<string, number>();
   return rows.map((row, i) => {
@@ -174,6 +176,9 @@ export function checkImportRows(rows: ImportRow[], existing: { emails: string[];
     else if (!IMPORT_ROLES.includes(role)) add("role", "role_not_allowed");
     if (row.title.trim().length > ADMIN_LIMITS.title) add("title", "title_too_long");
     if (teamFromText(row.team, existing.teams) === null) add("team", "team_unknown");
+    const password = row.password ?? "";
+    if (!password) add("password", "password_missing");
+    else if (passwordProblem(password, passwordMin)) add("password", "password_short");
     return { line, problems };
   });
 }
@@ -190,4 +195,6 @@ export const PROBLEM_WORDS: Record<ImportProblem, { ar: string; en: string }> = 
   role_not_allowed: { ar: "لا يُستورد مدير تنفيذي ولا مسؤول نظام: أضفه من قائمة المستخدمين", en: "A CEO or a system admin isn't imported: add them in the users list" },
   title_too_long: { ar: "المسمى أطول من 80 حرفاً", en: "The title is longer than 80 characters" },
   team_unknown: { ar: "لا يوجد فريق بهذا الاسم", en: "No team has this name" },
+  password_missing: { ar: "كلمة المرور فارغة: لا يُنشأ حساب بلا كلمة مرور", en: "No password: an account is never made without one" },
+  password_short: { ar: "كلمة المرور أقصر من المسموح", en: "The password is shorter than allowed" },
 };

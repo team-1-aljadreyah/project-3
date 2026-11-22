@@ -7,7 +7,8 @@ import { birthDateRange } from "@/shared/lib/birthday";
 import { useFmt } from "@/shared/lib/i18n";
 import { updateSessionUser, useUser } from "@/shared/lib/session";
 import { today } from "@/shared/lib/utils";
-import { Avatar, Button, Dialog, errorText, Field, Input, Select, useToast } from "@/shared/ui";
+import { PASSWORD_MIN_DEFAULT, passwordProblem } from "@/shared/lib/password";
+import { Avatar, Button, Dialog, errorText, Field, Input, PasswordInput, Select, useToast } from "@/shared/ui";
 import { adminApi } from "../api";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
 import { useSiteLive } from "@/shared/lib/site";
@@ -16,7 +17,8 @@ import type { AdminUser, UserInput } from "../types";
 
 /**
  * Adding a user, or changing one: name, email, role, title, team, birth date (optional, but suggested: the birthday
- * reminders need it); stopping or restarting the account; unlocking it.
+ * reminders need it), and the password (required for a new account: none is ever made without one; when changing an
+ * account, an optional new one for someone who forgot theirs); stopping or restarting the account; unlocking it.
  */
 export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: AdminUser; teams: Team[]; me: number; onClose: () => void; onSaved: () => void }) {
   const { tr, lang, day } = useFmt();
@@ -35,6 +37,8 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [password, setPassword] = useState("");
+  const passwordMin = useSiteLive().password_min ?? PASSWORD_MIN_DEFAULT;
   const set = <K extends keyof UserInput>(k: K, value: UserInput[K]) => setV((o) => ({ ...o, [k]: value }));
   const self = user?.id === me;
   const actor = useUser();
@@ -61,12 +65,18 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
       setBusy(false);
     }
   };
-  const save = () =>
-    run(() => {
+  const save = () => {
+    // A new account needs a password; a changed one only when a new password is written.
+    if (!user || password) {
+      const problem = passwordProblem(password, passwordMin);
+      if (problem) return setErrors({ password: tr(problem.ar, problem.en) });
+    }
+    return run(() => {
       // An empty birth date is sent as null: none (or cleared).
-      const input = { ...v, birth_date: v.birth_date || null };
+      const input = { ...v, birth_date: v.birth_date || null, ...(password ? { password } : {}) };
       return user ? adminApi.updateUser(user.id, input) : adminApi.createUser(input);
-    }, user ? tr("حُفظ المستخدم.", "User saved.") : tr("أُضيف المستخدم.", "User added."));
+    }, user ? (password ? tr("حُفظ المستخدم وكلمة مروره الجديدة.", "User and new password saved.") : tr("حُفظ المستخدم.", "User saved.")) : tr("أُضيف المستخدم.", "User added."));
+  };
 
   return (
     <Dialog
@@ -104,6 +114,19 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
         </Field>
         <Field label={tr("الهاتف (اختياري)", "Phone (optional)")} htmlFor="u-phone">
           <Input id="u-phone" type="tel" dir="ltr" value={v.phone} onChange={(e) => set("phone", e.target.value)} />
+        </Field>
+        {/* The password: required for a new account (and shown once made, to give to the person). */}
+        <Field
+          label={user ? tr("كلمة مرور جديدة (اختياري)", "New password (optional)") : tr("كلمة المرور", "Password")}
+          hint={user ? tr("لمن نسي كلمة مروره. اتركها فارغة لتبقى كما هي.", "For someone who forgot theirs. Leave it empty to keep it.") : tr(`${passwordMin} أحرف على الأقل. أعطها للشخص، ويغيّرها من ملفه الشخصي.`, `At least ${passwordMin} characters. Give it to the person; they change it in their profile.`)}
+          htmlFor="u-password"
+          error={errors.password}
+          className="sm:col-span-2"
+        >
+          <PasswordInput id="u-password" value={password} onChange={(value) => {
+            setPassword(value);
+            setErrors((o) => ({ ...o, password: "" }));
+          }} invalid={!!errors.password} generate />
         </Field>
         <Field label={tr("الدور", "Role")} htmlFor="u-role" error={errors.role}>
           <Select id="u-role" value={v.custom_role ? `custom:${v.custom_role}` : v.role} disabled={self} onChange={(e) => pick(e.target.value)}>
