@@ -3,7 +3,8 @@
 //
 // Not decided by the client yet (written as assumptions in docs/backend.md, changed here only):
 // - everyone who takes part in the project reports bugs;
-// - the PM and the project's team leaders assign them and change their details;
+// - the department manager, the project's team leaders and the monitoring officer (her Quick actions page, the client
+//   22 November 2026) assign them and change their details;
 // - the developer moves a bug through fixing and testing; the reporter or the managers close it or send it back.
 import type { Project } from "@/features/projects";
 import { canManageTasks } from "@/features/tasks";
@@ -18,9 +19,12 @@ export function canReportBug(user: User, project: P) {
   return canTakePart(user, project);
 }
 
-/** Assign, edit severity / priority / day, and do every status move: the same people who manage tasks. */
+/**
+ * Assign, edit severity / priority / day, and do every status move: the people who manage the project's tasks, and the
+ * monitoring officer on every project (Quick actions).
+ */
 export function canManageBugs(user: User, project: P) {
-  return canManageTasks(user, project);
+  return canManageTasks(user, project) || user.role === "monitor";
 }
 
 /** The status moves allowed from each status, and who may make them. */
