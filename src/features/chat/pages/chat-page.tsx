@@ -6,6 +6,7 @@ import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { featureOn, roleAllows, useSiteLive } from "@/shared/lib/site";
+import { usePoll } from "@/shared/lib/poll";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { useRouteParam } from "@/shared/lib/route-param";
@@ -30,6 +31,8 @@ export function ChatPage() {
   const live = useSiteLive();
   const key = useRouteParam("chat");
   const load = useLoad(() => Promise.all([chatApi.conversations(), authApi.users()]));
+  // The list keeps up with other people's messages while it is shown (the open chat asks more often, thread.tsx).
+  usePoll(load.reload, 10_000);
   const [starting, setStarting] = useState(false);
   const [grouping, setGrouping] = useState(false);
   const KIND: Record<ChatKind, string> = {

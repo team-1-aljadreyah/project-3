@@ -1,6 +1,11 @@
 // The signed-in person, saved in the browser so a refresh keeps you signed in (every tab shares it).
+//
+// The demo (no server) also keeps a copy per tab, so two tabs can be two people (sign in as Huda in one and as Sara in
+// another, and watch a message arrive live in the other tab). A new tab starts as the person who signed in last. With a
+// real server every tab is the same person, as before.
 import { useSyncExternalStore } from "react";
 import type { Session, User } from "../api/types";
+import { USE_MOCK } from "./config";
 
 const KEY = "p3.session";
 const listeners = new Set<() => void>();
@@ -8,10 +13,26 @@ const listeners = new Set<() => void>();
 let cachedRaw: string | null | undefined;
 let cachedSession: Session | null = null;
 
+/** This tab's own copy (the demo only); null when there is none or the browser refuses. */
+function tabStore(): Storage | null {
+  if (!USE_MOCK) return null;
+  try {
+    return typeof sessionStorage === "undefined" ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 function read(): Session | null {
   let raw: string | null = null;
   try {
-    raw = localStorage.getItem(KEY);
+    const tab = tabStore();
+    raw = tab?.getItem(KEY) ?? null;
+    if (raw === null) {
+      raw = localStorage.getItem(KEY);
+      // The demo: this tab keeps the person it opened as, even when another tab signs in as someone else.
+      if (raw !== null) tab?.setItem(KEY, raw);
+    }
   } catch {}
   // useSyncExternalStore needs the same object back while nothing changed.
   if (raw === cachedRaw) return cachedSession;
@@ -44,8 +65,10 @@ export function getToken(): string | null {
 }
 
 export function setSession(session: Session) {
+  const raw = JSON.stringify(session);
   try {
-    localStorage.setItem(KEY, JSON.stringify(session));
+    tabStore()?.setItem(KEY, raw);
+    localStorage.setItem(KEY, raw);
   } catch {}
   emit();
 }
@@ -63,6 +86,7 @@ export function updateSessionUser(user: User) {
 
 export function clearSession() {
   try {
+    tabStore()?.removeItem(KEY);
     localStorage.removeItem(KEY);
   } catch {}
   emit();

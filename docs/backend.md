@@ -738,8 +738,12 @@ The server checks (each → **422** on the field in brackets, unless said):
 - *Not built yet:* a notification when someone is added to a group (no notification kind for it yet), deleting a group,
   and a group picture.
 
-**Live:** the site reloads the open chat when data changes in this browser. With the real server, a WebSocket message
-`chat_message {chat}` (planned, like `notification`) will tell the site to load that chat and the list again.
+**Live (22 November 2026: "people see the message without refreshing"):** the site reloads the open chat when data
+changes in this browser, and, for other people's messages, **asks again while the chat is shown**: `GET /chats/:key/messages`
+every **3 seconds** and `GET /chats` every **10 seconds**, only while the tab is visible (and at once when it is shown again).
+Please keep both calls light (an index on `messages(chat, id)`; `ETag`/`304` is welcome). A WebSocket message
+`chat_message {chat}` (planned, like `notification`) will later replace the asking: the site then loads that chat and
+the list only when told. The demo keeps one signed-in person per tab, so two tabs can be two people.
 
 **Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats,
 written versions of voice messages.

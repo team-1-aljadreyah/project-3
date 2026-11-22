@@ -147,3 +147,32 @@ test("a picture sent in a chat shows as a preview and opens in the viewer, with 
   await page.keyboard.press("Escape");
   await expect(viewer).toBeHidden();
 });
+
+test("two tabs, two people: Ahmed's message appears in Sara's open chat without a refresh", async ({ context }) => {
+  test.setTimeout(60_000);
+  const ahmed = await context.newPage();
+  await signInAs(ahmed, /أحمد كريم/);
+  // The demo keeps a session per tab. A new tab opens as Ahmed (the last to sign in); signing out there and in as Sara
+  // leaves the first tab as Ahmed.
+  const sara = await context.newPage();
+  await sara.goto("/chat");
+  await sara.getByRole("button", { name: /حسابي: أحمد كريم/ }).click();
+  await sara.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await sara.getByRole("button", { name: /سارة علي/ }).click();
+  await expect(sara.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
+  await ahmed.goto("/chat/p-1");
+  await expect(ahmed.getByRole("button", { name: /حسابي: أحمد كريم/ })).toBeVisible();
+  await sara.goto("/chat/p-1");
+  await expect(sara.getByRole("button", { name: /حسابي: سارة علي/ })).toBeVisible();
+  const saraMessages = sara.getByRole("list", { name: "الرسائل" });
+  await expect(saraMessages).toBeVisible();
+
+  await ahmed.getByLabel("اكتب رسالة").fill("سارة، الاجتماع بعد ربع ساعة");
+  await ahmed.getByRole("button", { name: "أرسل" }).click();
+  // No reload in Sara's tab.
+  await expect(saraMessages.getByText("سارة، الاجتماع بعد ربع ساعة")).toBeVisible();
+  // And her reply reaches Ahmed the same way.
+  await sara.getByLabel("اكتب رسالة").fill("تمام، أنا جاهزة");
+  await sara.getByRole("button", { name: "أرسل" }).click();
+  await expect(ahmed.getByRole("list", { name: "الرسائل" }).getByText("تمام، أنا جاهزة")).toBeVisible();
+});
