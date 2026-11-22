@@ -27,7 +27,7 @@ test("Ahmed answers a message and mentions Sara; Sara is notified and the link o
 
   const sent = messages.getByRole("listitem").filter({ hasText: "جرّبيها اليوم من فضلك" });
   await expect(sent).toBeVisible();
-  await expect(sent.getByRole("link", { name: /علي حسين: نقطة الاتصال جاهزة/ })).toBeVisible();
+  await expect(sent.getByRole("button", { name: /علي حسين: نقطة الاتصال جاهزة/ })).toBeVisible();
   await expect(box).toHaveValue("");
   await signOut(page);
 
