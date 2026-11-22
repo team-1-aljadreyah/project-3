@@ -114,6 +114,7 @@ test("a department manager's request goes through monitoring to the CEO; the CEO
   await page.getByRole("button", { name: /حسابي/ }).click();
   await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
   await page.getByRole("button", { name: /هدى ناصر/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
   await page.goto("/monitoring?show=requests");
   const waiting = page.getByRole("list", { name: "الطلبات الواردة" }).getByRole("article").filter({ hasText: "زيادة ميزانية الحملة" });
   await waiting.getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
@@ -159,6 +160,7 @@ test("the monitoring officer answers a request herself; the answer reaches the e
   await page.getByRole("button", { name: /حسابي/ }).click();
   await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
   await page.getByRole("button", { name: /هدى ناصر/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
   await page.goto("/monitoring?show=requests");
   const waiting = page.getByRole("list", { name: "الطلبات الواردة" }).getByRole("article").filter({ hasText: "يوم إجازة الخميس" });
   await waiting.getByRole("button", { name: "أجب بنفسك" }).click();
@@ -169,6 +171,7 @@ test("the monitoring officer answers a request herself; the answer reaches the e
   await page.getByRole("button", { name: /حسابي/ }).click();
   await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
   await page.getByRole("button", { name: /سارة علي/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
   await page.goto("/requests");
   const mine = page.getByRole("list", { name: "طلباتي" }).getByRole("article").filter({ hasText: "يوم إجازة الخميس" });
   await expect(mine.getByText("أجاب عنه مسؤول المتابعة")).toBeVisible();
