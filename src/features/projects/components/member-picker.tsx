@@ -7,7 +7,7 @@ import { Avatar, Input } from "@/shared/ui";
 
 /**
  * Pick the people in a project: a search box and one checkbox per person (the whole row is the label, so a click
- * anywhere on it ticks the box). `locked` people are always in (the project manager) and can't be unticked.
+ * anywhere on it ticks the box). `locked` people are always in (the department manager) and can't be unticked.
  */
 export function MemberPicker({
   people,
@@ -52,7 +52,7 @@ export function MemberPicker({
                   <span className="truncate text-sm font-medium">{nameOf(u)}</span>
                   <span className="truncate text-xs text-muted">
                     {u.title} · {roleName(u, lang)}
-                    {isLocked && ` · ${tr("مدير المشروع", "Project manager")}`}
+                    {isLocked && ` · ${tr("مدير القسم", "Department manager")}`}
                   </span>
                 </span>
               </label>

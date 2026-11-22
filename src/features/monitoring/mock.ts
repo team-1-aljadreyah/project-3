@@ -6,12 +6,37 @@ import { notify } from "@/mock/notify";
 import { requireFeature } from "@/mock/site";
 import { today } from "@/shared/lib/utils";
 import type { MonitoringApi } from "./api";
-import { canSeeNote, canSendRequests, canSendToCeo, canUseCeoInbox, canWriteNotes, NOTE_LIMITS as L } from "./rules";
+import { canSeeNote, canSendRequests, canSendToCeo, canShareNote, canTriageRequests, canUseCeoInbox, canWriteNotes, NOTE_LIMITS as L } from "./rules";
 import { countReport } from "./report";
 import type { MonitorNote, NoteAbout, ReportPeriod } from "./types";
 
 const newestFirst = (a: MonitorNote, b: MonitorNote) => (b.sent_at ?? b.created_at).localeCompare(a.sent_at ?? a.created_at);
 const ceos = () => getDb().users.filter((u) => u.active && u.role === "ceo").map((u) => u.id);
+const monitors = () => getDb().users.filter((u) => u.active && u.role === "monitor").map((u) => u.id);
+
+/** A request that waits for the monitoring officer (only requests that reached her and she hasn't handled). */
+function waiting(id: number) {
+  const note = find(id);
+  if (note.kind !== "request") return fail(404, "NOT_FOUND", "لم يُعثر على الطلب.", "Request not found.");
+  if (note.triage !== "pending") return fail(409, "BAD_STATE", "عولج هذا الطلب من قبل.", "This request was already handled.");
+  return note;
+}
+
+/** Send a note to more people (not the writer, not the CEO who has her inbox): each is told once. */
+function shareTo(note: MonitorNote, ids: number[], actorId: number) {
+  const db = getDb();
+  const unique = [...new Set(ids)];
+  if (unique.length > L.people) invalid("share_ids", "اخترت أشخاصاً أكثر من المسموح.", "Too many people.");
+  const added: number[] = [];
+  for (const id of unique) {
+    const u = db.users.find((x) => x.id === id && x.active);
+    if (!u) return invalid("share_ids", "أحد الأشخاص غير موجود.", "One of the people doesn't exist.");
+    if (u.id === note.author_id || u.role === "ceo" || note.shared_with?.some((s) => s.id === u.id)) continue;
+    (note.shared_with ??= []).push({ id: u.id, label: u.name, label_en: u.name_en, at: nowIso() });
+    added.push(u.id);
+  }
+  if (added.length) notify(added, "note_sent", { actor_id: actorId, data: { title: note.title, queue: "received" } });
+}
 
 function find(id: number) {
   const user = currentUser();
@@ -106,7 +131,19 @@ export const monitoringMock: MonitoringApi = {
       created_at: nowIso(),
       ...(facts ? { facts } : {}),
     };
-    if (input.send || request) sendNow(note, user.id);
+    if (request) {
+      // Requests reach the monitoring officer first (the client, 22 November 2026); hers, or any request when there is
+      // no monitoring officer, go straight to the CEO.
+      const firstStop = monitors().filter((id) => id !== user.id);
+      if (user.role === "monitor" || !firstStop.length) sendNow(note, user.id);
+      else {
+        note.triage = "pending";
+        notify(firstStop, "note_sent", { actor_id: user.id, data: { title: note.title, queue: "monitor" } });
+      }
+    } else {
+      if (input.send) sendNow(note, user.id);
+      if (input.share_ids?.length) shareTo(note, input.share_ids, user.id);
+    }
     db.monitor_notes.push(note);
     commit();
     return wait(note);
@@ -118,6 +155,64 @@ export const monitoringMock: MonitoringApi = {
     if (!canSendToCeo(user, note)) return fail(403, "FORBIDDEN", "يرسلها من كتبها.", "Only its writer sends it.");
     sendNow(note, user.id);
     commit();
+    return wait(note);
+  },
+
+  async forwardRequest(id, raw) {
+    const user = currentUser();
+    if (!canTriageRequests(user)) return fail(403, "FORBIDDEN", "الطلبات تمر بمسؤول المتابعة.", "Requests go through the monitoring officer.");
+    const note = waiting(id);
+    const text = raw?.trim();
+    if (text && text.length > L.reply) invalid("note", "الملاحظة أطول من المسموح.", "The note is too long.");
+    note.triage = "forwarded";
+    note.triaged_by = user.id;
+    note.triaged_at = nowIso();
+    if (text) note.forward_note = text;
+    sendNow(note, user.id);
+    commit();
+    return wait(note);
+  },
+
+  async answerRequest(id, raw) {
+    const user = currentUser();
+    if (!canTriageRequests(user)) return fail(403, "FORBIDDEN", "الطلبات تمر بمسؤول المتابعة.", "Requests go through the monitoring officer.");
+    const note = waiting(id);
+    const reply = raw?.trim();
+    if (!reply) invalid("reply", "اكتب ردك.", "Write your answer.");
+    if (reply.length > L.reply) invalid("reply", "الرد أطول من المسموح.", "The reply is too long.");
+    note.triage = "answered";
+    note.triaged_by = user.id;
+    note.triaged_at = nowIso();
+    note.monitor_reply = reply;
+    notify([note.author_id], "note_answered", { actor_id: user.id, data: { title: note.title, note: reply, note_kind: "request" } });
+    commit();
+    return wait(note);
+  },
+
+  async share(id, userIds) {
+    const user = currentUser();
+    const note = find(id);
+    if (!canShareNote(user, note)) return fail(403, "FORBIDDEN", "يرسلها من كتبها.", "Only its writer sends it.");
+    if (!Array.isArray(userIds) || !userIds.length) invalid("share_ids", "اختر شخصاً واحداً على الأقل.", "Choose at least one person.");
+    shareTo(note, userIds, user.id);
+    commit();
+    return wait(note);
+  },
+
+  async received() {
+    const user = currentUser();
+    return wait(getDb().monitor_notes.filter((n) => n.shared_with?.some((s) => s.id === user.id)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+  },
+
+  async markSeen(id) {
+    const user = currentUser();
+    const note = find(id);
+    const mine = note.shared_with?.find((s) => s.id === user.id);
+    if (!mine) return fail(404, "NOT_FOUND", "لم يُعثر على الملاحظة.", "Note not found.");
+    if (!mine.seen_at) {
+      mine.seen_at = nowIso();
+      commit({ own: true });
+    }
     return wait(note);
   },
 

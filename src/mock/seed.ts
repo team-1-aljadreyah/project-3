@@ -469,7 +469,7 @@ export function seed(now = new Date()): MockDb {
     // with one busy day, three days ago, when the admin wrote the team's English names. Nothing is dated today.
     // The tests count on this: no wrong password and no stopped account here, and no new account or team in the last 7
     // days. A removed template or announcement is no longer in the demo data, so its line only names it.
-    changed(at(13, 10, 20), 2, "title", "مدير مشروع"),
+    changed(at(13, 10, 20), 2, "title", "مدير قسم"),
     { id: ++auditId, actor_id: 8, action: "user_created", target: { type: "user", id: 3, label: "هدى ناصر" }, changes: [{ field: "role", to: "monitor" }], at: at(12, 9, 40) },
     changed(at(12, 9, 55), 3, "title", "مسؤولة المتابعة"),
     setting(at(11, 14, 10), "lock_after", 3, 5),

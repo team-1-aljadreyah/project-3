@@ -469,7 +469,7 @@ body {
   animation-delay: 0.55s;
 }
 
-/* The project manager's task calendar: a day off (the weekend) is hatched (pm-plan.tsx). */
+/* The department manager's task calendar: a day off (the weekend) is hatched (pm-plan.tsx). */
 .day-off {
   background-image: repeating-linear-gradient(135deg, transparent 0 7px, var(--line) 7px 8px);
 }
@@ -880,5 +880,35 @@ body {
 @media (max-width: 639px) {
   .drawer-in {
     --drawer-from: 0 !important;
+  }
+}
+
+/* ── Printing one part (shared/ui/print-button.tsx): only the chosen part goes on the paper, at full width, under the
+   platform's name and the date (written by the page's own print header). Everything else is hidden, not removed. ── */
+@media print {
+  body.print-one * {
+    visibility: hidden;
+  }
+  body.print-one .print-target,
+  body.print-one .print-target * {
+    visibility: visible;
+  }
+  body.print-one .print-target {
+    position: absolute;
+    inset: 0 0 auto 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  body.print-one .print-target .print\:hidden {
+    display: none !important;
+  }
+  /* The site's dark theme wastes ink: paper is always light. */
+  body.print-one {
+    background: #fff !important;
+    color: #1a0e14 !important;
+  }
+  @page {
+    margin: 14mm;
   }
 }

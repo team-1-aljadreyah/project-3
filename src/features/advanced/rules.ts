@@ -99,8 +99,8 @@ export const CODE_KINDS: { key: CodeKind; ar: string; en: string; example: numbe
 ];
 
 export const APPROVERS: { key: Approver; ar: string; en: string }[] = [
-  { key: "either", ar: "مدير المشروع أو قائد الفريق", en: "The PM or a team leader" },
-  { key: "pm", ar: "مدير المشروع فقط", en: "The PM only" },
+  { key: "either", ar: "مدير القسم أو قائد الفريق", en: "The department manager or a team leader" },
+  { key: "pm", ar: "مدير القسم فقط", en: "The department manager only" },
   { key: "lead", ar: "قائد الفريق فقط", en: "A team leader only" },
 ];
 
@@ -367,7 +367,7 @@ export function checkRoles(roles: CustomRole[]): Problems {
     if ((r.description?.length ?? 0) > LIMITS.roleDescription) e[at("description")] = { ar: `حتى ${LIMITS.roleDescription} حرف`, en: `Up to ${LIMITS.roleDescription} letters` };
     if (!ROLE_COLORS.includes(r.color)) e[at("color")] = { ar: "اختر لوناً", en: "Choose a colour" };
     if (!BASE_JOBS.includes(r.base)) {
-      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو متابعة أو قائد فريق أو موظف", en: "Starts like: a PM, monitoring, a team leader or an employee" };
+      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو متابعة أو قائد فريق أو موظف", en: "Starts like: a department manager, monitoring, a team leader or an employee" };
       continue;
     }
     if (!Array.isArray(r.actions) || r.actions.some((a) => !baseDoes(r.base, a))) e[at("actions")] = { ar: "لا يأخذ أكثر مما لوظيفته الأساسية", en: "Never more than its base job" };

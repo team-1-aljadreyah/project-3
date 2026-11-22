@@ -19,7 +19,7 @@ export const githubMock: GithubApi = {
     const user = currentUser();
     requireFeature(user, "github");
     const project = projectFor(user, projectId);
-    if (!canManageProjectSetup(user, project)) return fail(403, "FORBIDDEN", "يضبط GitHub مدير المشروع أو المدير التنفيذي.", "The project's PM or the CEO sets up GitHub.");
+    if (!canManageProjectSetup(user, project)) return fail(403, "FORBIDDEN", "يضبط GitHub مدير القسم أو المدير التنفيذي.", "The project's department manager or the CEO sets up GitHub.");
     const repos = [...new Set(input.repos.map((r) => r.trim()).filter(Boolean))];
     if (repos.length > GITHUB_LIMITS.repos) invalid("repos", `${GITHUB_LIMITS.repos} مستودعات على الأكثر.`, `At most ${GITHUB_LIMITS.repos} repositories.`);
     const bad = repos.find((r) => !isRepoName(r));

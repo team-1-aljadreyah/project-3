@@ -60,7 +60,7 @@ test("a problem can be about anything and involve any people", async ({ page }) 
   await expect(card.getByText(/سارة علي، علي حسين/)).toBeVisible();
 });
 
-test("an employee sends the CEO a request instead of a message; the CEO answers it", async ({ page }) => {
+test("an employee sends the CEO a request instead of a message; it waits with the monitoring officer", async ({ page }) => {
   test.setTimeout(60_000);
   await signInAs(page, /سارة علي/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "طلباتي" }).click();
@@ -68,8 +68,9 @@ test("an employee sends the CEO a request instead of a message; the CEO answers 
   await page.getByLabel("عن ماذا").fill("جهاز العمل");
   await page.getByLabel("العنوان").fill("حاسوب أسرع");
   await page.getByLabel("الطلب").fill("حاسوبي بطيء في تشغيل الاختبارات.");
-  await page.getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
-  await expect(page.getByRole("list", { name: "طلباتي" }).getByText("حاسوب أسرع")).toBeVisible();
+  await page.getByRole("button", { name: "أرسل الطلب" }).click();
+  const mine = page.getByRole("list", { name: "طلباتي" }).getByRole("article").filter({ hasText: "حاسوب أسرع" });
+  await expect(mine.getByText("عند مسؤول المتابعة")).toBeVisible();
   // The CEO is not in her list for a new private chat.
   await page.goto("/chat");
   await page.getByRole("button", { name: /محادثة خاصة جديدة/ }).click();
@@ -98,16 +99,28 @@ test("the monitoring officer builds a report from the numbers, adds her comments
   await expect(card.getByText("أقترح توزيع المهام المتأخرة على الفريق.")).toBeVisible();
 });
 
-test("a project manager sends a request; the CEO answers, marks it done, finds it in Done, and can open it again", async ({ page }) => {
-  test.setTimeout(60_000);
+test("a department manager's request goes through monitoring to the CEO; the CEO answers, marks it done, finds it in Done, and can open it again", async ({ page }) => {
+  test.setTimeout(90_000);
   await signInAs(page, /أحمد كريم/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "طلباتي" }).click();
   await page.getByRole("button", { name: "طلب جديد" }).click();
   await page.getByLabel("عن ماذا").fill("ميزانية");
   await page.getByLabel("العنوان").fill("زيادة ميزانية الحملة");
   await page.getByLabel("الطلب").fill("نحتاج ميزانية إضافية للإعلانات.");
-  await page.getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
+  await page.getByRole("button", { name: "أرسل الطلب" }).click();
   await expect(page.getByRole("list", { name: "طلباتي" }).getByText("زيادة ميزانية الحملة")).toBeVisible();
+
+  // The monitoring officer gets it first, and sends it on to the CEO with a note.
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByRole("button", { name: /هدى ناصر/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
+  await page.goto("/monitoring?show=requests");
+  const waiting = page.getByRole("list", { name: "الطلبات الواردة" }).getByRole("article").filter({ hasText: "زيادة ميزانية الحملة" });
+  await waiting.getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
+  await page.getByLabel("ملاحظة للمدير التنفيذي (اختيارية)").fill("أنصح بالموافقة.");
+  await page.getByRole("dialog").getByRole("button", { name: "أرسل إلى المدير التنفيذي" }).click();
+  await expect(waiting.getByRole("button", { name: "أجب بنفسك" })).toHaveCount(0);
 
   // The CEO: no "My requests" in the menu; the request is in "To handle".
   await page.getByRole("button", { name: /حسابي/ }).click();
@@ -131,4 +144,37 @@ test("a project manager sends a request; the CEO answers, marks it done, finds i
   await page.getByRole("button", { name: "إعادة فتح" }).click();
   await page.getByRole("tab", { name: /للمتابعة/ }).click();
   await expect(inbox.getByRole("button", { name: "زيادة ميزانية الحملة" })).toBeVisible();
+});
+
+test("the monitoring officer answers a request herself; the answer reaches the employee and the CEO never gets it", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAs(page, /سارة علي/);
+  await page.goto("/requests");
+  await page.getByRole("button", { name: "طلب جديد" }).click();
+  await page.getByLabel("عن ماذا").fill("إجازة");
+  await page.getByLabel("العنوان").fill("يوم إجازة الخميس");
+  await page.getByLabel("الطلب").fill("أحتاج يوم الخميس إجازة.");
+  await page.getByRole("button", { name: "أرسل الطلب" }).click();
+  await expect(page.getByRole("list", { name: "طلباتي" }).getByText("يوم إجازة الخميس")).toBeVisible();
+
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByRole("button", { name: /هدى ناصر/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
+  await page.goto("/monitoring?show=requests");
+  const waiting = page.getByRole("list", { name: "الطلبات الواردة" }).getByRole("article").filter({ hasText: "يوم إجازة الخميس" });
+  await waiting.getByRole("button", { name: "أجب بنفسك" }).click();
+  await page.getByLabel("ردك").fill("اطلبيها من مدير القسم مباشرة.");
+  await page.getByRole("dialog").getByRole("button", { name: "أرسل الرد" }).click();
+  await expect(waiting.getByText("أجاب عنه مسؤول المتابعة")).toBeVisible();
+
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  await page.getByRole("button", { name: /سارة علي/ }).click();
+  await expect(page.getByRole("navigation", { name: "القائمة الرئيسية" })).toBeVisible();
+  await page.goto("/requests");
+  const mine = page.getByRole("list", { name: "طلباتي" }).getByRole("article").filter({ hasText: "يوم إجازة الخميس" });
+  await expect(mine.getByText("أجاب عنه مسؤول المتابعة")).toBeVisible();
+  // Her answer shows on the card, under "the monitoring officer's reply".
+  await expect(mine.getByText("اطلبيها من مدير القسم مباشرة.")).toBeVisible();
 });

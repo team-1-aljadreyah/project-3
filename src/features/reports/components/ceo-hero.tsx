@@ -19,7 +19,7 @@ export function CeoHero({ date, numbers }: { date: string; numbers: { label: str
       </svg>
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-4">
         <h1 id="dashboard-title" className="hero-in rounded-full border border-white/15 bg-white/10 px-3.5 py-1 text-xs font-medium text-[#f2dace]">
-          {tr("لوحة القيادة", "Dashboard")} · {date}
+          {tr("لوحة التحكم", "Dashboard")} · {date}
         </h1>
         <p className="hero-in text-3xl leading-tight font-semibold text-white sm:text-5xl sm:leading-tight">
           {tr("كل ما في الشركة،", "Everything in the company,")}

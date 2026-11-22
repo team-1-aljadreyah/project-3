@@ -63,7 +63,7 @@ export function canTakePart(user: Pick<User, "id" | "role">, project: Members) {
 
 export const ROLES: Record<Role, { ar: string; en: string }> = {
   ceo: { ar: "المدير التنفيذي", en: "CEO" },
-  pm: { ar: "مدير القسم", en: "Project manager" },
+  pm: { ar: "مدير القسم", en: "Department manager" },
   monitor: { ar: "مسؤول المتابعة والتقييم", en: "Monitoring & evaluation" },
   lead: { ar: "قائد الفريق", en: "Team leader" },
   employee: { ar: "موظف", en: "Employee" },
@@ -79,16 +79,21 @@ export interface NavItem {
   roles: Role[];
   /** false = not built yet: shown greyed out with "soon", never a broken link. */
   ready: boolean;
-  /** Not in the CEO's menu, the one exception to the CEO seeing every item ("My requests": requests go TO the CEO). */
+  /**
+   * Not in the CEO's menu, the only exceptions to the CEO seeing every item: "My tasks" (nobody gives the CEO tasks)
+   * and "My requests" (requests go TO the CEO).
+   */
   notForCeo?: boolean;
+  /** Opened from the account menu (the avatar), not from the top bar. */
+  inAccountMenu?: boolean;
 }
 
 const ALL: Role[] = ["ceo", "pm", "monitor", "lead", "employee", "admin"];
 const WORK: Role[] = ["ceo", "pm", "monitor", "lead", "employee"];
 
 export const NAV: NavItem[] = [
-  { key: "dashboard", ar: "لوحة القيادة", en: "Dashboard", href: "/dashboard", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
-  { key: "my-tasks", ar: "مهامي", en: "My tasks", href: "/my-tasks", roles: ["pm", "lead", "employee"], ready: true },
+  { key: "dashboard", ar: "لوحة التحكم", en: "Dashboard", href: "/dashboard", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
+  { key: "my-tasks", ar: "مهامي", en: "My tasks", href: "/my-tasks", roles: ["pm", "lead", "employee"], ready: true, notForCeo: true },
   { key: "projects", ar: "المشاريع", en: "Projects", href: "/", roles: WORK, ready: true },
   { key: "chat", ar: "المحادثات", en: "Chat", href: "/chat", roles: WORK, ready: true },
   { key: "bugs", ar: "الأخطاء البرمجية", en: "Bugs", href: "/bugs", roles: WORK, ready: true },
@@ -100,7 +105,7 @@ export const NAV: NavItem[] = [
   { key: "requests", ar: "طلباتي", en: "My requests", href: "/requests", roles: ["pm", "monitor", "lead", "employee", "admin"], ready: true, notForCeo: true },
   { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },
   { key: "audit", ar: "سجل العمليات", en: "Audit log", href: "/audit", roles: ["ceo", "admin"], ready: true },
-  { key: "advanced", ar: "الإعدادات المتقدمة", en: "Advanced settings", href: "/advanced", roles: ["ceo"], ready: true },
+  { key: "advanced", ar: "الإعدادات المتقدمة", en: "Advanced settings", href: "/advanced", roles: ["ceo"], ready: true, inAccountMenu: true },
 ];
 
 /** The menu of a job. The CEO sees every item, also the ones added later (the CEO rule above). */

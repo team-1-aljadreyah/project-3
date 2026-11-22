@@ -59,7 +59,7 @@ export function ProjectsPage() {
         (projects.data[0].length === 0 ? (
           <Empty
             title={tr("لا توجد مشاريع بعد", "No projects yet")}
-            body={tr("حين يضيفك مدير مشروع إلى مشروع، يظهر هنا.", "When a project manager adds you to a project, it shows here.")}
+            body={tr("حين يضيفك مدير قسم إلى مشروع، يظهر هنا.", "When a department manager adds you to a project, it shows here.")}
           />
         ) : (
           <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

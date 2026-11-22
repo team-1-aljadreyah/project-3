@@ -9,7 +9,7 @@ import { FormError } from "../form-error";
 import { MemberPicker } from "../member-picker";
 
 /**
- * Who works on the project. The project manager is always in. Someone with open tasks here can't be removed until
+ * Who works on the project. The department manager is always in. Someone with open tasks here can't be removed until
  * the tasks are given to another member (the server answers with who, and the message shows below).
  */
 export function MembersTab({ project, people }: { project: Project; people: User[] }) {

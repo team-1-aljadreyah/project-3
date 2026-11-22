@@ -1,9 +1,10 @@
-import { Camera, ChevronRight, Languages, LogOut, Moon, RotateCcw, Sun, TrendingUp, UserRound } from "lucide-react";
+import { Camera, ChevronRight, Languages, LogOut, Moon, RotateCcw, SlidersHorizontal, Sun, TrendingUp, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/shared/ui";
-import { roleName } from "@/shared/lib/site";
+import { navFor } from "@/shared/lib/access";
+import { hiddenNavKeys, roleName, useSiteLive } from "@/shared/lib/site";
 import { resetDemoData } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { signOut as endSession } from "@/shared/lib/session";
@@ -129,6 +130,9 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
   const role = roleName(user, lang);
   // "My performance": the jobs whose own work is counted (not the CEO, not the system admin).
   const hasOwnPerformance = user.role !== "ceo" && user.role !== "admin";
+  // Pages that open from here instead of the top bar (the CEO's advanced settings).
+  const hidden = hiddenNavKeys(useSiteLive(), user);
+  const settings = navFor(user.role).filter((n) => n.inAccountMenu && n.ready && !hidden.includes(n.key));
 
   return (
     <div ref={box} className="relative">
@@ -230,7 +234,7 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
           </div>
 
           {/* My own pages. */}
-          {(profile || hasOwnPerformance) && (
+          {(profile || hasOwnPerformance || settings.length > 0) && (
             <div className="flex flex-col gap-0.5 border-t border-line px-2 py-2">
               {profile && (
                 <button type="button" role="menuitem" tabIndex={-1} className={rowClass} onClick={() => openProfile("view")}>
@@ -250,6 +254,15 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
                   <ChevronRight size={16} aria-hidden="true" className="text-faint rtl:-scale-x-100" />
                 </Link>
               )}
+              {settings.map((n) => (
+                <Link key={n.key} href={n.href} role="menuitem" tabIndex={-1} className={rowClass} onClick={() => setOpen(false)}>
+                  <span className={cn(iconBox, "bg-chip text-text")}>
+                    <SlidersHorizontal size={16} aria-hidden="true" />
+                  </span>
+                  <span className="flex-1">{tr(n.ar, n.en)}</span>
+                  <ChevronRight size={16} aria-hidden="true" className="text-faint rtl:-scale-x-100" />
+                </Link>
+              ))}
             </div>
           )}
 
