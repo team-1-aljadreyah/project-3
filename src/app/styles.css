@@ -145,6 +145,9 @@ body {
 body {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  /* The installed app on a phone with a notch or a home bar (viewport-fit=cover, app/layout.tsx): the content stays
+     inside the safe area, and the page's colour fills the rest. 0 everywhere else. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* Numbers line up in counts and dates. */

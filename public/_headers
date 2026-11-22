@@ -8,3 +8,18 @@
 # The built scripts and styles have a fingerprint in their name: they never change, so browsers may keep them.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The installed app (docs/deploy-cloudflare.md). The service worker must never be kept by the browser's cache: a new
+# deploy has to reach it at once (browsers check it themselves too). The manifest and the offline page are small and
+# change with the site, so they are checked each time.
+/sw.js
+  Cache-Control: no-cache
+  Content-Type: text/javascript; charset=utf-8
+/manifest.webmanifest
+  Cache-Control: no-cache
+  Content-Type: application/manifest+json
+/offline.html
+  Cache-Control: no-cache
+# The app icons: kept a day (they change only with the logo).
+/icons/*
+  Cache-Control: public, max-age=86400
