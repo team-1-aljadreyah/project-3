@@ -1,4 +1,4 @@
-import { Ban, Plus } from "lucide-react";
+import { Ban, Cake, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { authApi } from "@/features/auth";
@@ -51,7 +51,18 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
           {subject && <Avatar user={subject} size="lg" />}
           <div className="flex flex-col">
             <h1 className="text-2xl font-semibold">{userId === me.id ? tr("أدائي", "My performance") : nameOf(subject)}</h1>
-            {subject && <p className="text-sm text-muted">{subject.title}</p>}
+            {subject && (
+              <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+                {subject.title}
+                {/* The birthday: day and month only (GET /users never gives colleagues the year). */}
+                {subject.birthday && (
+                  <span className="inline-flex items-center gap-1">
+                    <Cake size={13} aria-hidden="true" className="text-accent" />
+                    {tr(`عيد الميلاد ${day(`2000-${subject.birthday}`)}`, `Birthday ${day(`2000-${subject.birthday}`)}`)}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

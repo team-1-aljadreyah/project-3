@@ -61,6 +61,14 @@ export function canTakePart(user: Pick<User, "id" | "role">, project: Members) {
   return isCeo(user) || user.role === "monitor" || isMember(user, project);
 }
 
+/**
+ * The full birth date, with the year: the person themself, the admin (who keeps the accounts) and the CEO. Everyone
+ * else sees only the day and month (birthdayView in shared/lib/birthday.ts uses this; docs/backend.md section 20).
+ */
+export function canSeeBirthDate(viewer: Pick<User, "id" | "role">, person: Pick<User, "id">) {
+  return isCeo(viewer) || viewer.role === "admin" || viewer.id === person.id;
+}
+
 export const ROLES: Record<Role, { ar: string; en: string }> = {
   ceo: { ar: "المدير التنفيذي", en: "CEO" },
   pm: { ar: "مدير القسم", en: "Department manager" },

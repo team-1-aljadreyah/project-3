@@ -5,11 +5,12 @@ import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { Team, User } from "@/shared/api/types";
-import { matches } from "@/shared/lib/utils";
+import { birthDateProblem, birthdayView } from "@/shared/lib/birthday";
+import { matches, today } from "@/shared/lib/utils";
 import type { AdminApi } from "./api";
 import { ipMatches, searchText } from "./audit-detail";
 import { ACTION_KIND, ACTION_WORDS } from "./audit-words";
-import { ADMIN_LIMITS as L, canAdminister, canSeeAudit, isEmail, RELATED_LIMIT, ROLE_KEYS, settingsProblem } from "./rules";
+import { ADMIN_LIMITS as L, BIRTH_DATE_ERRORS, canAdminister, canSeeAudit, isEmail, RELATED_LIMIT, ROLE_KEYS, settingsProblem } from "./rules";
 import { dayOf } from "./summary";
 import type { AuditEntry, TeamInput, UserInput, UserPatch } from "./types";
 
@@ -35,6 +36,10 @@ function checkUser(input: Partial<UserInput>, selfId?: number) {
   if (input.role !== undefined && !ROLE_KEYS.includes(input.role)) invalid("role", "دور غير معروف.", "Unknown role.");
   if (input.title !== undefined && input.title.length > L.title) invalid("title", "المسمى أطول من المسموح.", "The title is too long.");
   if (input.team_id !== undefined && input.team_id !== null && !db.teams.some((t) => t.id === input.team_id)) invalid("team_id", "الفريق غير موجود.", "The team doesn't exist.");
+  if (input.birth_date !== undefined && input.birth_date !== null && input.birth_date !== "") {
+    const problem = birthDateProblem(input.birth_date, today());
+    if (problem) invalid("birth_date", BIRTH_DATE_ERRORS[problem].ar, BIRTH_DATE_ERRORS[problem].en);
+  }
 }
 
 /**
@@ -77,12 +82,12 @@ function joinLead(team: Team, leadId: number | null | undefined, actorId: number
 
 export const adminMock: AdminApi = {
   async users() {
-    admin();
+    const viewer = admin();
     const db = getDb();
     return wait(
       db.users.map((u) => {
         const login = db.logins.find((l) => l.user_id === u.id);
-        return { ...u, failed_logins: login?.failed ?? 0, locked_until: login?.locked_until, last_login_at: login?.last_login_at };
+        return { ...birthdayView(viewer, u), failed_logins: login?.failed ?? 0, locked_until: login?.locked_until, last_login_at: login?.last_login_at };
       }),
     );
   },
@@ -103,6 +108,7 @@ export const adminMock: AdminApi = {
       role: input.role,
       title: input.title.trim(),
       team_id: input.team_id ?? undefined,
+      birth_date: input.birth_date || undefined,
       active: true,
     };
     db.users.push(user);
@@ -164,6 +170,12 @@ export const adminMock: AdminApi = {
       changes.push({ field: "team", from: teamName(user.team_id), to: teamName(patch.team_id ?? undefined) });
       user.team_id = patch.team_id ?? undefined;
       if (user.team_id) notify([user.id], "team_joined", { actor_id: actor.id, data: { note: teamName(user.team_id) } });
+    }
+    // The birth date is personal: the audit log says it changed, never the dates themselves.
+    if (patch.birth_date !== undefined && (patch.birth_date || undefined) !== user.birth_date) {
+      changes.push({ field: "birth_date" });
+      if (patch.birth_date) user.birth_date = patch.birth_date;
+      else delete user.birth_date;
     }
     const target = { type: "user" as const, id, label: user.name };
     if (changes.length) audit(actor.id, "user_changed", target, changes);

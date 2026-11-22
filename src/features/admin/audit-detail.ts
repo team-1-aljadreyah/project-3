@@ -118,6 +118,7 @@ export const FIELD_WORDS: Record<string, { ar: string; en: string }> = {
   role: { ar: "الدور", en: "Role" },
   custom_role: { ar: "الدور المخصص", en: "Custom role" },
   team: { ar: "الفريق", en: "Team" },
+  birth_date: { ar: "تاريخ الميلاد", en: "Birth date" },
   lead: { ar: "قائد الفريق", en: "Team leader" },
   pm: { ar: "مدير القسم", en: "Department manager" },
   template: { ar: "من القالب", en: "From template" },

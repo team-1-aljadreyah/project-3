@@ -9,6 +9,7 @@ import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
+import { cn } from "@/shared/lib/utils";
 import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
@@ -16,6 +17,7 @@ import { LeadSphere } from "../components/lead-sphere";
 import { MonitorSummary } from "../components/monitor-summary";
 import { PmOrbit } from "../components/pm-orbit";
 import { PmPlan } from "../components/pm-plan";
+import { UpcomingBirthdays } from "../components/upcoming-birthdays";
 import { teamShares, totals } from "../compute";
 import { canSeeReports } from "../rules";
 
@@ -64,6 +66,8 @@ export function DashboardPage() {
   const requests = waiting.filter((n) => n.kind === "request").length;
   const t = totals(o);
   const monitor = user.role === "monitor";
+  // The birthdays card: for monitoring (the client: she is told about birthdays) and the CEO.
+  const birthdays = monitor || user.role === "ceo";
   const people = new Map(users.map((u) => [u.id, u]));
   const nameOf = (id: number) => {
     const u = people.get(id);
@@ -232,29 +236,32 @@ export function DashboardPage() {
         </section>
       </div>
 
-      <section aria-labelledby="news-title" className="rounded-xl border border-line bg-card p-4">
-        <h2 id="news-title" className="mb-3 flex items-center gap-2 font-semibold">
-          <Megaphone size={17} aria-hidden="true" className="text-muted" />
-          {tr("آخر الإعلانات", "Latest announcements")}
-        </h2>
-        {announcements.length === 0 ? (
-          <p className="text-sm text-muted">{tr("لا إعلانات بعد.", "No announcements yet.")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {announcements.slice(0, 3).map((a) => (
-              <li key={a.id}>
-                <Link href={`/announcements/${a.id}`} className="flex flex-wrap items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-chip">
-                  {a.important && <Pill tone="progress">{tr("مهم", "Important")}</Pill>}
-                  <span dir="auto" className="min-w-0 flex-1 truncate font-medium">
-                    {a.title}
-                  </span>
-                  <span className="text-xs text-muted">{tr(`شاهده ${num(a.seen_count)} من ${num(a.audience_count)}`, `seen by ${a.seen_count} of ${a.audience_count}`)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className={cn("grid gap-5", birthdays && "lg:grid-cols-[minmax(0,1fr)_22rem]")}>
+        <section aria-labelledby="news-title" className="rounded-xl border border-line bg-card p-4">
+          <h2 id="news-title" className="mb-3 flex items-center gap-2 font-semibold">
+            <Megaphone size={17} aria-hidden="true" className="text-muted" />
+            {tr("آخر الإعلانات", "Latest announcements")}
+          </h2>
+          {announcements.length === 0 ? (
+            <p className="text-sm text-muted">{tr("لا إعلانات بعد.", "No announcements yet.")}</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {announcements.slice(0, 3).map((a) => (
+                <li key={a.id}>
+                  <Link href={`/announcements/${a.id}`} className="flex flex-wrap items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-chip">
+                    {a.important && <Pill tone="progress">{tr("مهم", "Important")}</Pill>}
+                    <span dir="auto" className="min-w-0 flex-1 truncate font-medium">
+                      {a.title}
+                    </span>
+                    <span className="text-xs text-muted">{tr(`شاهده ${num(a.seen_count)} من ${num(a.audience_count)}`, `seen by ${a.seen_count} of ${a.audience_count}`)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        {birthdays && <UpcomingBirthdays viewer={user} people={users} today={o.today} />}
+      </div>
 
       <p className="text-xs text-faint">
         {tr(

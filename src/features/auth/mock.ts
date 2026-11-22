@@ -6,6 +6,7 @@ import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import { DEMO_PASSWORD } from "@/mock/seed";
+import { birthdayView } from "@/shared/lib/birthday";
 import type { AuthApi } from "./api";
 
 export const authMock: AuthApi = {
@@ -45,11 +46,12 @@ export const authMock: AuthApi = {
     // A new session: the audit log writes it on everything this person does until they sign in again.
     login!.session_id = newSessionId();
     commit({ own: true });
-    return wait({ token: `demo-${user.id}`, user });
+    return wait({ token: `demo-${user.id}`, user: birthdayView(user, user) });
   },
 
   async me() {
-    return wait(currentUser());
+    const me = currentUser();
+    return wait(birthdayView(me, me));
   },
 
   // The demo keeps no tokens on a server: nothing to cancel.
@@ -57,8 +59,9 @@ export const authMock: AuthApi = {
     return wait(undefined);
   },
 
+  // Birthdays: colleagues get the day and month only; the year only the person, the admin and the CEO (birthdayView).
   async users() {
-    currentUser();
-    return wait(getDb().users);
+    const viewer = currentUser();
+    return wait(getDb().users.map((u) => birthdayView(viewer, u)));
   },
 };
