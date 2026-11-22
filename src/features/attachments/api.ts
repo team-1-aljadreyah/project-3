@@ -1,12 +1,15 @@
 // File attachments of tasks and projects. Pages call `attachmentsApi`; the .env switch decides if it is the real server
 // or the demo backend (./mock.ts). Both follow `AttachmentsApi`.
 import { http, lazyApi } from "@/shared/api";
-import type { Attachment, AttachmentOwner } from "./types";
+import type { Attachment, AttachmentOwner, VoiceMeta } from "./types";
 
 export interface AttachmentsApi {
   list(owner: AttachmentOwner): Promise<Attachment[]>;
-  /** Uploads one file. `onProgress` gets 0–1 while it uploads (the real server only; the demo is instant). */
-  upload(owner: AttachmentOwner, file: File, onProgress?: (ratio: number) => void): Promise<Attachment>;
+  /**
+   * Uploads one file. `onProgress` gets 0–1 while it uploads (the real server only; the demo is instant). `voice`: the
+   * file is a chat voice message's recording (owner type "message" only), with its length and waveform.
+   */
+  upload(owner: AttachmentOwner, file: File, onProgress?: (ratio: number) => void, voice?: VoiceMeta): Promise<Attachment>;
   remove(id: number): Promise<void>;
 }
 
@@ -16,10 +19,12 @@ const pathOf = (owner: AttachmentOwner) => `/${owner.type}s/${owner.id}/attachme
 
 export const attachmentsHttp: AttachmentsApi = {
   list: (owner) => data(http.get<Attachment[]>(pathOf(owner))),
-  upload: (owner, file, onProgress) => {
+  upload: (owner, file, onProgress, voice) => {
     // A file goes as "multipart/form-data", the browser's way to send files (not JSON).
     const form = new FormData();
     form.append("file", file);
+    // A voice message: its length and bars go beside the file, as one JSON text field.
+    if (voice) form.append("voice", JSON.stringify(voice));
     return data(
       http.post<Attachment>(pathOf(owner), form, {
         onUploadProgress: (e) => onProgress?.(e.total ? e.loaded / e.total : 0),

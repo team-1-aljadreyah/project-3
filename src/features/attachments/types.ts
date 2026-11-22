@@ -22,4 +22,16 @@ export interface Attachment {
   url: string;
   uploaded_by: number;
   at: string;
+  /** A chat voice message only: how long it is and the shape of its sound (docs/backend.md, sections 8 and 11). */
+  voice?: VoiceMeta;
+}
+
+/**
+ * What the site sends with a voice message's audio, so a bubble can draw its bars and show its length without loading
+ * the audio. `duration_s`: seconds (one decimal), more than 0 and at most 300. `peaks`: 48 whole numbers from 0 to 100,
+ * the loudness of each slice of the recording from its start to its end (100 = its loudest slice).
+ */
+export interface VoiceMeta {
+  duration_s: number;
+  peaks: number[];
 }
