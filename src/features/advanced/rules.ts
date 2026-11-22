@@ -85,6 +85,7 @@ export const ACTION_GROUPS: Record<ActionGroup, { ar: string; en: string }> = {
 export const FEATURES: { key: FeatureKey; ar: string; en: string; hint_ar: string; hint_en: string }[] = [
   { key: "chat", ar: "المحادثات", en: "Chat", hint_ar: "صفحة المحادثات كلها: المشاريع والفرق والخاصة والمجموعات.", hint_en: "The whole chat page: project, team, private and group chats." },
   { key: "group_chats", ar: "مجموعات المحادثة", en: "Group chats", hint_ar: "إنشاء مجموعات جديدة. المجموعات الموجودة تبقى.", hint_en: "Making new groups. Existing groups stay." },
+  { key: "voice_messages", ar: "الرسائل الصوتية", en: "Voice messages", hint_ar: "تسجيل رسائل صوتية في المحادثات. المرسلة من قبل تبقى وتُسمع.", hint_en: "Recording voice messages in chats. Ones already sent stay and play." },
   { key: "bugs", ar: "المشكلات البرمجية", en: "Bugs", hint_ar: "صفحة المشكلات وتسجيل مشكلة جديدة.", hint_en: "The bugs page and reporting a new bug." },
   { key: "reviews", ar: "تقييمات الأداء", en: "Performance reviews", hint_ar: "صفحة الأداء وكتابة التقييمات.", hint_en: "The performance page and writing reviews." },
   { key: "announcements", ar: "الإعلانات", en: "Announcements", hint_ar: "صفحة الإعلانات ونشر إعلان جديد.", hint_en: "The announcements page and posting a new one." },
@@ -395,7 +396,7 @@ export const PART_WORDS: Record<string, string> = {
   permissions: "صلاحيات من يحق إنشاء إغلاق حذف إسناد موعد اعتماد إعلان مجموعة درجات تقييم سريع الفرق تقارير تنزيل CSV خطورة rights who may create close delete assign approve scores reviews quick ratings rate teams reports export severity",
   notify: "إشعارات من يصله إشعار notifications who gets",
   roles: "وظائف أدوار دور جديد مخصص مسمى صفحات قائمة jobs roles custom new role pages menu",
-  features: "تشغيل إيقاف ميزات محادثات مجموعات مشكلات تقييمات إعلانات طلبات GitHub ترحيب features switch chat groups bugs reviews announcements requests welcome",
+  features: "تشغيل إيقاف ميزات محادثات مجموعات رسائل صوتية صوت ميكروفون مشكلات تقييمات إعلانات طلبات GitHub ترحيب features switch chat groups voice messages microphone bugs reviews announcements requests welcome",
   security: "دخول كلمة مرور قفل محاولات تذكير أمان sign in password lock attempts security reminder",
   names: "بادئة أرقام رموز TSK PRJ BUG prefix codes numbers",
   announce: "إعلان شريط قراءة فقط تعديل banner read only",

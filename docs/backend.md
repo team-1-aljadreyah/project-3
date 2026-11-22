@@ -1121,7 +1121,7 @@ settings switch in the other demo backends: `src/mock/site.ts`, `src/mock/notify
 | `tasks.wip_limit` | 0 | tasks in progress per person, 0 = none, whole 0–50 |
 | `permissions.<action>` | today's rules (below) | jobs from `pm, monitor, lead, employee, admin`; never `ceo` (always allowed) |
 | `notify.<kind>` | every job | jobs that get the kind; **required kinds (section 7) must list every job** |
-| `features.<key>` | all `true` | `chat`, `group_chats`, `bugs`, `reviews`, `announcements`, `requests`, `github`, `welcome` |
+| `features.<key>` | all `true` | `chat`, `group_chats`, `voice_messages`, `bugs`, `reviews`, `announcements`, `requests`, `github`, `welcome` |
 | `security.lock_after`, `lock_minutes`, `due_soon_days` | 5, 15, 1 | the administration's settings, same limits (3–10, 5–120, 1–7) |
 | `security.password_min` | 8 | 6–32, new and changed passwords only |
 | `names.{task,project,bug}` | `TSK`, `PRJ`, `BUG` | 2–5 capital letters A–Z, all different; new records only |
@@ -1138,7 +1138,7 @@ monitor, lead, employee · `bug_severity` pm, lead.
 **What the server must enforce now (version 1, the demo does it):**
 
 - **Features off:** for everyone but the `ceo`, the feature's calls answer **403 `FEATURE_OFF`** ("أوقفت الإدارة هذه
-  الميزة الآن."): `chat` → `GET /chats`, sending, `POST /chats/direct`, new groups; `group_chats` → new groups;
+  الميزة الآن."): `chat` → `GET /chats`, sending, `POST /chats/direct`, new groups; `group_chats` → new groups; `voice_messages` → a recording on `POST /messages/:id/attachments` (with `voice`);
   `bugs` → `GET /bugs`, reporting; `reviews` → writing and finalizing reviews; `announcements` → posting; `requests` →
   an employee's request (`POST /monitoring/notes` with `kind: "request"`); `github` → `PUT /projects/:id/github`, and
   `GET /{tasks|bugs}/:id/github` answers `{enabled: false, repos: [], items: []}`. `welcome` is the page's only. The

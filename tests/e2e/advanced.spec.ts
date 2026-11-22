@@ -103,3 +103,30 @@ test("the advanced settings are the CEO's only", async ({ page }) => {
   await page.goto("/advanced");
   await expect(page.getByText("الإعدادات المتقدمة للمدير التنفيذي وحده")).toBeVisible();
 });
+
+test("the CEO switches voice messages off: nobody else gets the microphone in the chat; on again, it is back", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAs(page, /مريم العبيدي/);
+  await page.goto("/advanced?s=features");
+  await page.getByRole("switch", { name: "الرسائل الصوتية" }).click();
+  await expect(page.getByRole("switch", { name: "الرسائل الصوتية" })).toHaveAttribute("aria-checked", "false");
+  await saveBar(page).getByRole("button", { name: "حفظ" }).click();
+  await expect(page.getByText("حُفظت الإعدادات، وتسري على الجميع الآن.")).toBeVisible();
+
+  await signOut(page);
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await expect(page.getByLabel("اكتب رسالة")).toBeVisible();
+  await expect(page.getByRole("button", { name: "سجّل رسالة صوتية" })).toHaveCount(0);
+
+  await signOut(page);
+  await signInAs(page, /مريم العبيدي/);
+  await page.goto("/advanced?s=features");
+  await page.getByRole("switch", { name: "الرسائل الصوتية" }).click();
+  await saveBar(page).getByRole("button", { name: "حفظ" }).click();
+  await expect(page.getByText("حُفظت الإعدادات، وتسري على الجميع الآن.")).toBeVisible();
+  await signOut(page);
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await expect(page.getByRole("button", { name: "سجّل رسالة صوتية" })).toBeVisible();
+});

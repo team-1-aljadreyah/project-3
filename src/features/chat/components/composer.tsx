@@ -9,6 +9,7 @@ import { chatApi } from "../api";
 import { CHAT_LIMITS as L, mentionQuery } from "../rules";
 import type { ChatKey, Message } from "../types";
 import { messageSummary, spokenDuration } from "../voice";
+import { featureOn, useSiteLive } from "@/shared/lib/site";
 import { useVoiceRecorder } from "./use-voice-recorder";
 import { micProblemText, MicButton, PreviewBar, RecordingBar } from "./voice-recorder";
 
@@ -45,6 +46,7 @@ export function Composer({
   const labelId = useId();
   const nameOf = (u: User) => (lang === "en" && u.name_en ? u.name_en : u.name);
   const rec = useVoiceRecorder();
+  const live = useSiteLive();
   const [holding, setHolding] = useState(false);
   const [drag, setDrag] = useState(0);
   const voiceState = rec.state;
@@ -128,7 +130,9 @@ export function Composer({
     }
   };
 
-  const showMic = (!text.trim() && files.length === 0) || voiceState === "recording" || voiceState === "asking";
+  // The CEO may switch voice messages off (advanced settings): then the box only sends text and files.
+  const voiceOn = featureOn(live, "voice_messages", me.role);
+  const showMic = voiceOn && ((!text.trim() && files.length === 0) || voiceState === "recording" || voiceState === "asking");
 
   return (
     <div className="flex flex-col gap-2 border-t border-line p-3">
