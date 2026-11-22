@@ -188,7 +188,7 @@ export function PreviewBar({ rec, busy, onSend }: { rec: VoiceRecorder; busy: bo
   const send = useRef<HTMLButtonElement>(null);
   const take = rec.take!;
   // The send button takes the focus, so the keyboard goes on from the button that was pressed.
-  useEffect(() => send.current?.focus(), []);
+  useEffect(() => send.current?.focus({ preventScroll: true }), []);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">

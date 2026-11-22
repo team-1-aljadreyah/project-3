@@ -9,6 +9,7 @@ import { chatApi } from "../api";
 import { CHAT_LIMITS as L, mentionQuery } from "../rules";
 import type { ChatKey, Message } from "../types";
 import { messageSummary, spokenDuration } from "../voice";
+import { featureOn, useSiteLive } from "@/shared/lib/site";
 import { useVoiceRecorder } from "./use-voice-recorder";
 import { micProblemText, MicButton, PreviewBar, RecordingBar } from "./voice-recorder";
 
@@ -45,6 +46,7 @@ export function Composer({
   const labelId = useId();
   const nameOf = (u: User) => (lang === "en" && u.name_en ? u.name_en : u.name);
   const rec = useVoiceRecorder();
+  const live = useSiteLive();
   const [holding, setHolding] = useState(false);
   const [drag, setDrag] = useState(0);
   const voiceState = rec.state;
@@ -54,7 +56,7 @@ export function Composer({
     if (voiceState === "recording" || voiceState === "preview") wasVoice.current = true;
     else if (voiceState === "idle" && wasVoice.current) {
       wasVoice.current = false;
-      box.current?.focus();
+      box.current?.focus({ preventScroll: true });
     }
   }, [voiceState]);
   // A microphone problem shows where the other errors show, with how to fix it.
@@ -78,7 +80,7 @@ export function Composer({
   useLayoutEffect(() => {
     const el = box.current;
     if (caret.current === null || !el) return;
-    el.focus();
+    el.focus({ preventScroll: true });
     el.selectionStart = el.selectionEnd = caret.current;
     caret.current = null;
   }, [text]);
@@ -101,7 +103,7 @@ export function Composer({
       setError(errorText(e, tr));
     } finally {
       setBusy(false);
-      box.current?.focus();
+      box.current?.focus({ preventScroll: true });
     }
   };
 
@@ -128,7 +130,9 @@ export function Composer({
     }
   };
 
-  const showMic = (!text.trim() && files.length === 0) || voiceState === "recording" || voiceState === "asking";
+  // The CEO may switch voice messages off (advanced settings): then the box only sends text and files.
+  const voiceOn = featureOn(live, "voice_messages", me.role);
+  const showMic = voiceOn && ((!text.trim() && files.length === 0) || voiceState === "recording" || voiceState === "asking");
 
   return (
     <div className="flex flex-col gap-2 border-t border-line p-3">

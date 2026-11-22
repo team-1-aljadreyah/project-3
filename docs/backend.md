@@ -137,7 +137,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 10 | `POST` | `/bugs/:id/status` | see §10 | Move a bug |
 | 10 | `GET` | `/bugs/:id/history` | see §2 | The bug's history |
 | 11 | `GET` | `/chats` | signed in | My chats (project, team, private; group chats: §11) |
-| 11 | `GET` | `/chats/:key/messages` | its members | Messages |
+| 11 | `GET` | `/chats/:key/messages` | its members | Messages, a page at a time (`?limit=30`, then `&before=<id>&limit=10` when scrolling up) |
 | 11 | `POST` | `/chats/:key/messages` | its members | Send (with @mentions) |
 | 11 | `POST` | `/chats/:key/read` | its members | Read up to here |
 | 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (only the CEO and the monitor start one with the CEO: 403) |
@@ -395,7 +395,7 @@ Every change updates the task's `updated_at`.
 | `GET /bugs/:id/history` | can see its project | `BugEvent[]` |
 | `GET /bugs/:id/attachments`, `POST /bugs/:id/attachments` | as for tasks (section 8) | |
 | `GET /chats` | signed in | `Conversation[]`, my chats only, the newest message first |
-| `GET /chats/:key/messages` | the chat's members | `Message[]`, oldest first |
+| `GET /chats/:key/messages` | the chat's members | `Message[]`, oldest first. `?limit=N` (1–100): only the newest N. `?before=<id>&limit=N`: the N just older than that message. Neither: all. |
 | `POST /chats/:key/messages` | the chat's members | `Message` (section 11) |
 | `POST /chats/:key/read` | the chat's members | nothing |
 | `POST /chats/direct` `{user_id}` | signed in | `Conversation`: the existing private chat with that person, or a new one |
@@ -663,6 +663,11 @@ after the last one this person read.
 
 `Message`: `{id, chat, author_id, body, reply_to?, mentions, created_at, files}`. `files` are its attachments (section 8,
 owner type `message`).
+
+**Pages (22 November 2026):** a chat opens with its newest 30 messages (`GET /chats/:key/messages?limit=30`, also
+every 3 seconds while it is open), and scrolling to the top asks `?before=<oldest id shown>&limit=10` (10 at a time) until a page comes
+back with fewer than 10. Always oldest first inside a page. A reply's original that is not loaded yet is reached by
+asking older pages the same way.
 
 **Sending** (`POST /chats/:key/messages {body, reply_to?, mentions?}`):
 
@@ -1141,7 +1146,7 @@ settings switch in the other demo backends: `src/mock/site.ts`, `src/mock/notify
 | `tasks.wip_limit` | 0 | tasks in progress per person, 0 = none, whole 0–50 |
 | `permissions.<action>` | today's rules (below) | jobs from `pm, monitor, lead, employee, admin`; never `ceo` (always allowed) |
 | `notify.<kind>` | every job | jobs that get the kind; **required kinds (section 7) must list every job** |
-| `features.<key>` | all `true` | `chat`, `group_chats`, `bugs`, `reviews`, `announcements`, `requests`, `github`, `welcome` |
+| `features.<key>` | all `true` | `chat`, `group_chats`, `voice_messages`, `bugs`, `reviews`, `announcements`, `requests`, `github`, `welcome` |
 | `security.lock_after`, `lock_minutes`, `due_soon_days` | 5, 15, 1 | the administration's settings, same limits (3–10, 5–120, 1–7) |
 | `security.password_min` | 8 | 6–32, new and changed passwords only |
 | `names.{task,project,bug}` | `TSK`, `PRJ`, `BUG` | 2–5 capital letters A–Z, all different; new records only |
@@ -1158,7 +1163,7 @@ monitor, lead, employee · `bug_severity` pm, lead.
 **What the server must enforce now (version 1, the demo does it):**
 
 - **Features off:** for everyone but the `ceo`, the feature's calls answer **403 `FEATURE_OFF`** ("أوقفت الإدارة هذه
-  الميزة الآن."): `chat` → `GET /chats`, sending, `POST /chats/direct`, new groups; `group_chats` → new groups;
+  الميزة الآن."): `chat` → `GET /chats`, sending, `POST /chats/direct`, new groups; `group_chats` → new groups; `voice_messages` → a recording on `POST /messages/:id/attachments` (with `voice`);
   `bugs` → `GET /bugs`, reporting; `reviews` → writing and finalizing reviews; `announcements` → posting; `requests` →
   an employee's request (`POST /monitoring/notes` with `kind: "request"`); `github` → `PUT /projects/:id/github`, and
   `GET /{tasks|bugs}/:id/github` answers `{enabled: false, repos: [], items: []}`. `welcome` is the page's only. The

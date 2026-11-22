@@ -27,7 +27,7 @@ test("Ahmed answers a message and mentions Sara; Sara is notified and the link o
 
   const sent = messages.getByRole("listitem").filter({ hasText: "جرّبيها اليوم من فضلك" });
   await expect(sent).toBeVisible();
-  await expect(sent.getByRole("link", { name: /علي حسين: نقطة الاتصال جاهزة/ })).toBeVisible();
+  await expect(sent.getByRole("button", { name: /علي حسين: نقطة الاتصال جاهزة/ })).toBeVisible();
   await expect(box).toHaveValue("");
   await signOut(page);
 
@@ -175,4 +175,54 @@ test("two tabs, two people: Ahmed's message appears in Sara's open chat without 
   await sara.getByLabel("اكتب رسالة").fill("تمام، أنا جاهزة");
   await sara.getByRole("button", { name: "أرسل" }).click();
   await expect(ahmed.getByRole("list", { name: "الرسائل" }).getByText("تمام، أنا جاهزة")).toBeVisible();
+});
+
+/** Adds `n` messages from Ahmed to a chat, straight into this browser's demo data, then reloads. */
+async function addMessages(page: import("@playwright/test").Page, chat: string, n: number) {
+  await page.evaluate(
+    ([chat, n]) => {
+      const saved = JSON.parse(localStorage.getItem("p3.mock.db")!);
+      const db = saved.db;
+      for (let i = 1; i <= n; i++) db.messages.push({ id: ++db.seq.message, chat, author_id: 2, body: `رسالة قديمة ${i}`, mentions: [], created_at: new Date(Date.now() - (n - i) * 60000).toISOString() });
+      localStorage.setItem("p3.mock.db", JSON.stringify(saved));
+    },
+    [chat, n] as const,
+  );
+  await page.reload();
+}
+
+test("a long chat opens with the newest messages; scrolling up loads the older ones; sending never moves the page", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await addMessages(page, "p-1", 45);
+  const list = page.getByRole("list", { name: "الرسائل" });
+  await expect(list.getByText("رسالة قديمة 45", { exact: true })).toBeVisible();
+  // Only the newest 30 at first.
+  await expect(list.getByRole("listitem")).toHaveCount(30);
+  await expect(list.getByText("رسالة قديمة 10", { exact: true })).toHaveCount(0);
+
+  // To the top of the list: the older ones come in.
+  await list.evaluate((ol) => (ol.parentElement!.scrollTop = 0));
+  await expect(list.getByText("رسالة قديمة 10", { exact: true })).toBeAttached();
+  await expect.poll(() => list.getByRole("listitem").count()).toBeGreaterThan(30);
+
+  // Sending: the list goes to the new message, the page itself stays where it is. (Typing first: the test tool scrolls
+  // a box into view before it types in it, so the page is measured just before pressing send.)
+  await page.getByLabel("اكتب رسالة").fill("رسالة جديدة في الأسفل");
+  const pageTop = await page.evaluate(() => window.scrollY);
+  await page.getByLabel("اكتب رسالة").press("Enter");
+  await expect(list.getByText("رسالة جديدة في الأسفل")).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBe(pageTop);
+});
+
+test("the chat's name and faces open its details: the way to the project and every member", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await page.getByRole("button", { name: /معلومات المحادثة وأعضاؤها/ }).click();
+  const info = page.getByRole("dialog", { name: "معلومات المحادثة" });
+  await expect(info.getByRole("link", { name: /افتح المشروع/ })).toHaveAttribute("href", /\/projects\/1$/);
+  await expect(info.getByText("سارة علي")).toBeVisible();
+  await expect(info.getByText("(أنت)")).toBeVisible();
+  await expect(info.getByText("أحمد كريم")).toBeVisible();
 });

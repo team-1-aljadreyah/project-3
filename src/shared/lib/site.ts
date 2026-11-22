@@ -11,9 +11,9 @@ import type { Lang } from "./format";
 import { useFmt } from "./i18n";
 
 /** The features the CEO can switch off. Off = gone from the menu and refused by the server, except for the CEO. */
-export type FeatureKey = "chat" | "group_chats" | "bugs" | "reviews" | "announcements" | "requests" | "github" | "welcome";
+export type FeatureKey = "chat" | "group_chats" | "voice_messages" | "bugs" | "reviews" | "announcements" | "requests" | "github" | "welcome";
 
-export const FEATURE_KEYS: FeatureKey[] = ["chat", "group_chats", "bugs", "reviews", "announcements", "requests", "github", "welcome"];
+export const FEATURE_KEYS: FeatureKey[] = ["chat", "group_chats", "voice_messages", "bugs", "reviews", "announcements", "requests", "github", "welcome"];
 
 /** The menu item each feature hides when it is off (shared/lib/access.ts NAV keys). */
 export const FEATURE_NAV: Partial<Record<FeatureKey, string>> = {

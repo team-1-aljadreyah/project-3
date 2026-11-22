@@ -372,6 +372,14 @@ body {
 .frost[data-frost="soft"]::after {
   background: var(--frost-tint, rgb(23 13 18 / 0.16));
 }
+/* On phones and tablets the small blurred picture was stretched into big blocky smears (the client, 22 November 2026:
+   "remove the blur, make it normal like the rest of the page"): there each card and section keeps the page's own
+   background, and the threads stay sharp. */
+@media (max-width: 1023px), (pointer: coarse) {
+  .frost {
+    display: none;
+  }
+}
 /* The curtains: blocks of the page's colour with a soft top edge (220px, FADE in light-threads.tsx). The script slides
    them down to uncover the threads as they drop. Off until the script turns them on (never with "reduce motion"). */
 .threads-curtain,
@@ -523,6 +531,37 @@ body {
   from {
     opacity: 0;
     transform: scale(0.96);
+  }
+}
+
+/* The dashboard greeting (greeting.tsx): it settles in, the clock's colon breathes, a new minute rolls up. */
+.greet-in {
+  animation: settle 0.7s 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.greet-later {
+  animation-delay: 0.35s;
+}
+.clock-colon {
+  animation: clock-breathe 2s ease-in-out infinite;
+}
+@keyframes clock-breathe {
+  50% {
+    opacity: 0.25;
+  }
+}
+.clock-roll {
+  display: inline-block;
+  animation: clock-roll 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes clock-roll {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clock-colon {
+    animation: none;
   }
 }
 

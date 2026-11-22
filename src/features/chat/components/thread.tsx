@@ -1,6 +1,6 @@
 import { ArrowDown } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePoll } from "@/shared/lib/poll";
@@ -12,32 +12,63 @@ import { canWriteInDirect } from "../rules";
 import { Composer } from "./composer";
 import { MessageItem } from "./message-item";
 
-/**
- * One chat's messages, the oldest at the top and the box to write at the bottom. Opening the chat (and every new
- * message while it is open) marks it as read, so the count in the list goes away. Other people's messages appear by
- * themselves: the chat asks the server again every few seconds while it is shown. A new message brings the list to the
- * bottom when you are already there (or wrote it); while you read older messages it waits under a "new messages" button.
- */
+/** How many messages a chat opens with. */
+export const PAGE = 30;
+/** How many older ones come in each time you scroll to the top (the client, 22 November 2026: "10 by 10"). */
+export const OLDER = 10;
 const POLL_MS = 3000;
+/** Pages to load at most when a reply points to an older message (30 × 20 = the 600 messages before the shown ones). */
+const MAX_JUMP_PAGES = 20;
+
+/** Older pages and the newest one together, each message once, oldest first. */
+function merge(older: Message[], latest: Message[]) {
+  const byId = new Map<number, Message>();
+  for (const m of older) byId.set(m.id, m);
+  for (const m of latest) byId.set(m.id, m);
+  return [...byId.values()].sort((a, b) => a.id - b.id);
+}
+
+/**
+ * One chat's messages, the oldest at the top and the box to write at the bottom.
+ * - It opens with the newest messages only; scrolling to the top loads the older ones, a page at a time, and the
+ *   message you were reading stays where it was.
+ * - Other people's messages appear by themselves: the chat asks the server for the newest page every few seconds while
+ *   it is shown.
+ * - A new message brings the list to the bottom when you are already there (or wrote it); while you read older ones it
+ *   waits under a "new messages" button.
+ * - Only this list scrolls, never the page around it (sending a message used to move the whole page).
+ * - Opening the chat (and every new message while it is open) marks it as read.
+ */
 export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; people: Map<number, User>; members: User[]; me: User }) {
   const { tr, lang } = useFmt();
-  const load = useLoad(() => chatApi.messages(chatKey), [chatKey]);
+  const load = useLoad(() => chatApi.messages(chatKey, { limit: PAGE }), [chatKey]);
+  usePoll(load.reload, POLL_MS);
+  const [older, setOlder] = useState<Message[]>([]);
+  const [noOlder, setNoOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [replyTo, setReplyTo] = useState<Message>();
-  const bottom = useRef<HTMLDivElement>(null);
-  const messages = load.data;
+  const [flash, setFlash] = useState<number | null>(null);
+  const latest = load.data;
+  const messages = latest ? merge(older, latest) : undefined;
   const loaded = messages !== undefined;
+  const hasOlder = !!latest && !noOlder && (older.length > 0 || latest.length >= PAGE);
   const lastId = messages?.at(-1)?.id;
   const lastMine = messages?.at(-1)?.author_id === me.id;
-  usePoll(load.reload, POLL_MS);
+  const hasList = !!messages?.length;
 
-  // Whether the list is at its bottom (where new messages land), and how many arrived while it wasn't.
   const box = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLOListElement>(null);
   const atBottom = useRef(true);
   const shownFor = useRef<string | null>(null);
   const seenLast = useRef<number | undefined>(undefined);
+  // Where the reader was before older messages were added on top: put back after they are drawn.
+  const keepPlace = useRef<{ height: number; top: number } | null>(null);
   const [unseen, setUnseen] = useState(0);
-  const toBottom = (smooth = false) => {
-    bottom.current?.scrollIntoView({ block: "end", behavior: smooth ? "smooth" : "auto" });
+
+  const scrollToBottom = (smooth = false) => {
+    const el = box.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
     atBottom.current = true;
     setUnseen(0);
   };
@@ -50,7 +81,8 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
     shownFor.current = chatKey;
     seenLast.current = lastId;
     if (fresh || atBottom.current || lastMine) {
-      bottom.current?.scrollIntoView({ block: "end" });
+      const el = box.current;
+      if (el) el.scrollTop = el.scrollHeight;
       atBottom.current = true;
       setUnseen(0);
     } else if (lastId !== before) {
@@ -59,10 +91,79 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
     chatApi.markRead(chatKey).catch(() => {});
   }, [chatKey, lastId, loaded, lastMine]);
 
+  // Pictures and voice messages get their height a moment later: stay at the bottom if that is where you were.
+  useEffect(() => {
+    const el = box.current;
+    const ol = list.current;
+    if (!el || !ol || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => {
+      if (atBottom.current && !keepPlace.current) el.scrollTop = el.scrollHeight;
+    });
+    watch.observe(ol);
+    return () => watch.disconnect();
+    // The list exists once there is a first message.
+  }, [hasList]);
+
+  // Older messages were added above: keep the one you were reading in the same place.
+  useLayoutEffect(() => {
+    const el = box.current;
+    const place = keepPlace.current;
+    if (!el || !place) return;
+    el.scrollTop = el.scrollHeight - place.height + place.top;
+    keepPlace.current = null;
+  }, [older]);
+
+  /** One more page of older messages. Resolves with what came (an empty list when there are no more). */
+  const loadOlder = async (): Promise<Message[]> => {
+    const first = messages?.[0];
+    if (!first || loadingOlder) return [];
+    setLoadingOlder(true);
+    try {
+      const page = await chatApi.messages(chatKey, { before: first.id, limit: OLDER });
+      if (page.length < OLDER) setNoOlder(true);
+      if (page.length) {
+        const el = box.current;
+        if (el) keepPlace.current = { height: el.scrollHeight, top: el.scrollTop };
+        setOlder((o) => [...page, ...o]);
+      }
+      return page;
+    } catch {
+      return [];
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
+  /** Show a message (a reply's original): load older pages until it is there, then bring it into view and light it. */
+  const jumpTo = async (id: number) => {
+    let have = messages?.some((m) => m.id === id);
+    let oldest = messages?.[0]?.id;
+    for (let i = 0; !have && oldest && i < MAX_JUMP_PAGES; i++) {
+      const page = await chatApi.messages(chatKey, { before: oldest, limit: PAGE }).catch(() => [] as Message[]);
+      if (!page.length) break;
+      if (page.length < PAGE) setNoOlder(true);
+      setOlder((o) => [...page, ...o]);
+      oldest = page[0].id;
+      have = page.some((m) => m.id === id);
+    }
+    if (!have) return;
+    setFlash(id);
+    // After the older messages are drawn: scroll only the list, so the page itself never moves.
+    requestAnimationFrame(() => {
+      const el = box.current;
+      const target = el?.querySelector<HTMLElement>(`#msg-${id}`);
+      if (!el || !target) return;
+      atBottom.current = false;
+      el.scrollTo({ top: target.offsetTop - el.clientHeight / 3, behavior: "smooth" });
+    });
+    setTimeout(() => setFlash((f) => (f === id ? null : f)), 2200);
+  };
+
   const byId = new Map(messages?.map((m) => [m.id, m]));
-  // A private chat with the CEO: you answer only once the CEO has written (otherwise you send a request).
+  // A private chat with the CEO: you answer only once the CEO has written there (otherwise you send a request). Older
+  // pages not loaded yet count as written: the other person can't write before the CEO, so any message means the CEO did.
   const other = members.find((u) => u.id !== me.id);
-  const readOnly = !!other && members.length === 2 && chatKey.startsWith("d-") && !canWriteInDirect(me, other, !!messages?.some((m) => m.author_id === other.id));
+  const readOnly = !!other && members.length === 2 && chatKey.startsWith("d-") && !hasOlder && !canWriteInDirect(me, other, !!messages?.some((m) => m.author_id === other.id));
   const nameOf = (id: number) => {
     const u = people.get(id);
     return u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-";
@@ -76,8 +177,10 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
           const el = e.currentTarget;
           atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
           if (atBottom.current && unseen) setUnseen(0);
+          // Near the top: the next 10 older messages come in.
+          if (el.scrollTop < 160 && hasOlder && !loadingOlder) void loadOlder();
         }}
-        className="min-h-0 flex-1 overflow-y-auto px-2 py-3"
+        className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"
       >
         {load.state.status === "loading" && (
           <LoadingBlock className="flex flex-col gap-3 p-2">
@@ -88,19 +191,36 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
         )}
         {load.state.status === "error" && <ErrorBox error={load.state.error} onRetry={load.reload} backHref="/chat" />}
         {messages && messages.length === 0 && <p className="p-6 text-center text-sm text-muted">{tr("لا رسائل بعد. ابدأ المحادثة.", "No messages yet. Start the conversation.")}</p>}
+        {hasOlder && (
+          // Loads by itself near the top; the button is there for the keyboard and when the list is short.
+          <div className="flex justify-center pb-2">
+            <button type="button" onClick={() => void loadOlder()} disabled={loadingOlder} className="rounded-full border border-line bg-card px-3 py-1 text-xs text-muted hover:text-text disabled:opacity-60">
+              {loadingOlder ? tr("جارٍ تحميل الرسائل الأقدم…", "Loading older messages…") : tr("اعرض الرسائل الأقدم", "Show older messages")}
+            </button>
+          </div>
+        )}
         {messages && messages.length > 0 && (
-          <ol aria-label={tr("الرسائل", "Messages")} className="flex flex-col gap-0.5">
+          <ol ref={list} aria-label={tr("الرسائل", "Messages")} className="flex flex-col gap-0.5">
             {messages.map((m) => (
-              <MessageItem key={m.id} m={m} replied={m.reply_to ? byId.get(m.reply_to) : undefined} people={people} mine={m.author_id === me.id} me={me.id} onReply={setReplyTo} />
+              <MessageItem
+                key={m.id}
+                m={m}
+                replied={m.reply_to ? byId.get(m.reply_to) : undefined}
+                people={people}
+                mine={m.author_id === me.id}
+                me={me.id}
+                onReply={setReplyTo}
+                onJump={jumpTo}
+                flash={flash === m.id}
+              />
             ))}
           </ol>
         )}
-        <div ref={bottom} />
       </div>
       {unseen > 0 && (
         <button
           type="button"
-          onClick={() => toBottom(true)}
+          onClick={() => scrollToBottom(true)}
           className="absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-medium text-on-accent shadow-card"
         >
           <ArrowDown size={15} aria-hidden="true" />

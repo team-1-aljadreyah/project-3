@@ -21,6 +21,8 @@ export function MessageItem({
   mine,
   me,
   onReply,
+  onJump,
+  flash,
 }: {
   m: Message;
   replied?: Message;
@@ -28,6 +30,10 @@ export function MessageItem({
   mine: boolean;
   /** The person reading, for the "not listened yet" mark of voice messages from others. */
   me: number;
+  /** Show another message of this chat (a reply's original), loading older ones when needed. */
+  onJump?: (id: number) => void;
+  /** Lit for a moment after a jump to it. */
+  flash?: boolean;
   onReply: (m: Message) => void;
 }) {
   const { tr, lang, dateTime } = useFmt();
@@ -45,7 +51,7 @@ export function MessageItem({
   const [viewing, setViewing] = useState<number | null>(null);
 
   return (
-    <li id={`msg-${m.id}`} className="group flex gap-2.5 rounded-lg px-2 py-1.5 target:bg-accent-soft hover:bg-card-2">
+    <li id={`msg-${m.id}`} className={cn("group flex gap-2.5 rounded-lg px-2 py-1.5 transition-colors duration-700 target:bg-accent-soft hover:bg-card-2", flash && "bg-accent-soft")}>
       {author && <Avatar user={author} size="sm" />}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
@@ -54,13 +60,25 @@ export function MessageItem({
             {dateTime(m.created_at)}
           </time>
         </p>
-        {replied && (
-          <a href={`#msg-${replied.id}`} className="flex max-w-full items-center gap-1.5 truncate rounded-md border-s-2 border-accent bg-chip px-2 py-1 text-xs text-muted hover:text-text">
+        {/* The quote of the message this one answers: pressing it shows that message (older ones load first). Only the
+            list scrolls, not the page. */}
+        {m.reply_to && (
+          <button
+            type="button"
+            onClick={() => onJump?.(m.reply_to!)}
+            className="flex max-w-full items-center gap-1.5 truncate rounded-md border-s-2 border-accent bg-chip px-2 py-1 text-start text-xs text-muted hover:text-text"
+          >
             <Reply size={12} aria-hidden="true" className="shrink-0 rtl:-scale-x-100" />
             <span className="truncate">
-              <b className="font-medium">{nameOf(replied.author_id)}:</b> <bdi>{messageSummary(replied, tr)}</bdi>
+              {replied ? (
+                <>
+                  <b className="font-medium">{nameOf(replied.author_id)}:</b> <bdi>{messageSummary(replied, tr)}</bdi>
+                </>
+              ) : (
+                tr("ردّ على رسالة أقدم، اضغط لعرضها", "A reply to an older message: press to show it")
+              )}
             </span>
-          </a>
+          </button>
         )}
         {m.body && (
           <p dir="auto" className="text-sm leading-relaxed break-words whitespace-pre-wrap">
