@@ -552,6 +552,12 @@ chat **message** (section 11, its own rules for who may add and remove).
 
 `Attachment`: `{id, owner_type: "task" | "project" | "bug" | "message", owner_id, name, size, mime, url, uploaded_by, at, voice?}`. `url` is where the site
 downloads it from (a short-lived signed link is fine). The site shows a preview for `image/png|jpeg|gif|webp` only.
+
+**Signed links (22 November 2026):** please give the **same** link for a file for a while (for example round the
+`expires` time to the next hour, so the signature does not change on every request). The chat asks for messages every
+3 seconds; a link that changed each time made a voice message start loading again every 3 seconds ("I have to press it
+a lot"). The site now keeps the first link it got for a file until it stops working (`src/shared/lib/stable-url.ts`),
+but a stable link also saves downloads and lets the browser cache pictures. Serve files with `Accept-Ranges: bytes`.
 `voice` (`{duration_s, peaks}`) is there only on a chat voice message's recording (section 11, *Voice messages*): the site
 shows it as a player instead of a file.
 

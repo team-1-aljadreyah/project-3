@@ -1,4 +1,5 @@
 import { FileText, Reply } from "lucide-react";
+import { stableUrl } from "@/shared/lib/stable-url";
 import { useState } from "react";
 import { ImageViewer, isImage } from "@/features/attachments";
 import type { User } from "@/shared/api/types";
@@ -97,7 +98,7 @@ export function MessageItem({
           <VoiceNote
             key={f.id}
             id={f.id}
-            src={f.url}
+            src={stableUrl(f.url)}
             duration={f.voice!.duration_s}
             peaks={f.voice!.peaks}
             tone={mine ? "mine" : "theirs"}
@@ -118,7 +119,7 @@ export function MessageItem({
                   {/* A user's file (a data: link in the demo, a short-lived link later): next/image can't optimise those. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={f.url}
+                    src={stableUrl(f.url)}
                     alt=""
                     loading="lazy"
                     className={cn("block object-cover transition-transform duration-300 group-hover:scale-[1.02]", pictures.length === 1 ? "max-h-72 w-auto max-w-[min(18rem,70vw)]" : "size-32")}
@@ -129,7 +130,7 @@ export function MessageItem({
           </ul>
         )}
         <ImageViewer
-          images={pictures.map((f) => ({ id: f.id, url: f.url, name: f.name, size: f.size, caption: `${author ? (lang === "en" && author.name_en ? author.name_en : author.name) : nameOf(m.author_id)} · ${dateTime(m.created_at)}` }))}
+          images={pictures.map((f) => ({ id: f.id, url: stableUrl(f.url), name: f.name, size: f.size, caption: `${author ? (lang === "en" && author.name_en ? author.name_en : author.name) : nameOf(m.author_id)} · ${dateTime(m.created_at)}` }))}
           index={viewing}
           onIndex={setViewing}
           onClose={() => setViewing(null)}
@@ -138,7 +139,7 @@ export function MessageItem({
           <ul className="flex flex-wrap gap-2">
             {files.map((f) => (
               <li key={f.id}>
-                <a href={f.url} download={f.name} className="flex items-center gap-2 rounded-lg border border-line bg-card p-1.5 pe-3 text-xs hover:border-accent">
+                <a href={stableUrl(f.url)} download={f.name} className="flex items-center gap-2 rounded-lg border border-line bg-card p-1.5 pe-3 text-xs hover:border-accent">
                   <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-md bg-chip text-muted">
                     <FileText size={16} />
                   </span>
