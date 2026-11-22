@@ -22,7 +22,7 @@ const RING_LENGTH = 2 * Math.PI * RING;
  * turning slowly; a planet behind its plan is the deep wine one. The projects are also listed as links at the side, and
  * the picture has a label with the same numbers. With "reduce motion" it is simply there, still.
  */
-export function PmOrbit({ user, projects, date }: { user: Pick<User, "id" | "name" | "name_en">; projects: ProjectRow[]; date: string }) {
+export function PmOrbit({ user, projects }: { user: Pick<User, "id" | "name" | "name_en">; projects: ProjectRow[] }) {
   const { tr, lang, num, pct } = useFmt();
   const mine = projects.filter((p) => p.pm_id === user.id && p.state !== "done").sort((a, b) => b.total - a.total);
   const total = mine.reduce((s, p) => s + p.total, 0);
@@ -49,7 +49,7 @@ export function PmOrbit({ user, projects, date }: { user: Pick<User, "id" | "nam
         <div className="flex flex-col gap-6">
           <div>
             <h1 id="dashboard-title" className="hero-in text-xs font-medium text-[#e6d3da]">
-              {tr("لوحة التحكم", "Dashboard")} · {date}
+              {tr("لوحة التحكم", "Dashboard")}
             </h1>
             <Greeting user={user} className="mt-3" />
             <p className="hero-in mt-3 max-w-72 text-sm leading-relaxed text-[#e6d3da]">

@@ -59,6 +59,8 @@ export function Greeting({ user, tone = "light", size = "lg", className }: { use
       <p className={cn("greet-in greet-later flex flex-wrap items-baseline gap-x-2 text-sm", light ? "text-white/80" : "text-muted")}>
         {/* The time, read as one: "2:31 PM". Each new minute rolls in. */}
         <time dateTime={now.toISOString()} aria-label={`${h12}:${mm} ${half}`} className={cn("num inline-flex items-baseline font-semibold", light ? "text-white" : "text-text")} dir="ltr">
+          {/* Arabic reads the time right to left: «2:23 م» has the م on the left of the digits. */}
+          {lang === "ar" && <span className="me-1 text-xs font-medium">{half}</span>}
           <span key={`${h12}`} className="clock-roll">
             {h12}
           </span>
@@ -68,7 +70,7 @@ export function Greeting({ user, tone = "light", size = "lg", className }: { use
           <span key={mm} className="clock-roll">
             {mm}
           </span>
-          <span className="ms-1 text-xs font-medium">{half}</span>
+          {lang !== "ar" && <span className="ms-1 text-xs font-medium">{half}</span>}
         </time>
         <span aria-hidden="true">·</span>
         <span>

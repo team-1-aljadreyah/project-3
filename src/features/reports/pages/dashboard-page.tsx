@@ -84,7 +84,6 @@ export function DashboardPage() {
       {user.role === "ceo" ? (
         <CeoHero
           user={user}
-          date={day(o.today)}
           numbers={[
             { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active), href: "/" },
             { label: tr("الإنجاز", "Progress"), value: pct(t.ratio), href: "/reports" },
@@ -93,10 +92,10 @@ export function DashboardPage() {
         />
       ) : user.role === "lead" ? (
         // The team leader: a slide with the team's tasks as spheres in a glass one.
-        <LeadSphere user={user} shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
+        <LeadSphere user={user} shares={teamShares(o, user.team_id)} team={teamName} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
       ) : user.role === "pm" ? (
         // The department manager: a greeting, and their projects turning round the department's progress.
-        <PmOrbit user={user} projects={o.projects} date={day(o.today)} />
+        <PmOrbit user={user} projects={o.projects} />
       ) : monitor ? (
         // Monitoring and evaluation: a banner, the summary cards and every project against its plan.
         <MonitorSummary user={user} o={o} t={t} />
