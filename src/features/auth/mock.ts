@@ -6,6 +6,7 @@ import { commit, getDb } from "@/mock/db";
 import { browserSessionId, currentUser, fail, nowIso, setBrowserSessionId, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import { DEMO_PASSWORD } from "@/mock/seed";
+import { birthdayView } from "@/shared/lib/birthday";
 import type { AuthApi } from "./api";
 
 export const authMock: AuthApi = {
@@ -49,11 +50,12 @@ export const authMock: AuthApi = {
     db.sessions.push({ id: login!.session_id, user_id: user.id, ip: demoIp(user.id), user_agent: demoUserAgent(), started_at: now, last_seen_at: now });
     setBrowserSessionId(login!.session_id);
     commit({ own: true });
-    return wait({ token: `demo-${user.id}`, user });
+    return wait({ token: `demo-${user.id}`, user: birthdayView(user, user) });
   },
 
   async me() {
-    return wait(currentUser());
+    const me = currentUser();
+    return wait(birthdayView(me, me));
   },
 
   // Signing out ends this browser's session (the token itself is only "demo-<id>": nothing else to cancel).
@@ -69,8 +71,9 @@ export const authMock: AuthApi = {
     return wait(undefined);
   },
 
+  // Birthdays: colleagues get the day and month only; the year only the person, the admin and the CEO (birthdayView).
   async users() {
-    currentUser();
-    return wait(getDb().users);
+    const viewer = currentUser();
+    return wait(getDb().users.map((u) => birthdayView(viewer, u)));
   },
 };

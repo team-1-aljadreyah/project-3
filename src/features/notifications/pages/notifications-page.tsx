@@ -1,21 +1,30 @@
 import { useState } from "react";
 import { authApi } from "@/features/auth";
+import { chatApi, type Conversation } from "@/features/chat";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useLoad } from "@/shared/lib/use-load";
+import { useUser } from "@/shared/lib/session";
 import { cn } from "@/shared/lib/utils";
 import { Button, Empty, ErrorBox, LoadingBlock, Skeleton } from "@/shared/ui";
 import { notificationsApi } from "../api";
+import { DeviceAlerts } from "../components/device-alerts";
 import { NotificationItem } from "../components/notification-item";
 import { PrefsForm } from "../components/prefs-form";
+import { UnreadChats } from "../components/unread-chats";
 import type { Notification, NotificationPrefs } from "../types";
 
-/** All of this person's notifications (all or unread only), and their notification preferences. */
+/**
+ * All of this person's notifications (all or unread only) under the chats they haven't read, the alerts on this device
+ * (sound, system notifications), and their notification preferences.
+ */
 export function NotificationsPage() {
   const { tr } = useFmt();
   usePageTitle(tr("الإشعارات", "Notifications"));
-  const load = useLoad(() => Promise.all([notificationsApi.notifications(), authApi.users(), notificationsApi.prefs()]));
+  const load = useLoad(() =>
+    Promise.all([notificationsApi.notifications(), authApi.users(), notificationsApi.prefs(), chatApi.conversations().catch(() => [] as Conversation[])]),
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -30,14 +39,15 @@ export function NotificationsPage() {
       )}
       {load.state.status === "error" && <ErrorBox error={load.state.error} onRetry={load.reload} />}
 
-      {load.data && <NotificationsView list={load.data[0]} users={load.data[1]} prefs={load.data[2]} />}
+      {load.data && <NotificationsView list={load.data[0]} users={load.data[1]} prefs={load.data[2]} convs={load.data[3]} />}
     </div>
   );
 }
 
 /** The list (all or unread only) and the preferences, once everything has loaded. */
-function NotificationsView({ list, users, prefs }: { list: Notification[]; users: User[]; prefs: NotificationPrefs }) {
+function NotificationsView({ list, users, prefs, convs }: { list: Notification[]; users: User[]; prefs: NotificationPrefs; convs: Conversation[] }) {
   const { tr } = useFmt();
+  const me = useUser().id;
   const [only, setOnly] = useState<"all" | "unread">("all");
   const people = new Map(users.map((u) => [u.id, u]));
   const unread = list.filter((n) => !n.read).length;
@@ -72,6 +82,11 @@ function NotificationsView({ list, users, prefs }: { list: Notification[]; users
             </Button>
           )}
         </div>
+        {convs.some((c) => c.unread > 0) && (
+          <div className="rounded-xl border border-line bg-card p-1.5">
+            <UnreadChats convs={convs} people={people} me={me} headingId="unread-chats-title" />
+          </div>
+        )}
         {shown.length === 0 ? (
           <Empty
             title={only === "unread" ? tr("لا توجد إشعارات غير مقروءة", "Nothing unread") : tr("لا توجد إشعارات بعد", "No notifications yet")}
@@ -84,6 +99,16 @@ function NotificationsView({ list, users, prefs }: { list: Notification[]; users
             ))}
           </div>
         )}
+      </section>
+
+      <section aria-labelledby="device-title" className="flex flex-col gap-3">
+        <div>
+          <h2 id="device-title" className="text-lg font-semibold">
+            {tr("التنبيهات على هذا الجهاز", "Alerts on this device")}
+          </h2>
+          <p className="text-sm text-muted">{tr("صوت وإشعار على شاشة جهازك عند وصول رسالة أو إشعار جديد.", "A sound and a notification on your screen when a new message or notification arrives.")}</p>
+        </div>
+        <DeviceAlerts />
       </section>
 
       <section aria-labelledby="prefs-title" className="flex flex-col gap-3">

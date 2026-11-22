@@ -6,5 +6,9 @@ declare namespace NodeJS {
     readonly NEXT_PUBLIC_API_URL?: string;
     /** "true" = demo data in the browser, anything else = the real API. */
     readonly NEXT_PUBLIC_USE_MOCK?: string;
+    /** This build's name (next.config.ts sets it): the service worker's version. */
+    readonly NEXT_PUBLIC_APP_BUILD?: string;
+    /** The backend's Web Push public key (VAPID). Empty: no push while the app is closed (docs/backend.md). */
+    readonly NEXT_PUBLIC_PUSH_PUBLIC_KEY?: string;
   }
 }

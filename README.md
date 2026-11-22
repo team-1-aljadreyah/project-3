@@ -34,6 +34,7 @@ no backend needed. The login page has a one-tap button for each job (demo only; 
 | `npm run typecheck` | Next.js route types, then TypeScript (no output files) |
 | `npm test` | Unit tests (Vitest) for the rules and helpers |
 | `npm run test:e2e` | Browser tests (Playwright) on phone and desktop sizes. Run `npm run build` first, with `NEXT_PUBLIC_USE_MOCK=true` |
+| `node scripts/make-icons.mjs` | Makes the app icons (`public/icons/`) from the logo again, after it changes |
 | `npm run check:no-demo` | After a real build (`NEXT_PUBLIC_USE_MOCK=false`): fails if a demo account or password is in `.next/` or `out/` |
 
 Jenkins runs `npm ci`, lint, typecheck, unit tests, the real build and the Cloudflare build with the no-demo check,
@@ -75,9 +76,10 @@ src/
 │   ├── announcements/ company announcements, who has and hasn't seen them
 │   ├── attachments/  file attachments (tasks, projects) and the project files page
 │   ├── auth/         sign in, the sign-in check for signed-in pages, the list of people
-│   ├── chat/         project, team, private and group chats: replies, @mentions, files, unread counts
+│   ├── chat/         project, team, private and group chats: replies, @mentions, files, voice messages, unread counts
 │   ├── performance/  per person and team over a period, review criteria (CEO), reviews and their trend
 │   ├── profile/      my profile and my picture: pick, crop, the small square the browser sends
+│   ├── ratings/      quick ratings of teams and people (a score and a reason, any time), the teams list and team pages
 │   ├── reports/      the CEO dashboard and the reports (by project, team and person, sprint), CSV download
 │   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), sprint rules, templates, counts
 │   ├── bugs/         the bug tracker: report, the fix flow, reports
@@ -88,6 +90,7 @@ src/
 │   ├── ui/           the design system (tokens in app/styles.css)
 │   ├── shell/        the top bar, the account menu, the signed-in frame
 │   ├── api/          the HTTP client, errors, the demo switch, shared types
+│   ├── pwa/          the installable app: the service worker's app side, install offers, sounds, system notifications
 │   └── lib/          language, theme, dates, session, loading data, access rules
 └── mock/             the demo database (seed + browser storage) and helpers for the demo backends
 tests/
@@ -102,7 +105,7 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth` and `profile` (`profile` uses no feature); `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
+Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements`, `ratings` and `auth`; `performance` uses `ratings`, `projects` and `auth`; `ratings` uses `projects` and `auth`; `admin` uses `auth` and `profile` (`profile` uses no feature); `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
 `notifications` and `announcements` use `auth`. Never the other way, so there is no loop.
 
 **How data flows:**
@@ -132,17 +135,23 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   window shows a live task, a plate opens out of the logo mid-page, and a sprint meter you drag. Signing in is always
   at the top.
 - **The dashboard** (`/dashboard`) opens with a section made for each job (`src/features/reports/components`): the CEO
-  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the project manager gets a task calendar (the days around
+  gets a night banner with the page's name, today's numbers and the way to the reports (`CeoHero`); the department manager gets a task calendar (the days around
   today) and a board of every task in their projects (`PmPlan`); the team leader gets a slide where a glass sphere
   clears to show the team's tasks as smaller spheres, with the four shares beside it (`LeadSphere`); monitoring and
   evaluation gets a banner with who is signed in, summary cards, and every project against its plan with a filter and a
   search (`MonitorSummary`). In that banner a small character drawn in code (a monitoring officer with a ponytail,
   glasses and a tablet, `MonitorCharacter`) breathes, blinks and swipes her tablet, and waves when the mouse goes over
   her; she stands behind the profile card, so she never covers it.
+  The monitoring officer and the CEO also get "Upcoming birthdays" (the next 30 days, day and month only), and a
+  reminder in the bell a week before and on the day (`src/shared/lib/birthday.ts`, docs/backend.md section 20).
 - **Monitoring** (`src/features/monitoring`): the monitoring officer writes reports about teams and people, feedback
   on anyone and problems at `/monitoring` (or builds a report from the numbers at `/monitoring/report`), and sends any
   of them to the CEO. Every other job sends the CEO requests at `/requests` (nobody starts a chat with the CEO). The CEO
   answers in `/inbox`: "To handle", and "Done", the archive kept to read again.
+- **Quick ratings** (`src/features/ratings`): the monitoring officer (and the CEO; a PM in their own projects) rates any team
+  or person at any time, for any reason: five labelled steps (ضعيف … ممتاز), a kind of reason («سبب آخر» always there),
+  the reason in her words, visible or private. They show on `/teams`, each team's page `/teams/:id`, the performance page
+  and each person's page, apart from the periodic reviews (docs/backend.md section 21).
 - **Quick search** (`src/features/search`, Ctrl+K or the top bar): pages, projects, tasks, bugs, announcements and
   people, only what the person may see (docs/backend.md section 18).
 - **Links everywhere:** numbers, rows and names open their pages (a person's name only when the viewer may open their
@@ -168,8 +177,16 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   256×256 WebP. It shows wherever the person's avatar shows (`Avatar`, `src/shared/ui/avatar.tsx`; their first letter
   when there is none). The admin and the CEO can remove a picture that is not appropriate (docs/backend.md section 19).
 - **The welcome splash** (`src/shared/shell/welcome-splash.tsx`): each time the app opens (a new tab or browser start), a
-  short greeting with the person's first name, job and the day lifts away into their page. It never blocks a click.
+  short greeting with the person's first name, job and the day (and «عيد ميلاد سعيد» on their birthday) lifts away
+  into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
+
+- **The installable app** (`src/shared/pwa`, `public/sw.js`, `src/app/manifest.ts`): the site installs on phones,
+  tablets and computers and opens without a connection (pages seen before, else an offline page); the account menu offers
+  «ثبّت التطبيق» when the browser can (a how-to on iPhone and iPad). While it is open, a new notification or chat message
+  from someone else rings and shows a system notification; the bell reminds of chats not read yet, and `/notifications`
+  sets the alerts of each device ([docs/deploy-cloudflare.md](docs/deploy-cloudflare.md); push while it is closed:
+  docs/backend.md section 22).
 
 ## Documentation
 

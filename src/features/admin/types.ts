@@ -23,6 +23,11 @@ export interface UserInput {
   title: string;
   /** null = no team. */
   team_id?: number | null;
+  /**
+   * "YYYY-MM-DD", or null to clear it. Optional, but the form asks for it (the birthday reminders need it): a real
+   * day, not in the future, age 16–80 (birthDateProblem in shared/lib/birthday.ts; docs/backend.md section 20).
+   */
+  birth_date?: string | null;
 }
 
 /** Changes to a user. `active: false` stops the account (never deleted: their history stays). `unlock` ends a lock. */
@@ -185,7 +190,9 @@ export type AuditAction =
   | "picture_removed"
   | "session_ended"
   | "sessions_ended"
-  | "users_imported";
+  | "users_imported"
+  | "rating_changed"
+  | "rating_deleted";
 
 /** The part of the platform an action is about (the audit log shows it as a small label and filters by it). */
 export type AuditKind = "account" | "team" | "settings" | "signin" | "project" | "announcement" | "review";

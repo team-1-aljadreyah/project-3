@@ -19,5 +19,7 @@
 /announcements/:id            /announcements/_                  200
 /performance/:id/*            /performance/_/:splat             200
 /performance/:id              /performance/_                    200
+/teams/:id/*                  /teams/_/:splat                   200
+/teams/:id                    /teams/_                          200
 /chat/:key/*                  /chat/_/:splat                    200
 /chat/:key                    /chat/_                           200

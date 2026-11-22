@@ -53,8 +53,8 @@ export interface ActionDef {
  * and its team leaders (tasks/rules.ts canManageTasks, canApprove), projects are created by PMs (projects/rules.ts),
  * announcements are posted by monitoring and the admin (announcements/rules.ts), group chats are made by monitoring, PMs
  * and leaders (chat/rules.ts), scores are seen by PMs, monitoring and leaders, reviews written by PMs and leaders
- * (performance/rules.ts), reports by PMs, monitoring and leaders (reports/rules.ts), and every job but the admin
- * reports bugs (bugs/rules.ts canReportBug).
+ * (performance/rules.ts), quick ratings given by monitoring and PMs (ratings/rules.ts canGiveRatings), reports by PMs, monitoring
+ * and leaders (reports/rules.ts), and every job but the admin reports bugs (bugs/rules.ts canReportBug).
  */
 export const ACTIONS: ActionDef[] = [
   { key: "create_project", group: "work", ar: "إنشاء مشروع", en: "Create a project", def: ["pm", "monitor"] },
@@ -67,6 +67,7 @@ export const ACTIONS: ActionDef[] = [
   { key: "create_group_chat", group: "talk", ar: "إنشاء مجموعة محادثة", en: "Create a group chat", def: ["pm", "monitor", "lead"] },
   { key: "see_scores", group: "people", ar: "رؤية درجات الأداء", en: "See performance scores", def: ["pm", "monitor", "lead"] },
   { key: "write_reviews", group: "people", ar: "كتابة تقييمات الأداء", en: "Write performance reviews", def: ["pm", "lead"] },
+  { key: "give_ratings", group: "people", ar: "التقييمات السريعة للفرق والأشخاص", en: "Quick ratings of teams and people", def: ["pm", "monitor"] },
   { key: "see_reports", group: "people", ar: "رؤية التقارير", en: "See the reports", def: ["pm", "monitor", "lead"] },
   { key: "export_csv", group: "people", ar: "تنزيل ملفات CSV", en: "Download CSV files", def: ["pm", "monitor", "lead", "admin"] },
   { key: "report_bugs", group: "bugs", ar: "تسجيل مشكلة برمجية", en: "Report a bug", def: ["pm", "monitor", "lead", "employee"] },
@@ -99,8 +100,8 @@ export const CODE_KINDS: { key: CodeKind; ar: string; en: string; example: numbe
 ];
 
 export const APPROVERS: { key: Approver; ar: string; en: string }[] = [
-  { key: "either", ar: "مدير المشروع أو قائد الفريق", en: "The PM or a team leader" },
-  { key: "pm", ar: "مدير المشروع فقط", en: "The PM only" },
+  { key: "either", ar: "مدير القسم أو قائد الفريق", en: "The department manager or a team leader" },
+  { key: "pm", ar: "مدير القسم فقط", en: "The department manager only" },
   { key: "lead", ar: "قائد الفريق فقط", en: "A team leader only" },
 ];
 
@@ -367,7 +368,7 @@ export function checkRoles(roles: CustomRole[]): Problems {
     if ((r.description?.length ?? 0) > LIMITS.roleDescription) e[at("description")] = { ar: `حتى ${LIMITS.roleDescription} حرف`, en: `Up to ${LIMITS.roleDescription} letters` };
     if (!ROLE_COLORS.includes(r.color)) e[at("color")] = { ar: "اختر لوناً", en: "Choose a colour" };
     if (!BASE_JOBS.includes(r.base)) {
-      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو متابعة أو قائد فريق أو موظف", en: "Starts like: a PM, monitoring, a team leader or an employee" };
+      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو متابعة أو قائد فريق أو موظف", en: "Starts like: a department manager, monitoring, a team leader or an employee" };
       continue;
     }
     if (!Array.isArray(r.actions) || r.actions.some((a) => !baseDoes(r.base, a))) e[at("actions")] = { ar: "لا يأخذ أكثر مما لوظيفته الأساسية", en: "Never more than its base job" };
@@ -391,7 +392,7 @@ export const PART_WORDS: Record<string, string> = {
   home: "صحة متأخرة مشاريع حسابات health overdue late accounts",
   work: "دوام أيام عمل ساعات عطلة عطل جمعة سبت موعد تسليم أولوية خطورة إصلاح working days hours holiday due priority severity fix",
   tasks: "اعتماد إكمال إعادة فتح سبب موعد حد مهام قيد التنفيذ approve done reopen reason due limit progress wip",
-  permissions: "صلاحيات من يحق إنشاء إغلاق حذف إسناد موعد اعتماد إعلان مجموعة درجات تقييم تقارير تنزيل CSV خطورة rights who may create close delete assign approve scores reviews reports export severity",
+  permissions: "صلاحيات من يحق إنشاء إغلاق حذف إسناد موعد اعتماد إعلان مجموعة درجات تقييم سريع الفرق تقارير تنزيل CSV خطورة rights who may create close delete assign approve scores reviews quick ratings rate teams reports export severity",
   notify: "إشعارات من يصله إشعار notifications who gets",
   roles: "وظائف أدوار دور جديد مخصص مسمى صفحات قائمة jobs roles custom new role pages menu",
   features: "تشغيل إيقاف ميزات محادثات مجموعات مشكلات تقييمات إعلانات طلبات GitHub ترحيب features switch chat groups bugs reviews announcements requests welcome",

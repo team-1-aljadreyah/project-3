@@ -7,7 +7,7 @@ test("the team leader reviews Sara: counted scores, stars for quality and teamwo
   await page.getByRole("table", { name: "أداء الموظفين" }).getByRole("link", { name: /سارة علي/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "سارة علي" })).toBeVisible();
 
-  await page.getByRole("button", { name: "تقييم جديد" }).click();
+  await page.getByRole("button", { name: "تقييم دوري جديد" }).click();
   const dialog = page.getByRole("dialog", { name: "تقييم أداء سارة علي" });
   await expect(dialog.getByRole("button", { name: "اعتمد التقييم" })).toBeDisabled(); // stars missing
   await dialog.getByLabel("درجة جودة العمل").selectOption("5");
@@ -24,7 +24,7 @@ test("Sara sees her own performance and her final reviews, and can't write one",
   await expect(page.getByRole("heading", { level: 1, name: "أدائي" })).toBeVisible();
   await expect(page.getByRole("list", { name: "تطور التقييم" }).getByRole("listitem")).toHaveCount(2);
   await expect(page.getByText("تحسن واضح في الالتزام بالمواعيد")).toBeVisible();
-  await expect(page.getByRole("button", { name: "تقييم جديد" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "تقييم دوري جديد" })).toHaveCount(0);
 });
 
 test("the CEO's criteria: weights must add up to 100; a change needs a new approval", async ({ page }) => {

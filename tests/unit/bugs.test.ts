@@ -145,3 +145,33 @@ describe("seeing and reminders", () => {
     expect(getDb().bug_events.at(-1)).toMatchObject({ bug_id: 1, kind: "attachment_added", to: "لقطة.png" });
   });
 });
+
+describe("Quick actions: the monitoring officer handles bugs on every project", () => {
+  it("she assigns, changes severity, priority and day, and moves a bug a step; each is in its history", async () => {
+    as(3);
+    const bug = getDb().bugs.find((b) => b.status !== "closed")!;
+    const project = getDb().projects.find((p) => p.id === bug.project_id)!;
+    // Values that differ from what it has, so each one is a change.
+    const dev = project.member_ids.find((id) => user(id).role === "employee" && id !== bug.assignee_id)!;
+    const severity = bug.severity === "critical" ? "low" : "critical";
+    const priority = bug.priority === "low" ? "high" : "low";
+    const changed = await api.update(bug.id, { assignee_id: dev, severity, priority, due: "2026-12-01" });
+    expect(changed).toMatchObject({ assignee_id: dev, severity, priority, due: "2026-12-01" });
+    const kinds = (await api.history(bug.id)).filter((e) => e.actor_id === 3).map((e) => e.kind);
+    expect(kinds).toEqual(expect.arrayContaining(["assignee", "severity", "priority", "due"]));
+    expect(movesFor(user(3), project, changed).length).toBeGreaterThan(0);
+  });
+
+  it("she sends a bug in testing back with a reason (required), or closes it", async () => {
+    as(3);
+    const project = getDb().projects[0];
+    const dev = project.member_ids.find((id) => user(id).role === "employee")!;
+    const bug = await api.report(project.id, { ...input, assignee_id: dev });
+    as(dev);
+    await api.move(bug.id, "fixing");
+    await api.move(bug.id, "testing");
+    as(3);
+    expect((await fails(api.move(bug.id, "reopened", " ")))?.status).toBe(422);
+    expect((await api.move(bug.id, "reopened", "ما زالت الصفحة بيضاء.")).status).toBe("reopened");
+  });
+});

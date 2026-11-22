@@ -145,6 +145,9 @@ body {
 body {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  /* The installed app on a phone with a notch or a home bar (viewport-fit=cover, app/layout.tsx): the content stays
+     inside the safe area, and the page's colour fills the rest. 0 everywhere else. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* Numbers line up in counts and dates. */
@@ -469,7 +472,7 @@ body {
   animation-delay: 0.55s;
 }
 
-/* The project manager's task calendar: a day off (the weekend) is hatched (pm-plan.tsx). */
+/* The department manager's task calendar: a day off (the weekend) is hatched (pm-plan.tsx). */
 .day-off {
   background-image: repeating-linear-gradient(135deg, transparent 0 7px, var(--line) 7px 8px);
 }
@@ -510,6 +513,60 @@ body {
 /* The shares at the sides arrive once the sphere has cleared. */
 .sphere-late {
   animation: settle 0.7s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* The department manager's slide (pm-orbit.tsx): the orbits draw themselves, the ring fills, the planets arrive and
+   then turn slowly round the centre. */
+.orbit-path {
+  animation: orbit-draw 1.2s ease both;
+}
+@keyframes orbit-draw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.orbit-sun {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bubble-in 0.9s 0.2s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.orbit-ring {
+  animation: orbit-fill 1.4s 0.5s cubic-bezier(0.3, 0.8, 0.3, 1) both;
+}
+@keyframes orbit-fill {
+  from {
+    stroke-dashoffset: var(--ring-from);
+  }
+  to {
+    stroke-dashoffset: var(--ring-to);
+  }
+}
+.orbit-turn {
+  transform-box: view-box;
+  transform-origin: 160px 160px;
+  animation: orbit-spin linear infinite;
+}
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.orbit-planet {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bubble-in 0.8s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.orbit-late {
+  animation: settle 0.7s 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* Still under "reduce motion" (the general rule would make the endless turn flicker). */
+@media (prefers-reduced-motion: reduce) {
+  .orbit-turn {
+    animation: none;
+  }
 }
 
 /* The monitoring officer's banner: wine to mauve (monitor-summary.tsx draws the waves). */
@@ -880,5 +937,35 @@ body {
 @media (max-width: 639px) {
   .drawer-in {
     --drawer-from: 0 !important;
+  }
+}
+
+/* ── Printing one part (shared/ui/print-button.tsx): only the chosen part goes on the paper, at full width, under the
+   platform's name and the date (written by the page's own print header). Everything else is hidden, not removed. ── */
+@media print {
+  body.print-one * {
+    visibility: hidden;
+  }
+  body.print-one .print-target,
+  body.print-one .print-target * {
+    visibility: visible;
+  }
+  body.print-one .print-target {
+    position: absolute;
+    inset: 0 0 auto 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  body.print-one .print-target .print\:hidden {
+    display: none !important;
+  }
+  /* The site's dark theme wastes ink: paper is always light. */
+  body.print-one {
+    background: #fff !important;
+    color: #1a0e14 !important;
+  }
+  @page {
+    margin: 14mm;
   }
 }

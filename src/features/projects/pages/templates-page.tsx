@@ -26,7 +26,7 @@ export function TemplatesPage() {
   const remover = useSave();
 
   if (!allowed) {
-    return <Empty title={tr("القوالب لمن ينشئ المشاريع", "Templates are for the people who create projects")} body={tr("المدير التنفيذي ومديرو المشاريع.", "The CEO and the project managers.")} />;
+    return <Empty title={tr("القوالب لمن ينشئ المشاريع", "Templates are for the people who create projects")} body={tr("المدير التنفيذي ومديرو الأقسام.", "The CEO and the department managers.")} />;
   }
 
   const people = new Map((load.data?.[1] ?? []).map((u) => [u.id, u]));

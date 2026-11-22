@@ -4,17 +4,21 @@ import { announcementsApi } from "@/features/announcements";
 import { authApi } from "@/features/auth";
 import { monitoringApi } from "@/features/monitoring";
 import { PROJECT_STATE, projectsApi } from "@/features/projects";
+import { TeamsToRate } from "@/features/ratings";
 import { personHref } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
+import { cn } from "@/shared/lib/utils";
 import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, MaybeLink, Pill, ProgressBar, Skeleton, Stat } from "@/shared/ui";
 import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
 import { LeadSphere } from "../components/lead-sphere";
 import { MonitorSummary } from "../components/monitor-summary";
+import { PmOrbit } from "../components/pm-orbit";
 import { PmPlan } from "../components/pm-plan";
+import { UpcomingBirthdays } from "../components/upcoming-birthdays";
 import { teamShares, totals } from "../compute";
 import { canSeeReports } from "../rules";
 
@@ -25,7 +29,7 @@ import { canSeeReports } from "../rules";
  */
 export function DashboardPage() {
   const { tr, lang, num, pct, day } = useFmt();
-  usePageTitle(tr("لوحة القيادة", "Dashboard"));
+  usePageTitle(tr("لوحة التحكم", "Dashboard"));
   const user = useUser();
   const allowed = canSeeReports(user);
   const load = useLoad(
@@ -41,7 +45,7 @@ export function DashboardPage() {
     [allowed],
   );
 
-  if (!allowed) return <Empty title={tr("لوحة القيادة للإدارة", "The dashboard is for management")} body={tr("افتح «مهامي» لترى مهامك.", 'Open "My tasks" to see your tasks.')} />;
+  if (!allowed) return <Empty title={tr("لوحة التحكم للإدارة", "The dashboard is for management")} body={tr("افتح «مهامي» لترى مهامك.", 'Open "My tasks" to see your tasks.')} />;
   if (load.state.status === "loading") {
     return (
       <LoadingBlock className="mx-auto flex w-full max-w-6xl flex-col gap-4">
@@ -63,6 +67,8 @@ export function DashboardPage() {
   const requests = waiting.filter((n) => n.kind === "request").length;
   const t = totals(o);
   const monitor = user.role === "monitor";
+  // The birthdays card: for monitoring (the client: she is told about birthdays) and the CEO.
+  const birthdays = monitor || user.role === "ceo";
   const people = new Map(users.map((u) => [u.id, u]));
   const nameOf = (id: number) => {
     const u = people.get(id);
@@ -87,13 +93,16 @@ export function DashboardPage() {
       ) : user.role === "lead" ? (
         // The team leader: a slide with the team's tasks as spheres in a glass one.
         <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
+      ) : user.role === "pm" ? (
+        // The department manager: a greeting, and their projects turning round the department's progress.
+        <PmOrbit user={user} projects={o.projects} date={day(o.today)} />
       ) : monitor ? (
         // Monitoring and evaluation: a banner, the summary cards and every project against its plan.
         <MonitorSummary user={user} o={o} t={t} />
       ) : (
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold">{tr("لوحة القيادة", "Dashboard")}</h1>
+            <h1 className="text-2xl font-semibold">{tr("لوحة التحكم", "Dashboard")}</h1>
             <p className="text-sm text-muted">{tr(`الأرقام حتى ${day(o.today)}، للمشاريع التي تراها.`, `Numbers up to ${day(o.today)}, for the projects you can see.`)}</p>
           </div>
           <ButtonLink href="/reports" variant="secondary" pill>
@@ -101,6 +110,9 @@ export function DashboardPage() {
           </ButtonLink>
         </div>
       )}
+
+      {/* Monitoring and evaluation: a quick way to rate a team, any team, for any reason. */}
+      {monitor && <TeamsToRate />}
 
       {/* The CEO: new things in the inbox, one line that opens it. */}
       {waiting.length > 0 && (
@@ -140,7 +152,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* The project manager: the task calendar and the board over all their projects. */}
+      {/* The department manager: the task calendar and the board over all their projects. */}
       {user.role === "pm" && <PmPlan today={o.today} people={people} />}
 
       {!monitor && (
@@ -188,10 +200,10 @@ export function DashboardPage() {
           ) : (
             <ul className="flex flex-col gap-3">
               {o.teams.map((team) => (
-                // The whole row opens the people report of that team.
+                // The whole row opens the team's page (its people, numbers and ratings).
                 <li key={team.team_id} className="relative -mx-2 flex flex-col gap-1.5 rounded-lg px-2 py-1 hover:bg-card-2">
                   <div className="flex justify-between gap-2 text-sm">
-                    <Link href={`/reports?tab=people&team=${team.team_id}`} dir="auto" className="font-medium after:absolute after:inset-0 hover:underline">
+                    <Link href={`/teams/${team.team_id}`} dir="auto" className="font-medium after:absolute after:inset-0 hover:underline">
                       {lang === "en" && team.name_en ? team.name_en : team.name}
                     </Link>
                     <span className="text-muted">
@@ -228,29 +240,32 @@ export function DashboardPage() {
         </section>
       </div>
 
-      <section aria-labelledby="news-title" className="rounded-xl border border-line bg-card p-4">
-        <h2 id="news-title" className="mb-3 flex items-center gap-2 font-semibold">
-          <Megaphone size={17} aria-hidden="true" className="text-muted" />
-          {tr("آخر الإعلانات", "Latest announcements")}
-        </h2>
-        {announcements.length === 0 ? (
-          <p className="text-sm text-muted">{tr("لا إعلانات بعد.", "No announcements yet.")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {announcements.slice(0, 3).map((a) => (
-              <li key={a.id}>
-                <Link href={`/announcements/${a.id}`} className="flex flex-wrap items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-chip">
-                  {a.important && <Pill tone="progress">{tr("مهم", "Important")}</Pill>}
-                  <span dir="auto" className="min-w-0 flex-1 truncate font-medium">
-                    {a.title}
-                  </span>
-                  <span className="text-xs text-muted">{tr(`شاهده ${num(a.seen_count)} من ${num(a.audience_count)}`, `seen by ${a.seen_count} of ${a.audience_count}`)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className={cn("grid gap-5", birthdays && "lg:grid-cols-[minmax(0,1fr)_22rem]")}>
+        <section aria-labelledby="news-title" className="rounded-xl border border-line bg-card p-4">
+          <h2 id="news-title" className="mb-3 flex items-center gap-2 font-semibold">
+            <Megaphone size={17} aria-hidden="true" className="text-muted" />
+            {tr("آخر الإعلانات", "Latest announcements")}
+          </h2>
+          {announcements.length === 0 ? (
+            <p className="text-sm text-muted">{tr("لا إعلانات بعد.", "No announcements yet.")}</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {announcements.slice(0, 3).map((a) => (
+                <li key={a.id}>
+                  <Link href={`/announcements/${a.id}`} className="flex flex-wrap items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-chip">
+                    {a.important && <Pill tone="progress">{tr("مهم", "Important")}</Pill>}
+                    <span dir="auto" className="min-w-0 flex-1 truncate font-medium">
+                      {a.title}
+                    </span>
+                    <span className="text-xs text-muted">{tr(`شاهده ${num(a.seen_count)} من ${num(a.audience_count)}`, `seen by ${a.seen_count} of ${a.audience_count}`)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        {birthdays && <UpcomingBirthdays viewer={user} people={users} today={o.today} />}
+      </div>
 
       <p className="text-xs text-faint">
         {tr(

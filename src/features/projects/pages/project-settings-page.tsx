@@ -79,7 +79,7 @@ function Settings({ project, people, sprints, history }: Loaded) {
     return (
       <div className="mx-auto w-full max-w-xl">
         <ErrorBox
-          error={new ApiError(403, tr("إعدادات المشروع لمدير المشروع والمدير التنفيذي فقط.", "Project settings are for its project manager and the CEO."))}
+          error={new ApiError(403, tr("إعدادات المشروع لمدير القسم والمدير التنفيذي فقط.", "Project settings are for its department manager and the CEO."))}
           backHref={`/projects/${project.id}`}
         />
       </div>

@@ -1,7 +1,8 @@
-import { Ban, Plus } from "lucide-react";
+import { Ban, Cake, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { authApi } from "@/features/auth";
+import { RatingsPanel } from "@/features/ratings";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
@@ -51,7 +52,18 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
           {subject && <Avatar user={subject} size="lg" />}
           <div className="flex flex-col">
             <h1 className="text-2xl font-semibold">{userId === me.id ? tr("أدائي", "My performance") : nameOf(subject)}</h1>
-            {subject && <p className="text-sm text-muted">{subject.title}</p>}
+            {subject && (
+              <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+                {subject.title}
+                {/* The birthday: day and month only (GET /users never gives colleagues the year). */}
+                {subject.birthday && (
+                  <span className="inline-flex items-center gap-1">
+                    <Cake size={13} aria-hidden="true" className="text-accent" />
+                    {tr(`عيد الميلاد ${day(`2000-${subject.birthday}`)}`, `Birthday ${day(`2000-${subject.birthday}`)}`)}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -59,7 +71,7 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
           {detail.can_review && (
             <Button pill onClick={() => setWriting({})}>
               <Plus size={16} aria-hidden="true" />
-              {tr("تقييم جديد", "New review")}
+              {tr("تقييم دوري جديد", "New periodic review")}
             </Button>
           )}
         </div>
@@ -101,9 +113,18 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
         </section>
       )}
 
+      {/* Quick ratings (any time, any reason: the ratings feature), apart from the periodic reviews below. */}
+      {subject && subject.role !== "ceo" && subject.role !== "admin" && (
+        <RatingsPanel
+          target={{ subject: { type: "person", id: userId }, name: nameOf(subject), memberIds: [userId] }}
+          title={tr("تقييمات سريعة", "Quick ratings")}
+          rateLabel={tr("تقييم سريع", "Quick rating")}
+        />
+      )}
+
       <section aria-labelledby="trend-title" className="rounded-xl border border-line bg-card p-4">
         <h2 id="trend-title" className="mb-3 font-semibold">
-          {tr("التقييمات عبر الفترات", "Reviews over time")}
+          {tr("التقييم الدوري عبر الفترات", "Periodic reviews over time")}
         </h2>
         {finals.length === 0 ? (
           <p className="text-sm text-muted">{tr("لا تقييمات معتمدة بعد.", "No final reviews yet.")}</p>
@@ -124,7 +145,7 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
 
       <section aria-labelledby="reviews-title" className="flex flex-col gap-3">
         <h2 id="reviews-title" className="font-semibold">
-          {tr("سجل التقييمات", "Past reviews")}
+          {tr("سجل التقييم الدوري", "Past periodic reviews")}
         </h2>
         {detail.reviews.length === 0 && <Empty title={tr("لا توجد تقييمات", "No reviews")} body={tr("تظهر هنا تقييمات المسؤول المباشر وملاحظاته.", "The manager's reviews and notes show here.")} />}
         {detail.reviews.map((r) => (

@@ -17,6 +17,7 @@ import * as monitoring from "@/features/monitoring/rules";
 import * as performance from "@/features/performance/rules";
 import * as profile from "@/features/profile/rules";
 import * as projects from "@/features/projects/rules";
+import * as ratings from "@/features/ratings/rules";
 import * as reports from "@/features/reports/rules";
 import * as tasks from "@/features/tasks/rules";
 import type { User } from "@/shared/api/types";
@@ -34,6 +35,7 @@ const CHECKS: Record<string, () => boolean> = {
   canSeeProject: () => access.canSeeProject(ceo, project),
   canManageProjectSetup: () => access.canManageProjectSetup(ceo, project),
   canTakePart: () => access.canTakePart(ceo, project),
+  canSeeBirthDate: () => access.canSeeBirthDate(ceo, someone),
   // admin
   canAdminister: () => admin.canAdminister(ceo),
   canSeeAudit: () => admin.canSeeAudit(ceo),
@@ -54,8 +56,10 @@ const CHECKS: Record<string, () => boolean> = {
   // monitoring
   canWriteNotes: () => monitoring.canWriteNotes(ceo),
   // The one exception (the client: requests go TO the CEO, "who will he request?"): checked below, not here.
-  canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3 }),
+  canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3, kind: "report" }),
   canSendToCeo: () => monitoring.canSendToCeo(ceo, { author_id: 3 }),
+  canTriageRequests: () => monitoring.canTriageRequests(ceo),
+  canShareNote: () => monitoring.canShareNote(ceo, { author_id: 3, kind: "report" }),
   canUseCeoInbox: () => monitoring.canUseCeoInbox(ceo),
   // performance
   canSeePeoplePerf: () => performance.canSeePeoplePerf(ceo),
@@ -71,6 +75,15 @@ const CHECKS: Record<string, () => boolean> = {
   canChangePm: () => projects.canChangePm(ceo),
   canUseTemplates: () => projects.canUseTemplates(ceo),
   canRemoveTemplate: () => projects.canRemoveTemplate(ceo, { created_by: 7 }),
+  // quick ratings (teams and people) and the team pages: a team the CEO is not in, a rating someone else wrote long ago
+  canSeeTeam: () => ratings.canSeeTeam(ceo, { id: 3 }),
+  canGiveRatings: () => ratings.canGiveRatings(ceo),
+  canRateTeam: () => ratings.canRateTeam(ceo, { id: 3 }, [someone], []),
+  canSeeTeamRatings: () => ratings.canSeeTeamRatings(ceo, { id: 3 }, [someone], []),
+  canRatePerson: () => ratings.canRatePerson(ceo, someone, []),
+  canSeePersonRatings: () => ratings.canSeePersonRatings(ceo, someone, []),
+  canSeeRating: () => ratings.canSeeRating(ceo, { private: true, rater_id: 3 }),
+  canChangeRating: () => ratings.canChangeRating(ceo, { rater_id: 3, created_at: "2020-01-01T00:00:00.000Z" }, new Date()),
   // reports
   canSeeReports: () => reports.canSeeReports(ceo),
   // tasks
@@ -127,6 +140,6 @@ describe("the CEO rule: the CEO may do everything any job can", () => {
 
   it("the menu shows the CEO every item, also the ones added later (except \"My requests\")", () => {
     expect(access.navFor("ceo")).toEqual(access.NAV.filter((n) => !n.notForCeo));
-    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["requests"]);
+    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["my-tasks", "requests"]);
   });
 });

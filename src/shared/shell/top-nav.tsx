@@ -20,9 +20,11 @@ export function TopNav({ user, actions, profile }: { user: User; actions?: React
   const active = activeNavKey(path);
   // A feature the CEO switched off leaves the menu (never the CEO's menu).
   const hidden = hiddenNavKeys(useSiteLive(), user);
-  const items = navFor(user.role).filter((item) => !hidden.includes(item.key));
-  // A long menu (the CEO sees every item) is a little tighter, so it stays on one row on a computer.
-  const dense = items.length > 12;
+  // Items that live in the account menu (the avatar) are not repeated here.
+  const items = navFor(user.role).filter((item) => !hidden.includes(item.key) && !item.inAccountMenu);
+  // A long menu (the CEO sees every item; the PM and monitoring have ten) is a little tighter, so it stays on one row on
+  // a computer.
+  const dense = items.length > 9;
   // When the menu scrolls sideways, the page you are on is brought into view.
   const navRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -30,7 +32,7 @@ export function TopNav({ user, actions, profile }: { user: User; actions?: React
   }, [active]);
 
   return (
-    <header className="sticky top-3 z-30 print:hidden mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 lg:flex-nowrap rounded-2xl border border-line bg-card px-2.5 py-2 shadow-card sm:mx-7">
+    <header className="sticky top-[calc(0.75rem+env(safe-area-inset-top))] z-30 print:hidden mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 lg:flex-nowrap rounded-2xl border border-line bg-card px-2.5 py-2 shadow-card sm:mx-7">
       <Logo />
       <nav ref={navRef} aria-label={tr("القائمة الرئيسية", "Main menu")} className="relative order-last -mx-1 w-full overflow-x-auto [scrollbar-width:none] lg:order-none lg:mx-0 lg:w-auto lg:min-w-0 lg:flex-1">
         {/* On a computer the menu shares the row with the logo and the account; if it is still too long it scrolls

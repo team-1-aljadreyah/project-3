@@ -12,7 +12,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today } from "@/shared/lib/utils";
-import { Button, ButtonLink, Empty, ErrorBox, Field, Input, LoadingBlock, Pill, ProgressBar, Select, Skeleton, Stat, Textarea, errorText, useToast } from "@/shared/ui";
+import { Button, ButtonLink, Empty, ErrorBox, Field, Input, LoadingBlock, PeoplePicker, Pill, ProgressBar, Select, Skeleton, Stat, Textarea, errorText, useToast } from "@/shared/ui";
 import { monitoringApi } from "../api";
 import { againstPlan, draftSummary } from "../report";
 import { canWriteNotes, NOTE_LIMITS as L } from "../rules";
@@ -35,7 +35,7 @@ const PLAN = {
 /**
  * The monitoring officer's report builder: she picks a team, a person or a project and a period; the platform counts
  * the numbers (tasks done, late, blocked, progress against the plan, bugs) and writes a first draft; she edits it, adds
- * her comments, and saves it, prints it, or sends it to the CEO.
+ * her comments, and saves it, prints it (or saves it as a PDF), or sends it to whom she chooses: the CEO and/or anyone else.
  */
 export function ReportBuilderPage() {
   const fmt = useFmt();
@@ -58,6 +58,9 @@ export function ReportBuilderPage() {
   const [edited, setEdited] = useState({ title: false, summary: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<"save" | "send" | null>(null);
+  // Who receives it: the CEO (her inbox) and/or anyone else (their "Received" list).
+  const [toCeo, setToCeo] = useState(true);
+  const [shareIds, setShareIds] = useState<number[]>([]);
 
   if (!allowed) return <Empty title={tr("صانع التقارير لمسؤول المتابعة والتقييم", "The report builder is for the monitoring officer")} />;
   if (load.state.status === "loading") {
@@ -111,8 +114,17 @@ export function ReportBuilderPage() {
     if (Object.keys(problems).length) return setErrors(problems);
     setBusy(send ? "send" : "save");
     try {
-      await monitoringApi.create({ kind: "report", title: title.trim(), body: body(), about: { type: facts.about.type, id: facts.about.id }, period: facts.period, send });
-      toast(send ? tr("حُفظ التقرير وأُرسل إلى المدير التنفيذي.", "The report was saved and sent to the CEO.") : tr("حُفظ التقرير.", "The report was saved."));
+      await monitoringApi.create({
+        kind: "report",
+        title: title.trim(),
+        body: body(),
+        about: { type: facts.about.type, id: facts.about.id },
+        period: facts.period,
+        send: send && toCeo,
+        ...(send && shareIds.length ? { share_ids: shareIds } : {}),
+      });
+      const to = [send && toCeo ? tr("المدير التنفيذي", "the CEO") : "", send && shareIds.length ? tr(`${num(shareIds.length)} أشخاص آخرين`, `${num(shareIds.length)} other people`) : ""].filter(Boolean);
+      toast(to.length ? tr(`حُفظ التقرير وأُرسل إلى ${to.join(" و")}.`, `The report was saved and sent to ${to.join(" and ")}.`) : tr("حُفظ التقرير.", "The report was saved."));
       router.push("/monitoring");
     } catch (e) {
       if (e instanceof ApiError && e.errors) setErrors({ ...e.errors, ...(e.errors.body ? { summary: e.errors.body } : {}) });
@@ -339,19 +351,39 @@ export function ReportBuilderPage() {
             </p>
           </div>
 
+          {/* Who receives it: not only the CEO. Nobody chosen: "Save" keeps it, to send later from the list. */}
+          <fieldset className="flex flex-col gap-2 rounded-xl border border-line p-3 print:hidden">
+            <legend className="px-1 text-sm font-medium">{tr("أرسليه إلى", "Send it to")}</legend>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={toCeo} onChange={(e) => setToCeo(e.target.checked)} className="size-4 accent-[var(--accent)]" />
+              {tr("المدير التنفيذي", "The CEO")}
+            </label>
+            <PeoplePicker
+              people={users.filter((u) => u.active && u.id !== user.id && u.role !== "ceo")}
+              value={shareIds}
+              onChange={setShareIds}
+              error={errors.share_ids}
+              legend={{ ar: "وأشخاص آخرون (اختياري)", en: "And other people (optional)" }}
+            />
+          </fieldset>
+
           <footer className="flex flex-wrap items-center gap-2 border-t border-line pt-4 print:hidden">
-            <Button variant="secondary" pill onClick={() => window.print()}>
+            <Button variant="secondary" pill onClick={() => window.print()} title={tr("اختاري «حفظ بصيغة PDF» في نافذة الطباعة لتنزيله.", "Choose \"Save as PDF\" in the print window to download it.")}>
               <Printer size={16} aria-hidden="true" />
-              {tr("اطبع", "Print")}
+              {tr("اطبع أو احفظ PDF", "Print or save as PDF")}
             </Button>
             <span className="ms-auto flex flex-wrap gap-2">
               <Button variant="secondary" pill onClick={() => save(false)} disabled={!!busy || stale}>
                 <Save size={16} aria-hidden="true" />
                 {busy === "save" ? tr("جارٍ الحفظ…", "Saving…") : tr("احفظ", "Save")}
               </Button>
-              <Button pill onClick={() => save(true)} disabled={!!busy || stale}>
+              <Button pill onClick={() => save(true)} disabled={!!busy || stale || (!toCeo && !shareIds.length)}>
                 <Send size={16} aria-hidden="true" />
-                {busy === "send" ? tr("جارٍ الإرسال…", "Sending…") : tr("احفظ وأرسل إلى المدير التنفيذي", "Save and send to the CEO")}
+                {busy === "send"
+                  ? tr("جارٍ الإرسال…", "Sending…")
+                  : toCeo && !shareIds.length
+                    ? tr("احفظ وأرسل إلى المدير التنفيذي", "Save and send to the CEO")
+                    : tr("احفظ وأرسل", "Save and send")}
               </Button>
             </span>
           </footer>

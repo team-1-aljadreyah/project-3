@@ -32,7 +32,7 @@ export function useMoveTask(user: User, project: Project, onSettled?: () => void
       const res = await tasksApi.moveTask(task.id, { status: to, blocked_reason: reason });
       toast(
         res.outcome === "approval_requested"
-          ? tr("أُرسل طلب اعتماد الإكمال إلى مدير المشروع.", "Sent to the project manager for approval.")
+          ? tr("أُرسل طلب اعتماد الإكمال إلى مدير القسم.", "Sent to the department manager for approval.")
           : tr(`نُقلت ${task.code} إلى «${name(to)}».`, `${task.code} moved to "${name(to)}".`),
         res.outcome === "approval_requested" ? "info" : "success",
       );
@@ -64,7 +64,7 @@ export function useMoveTask(user: User, project: Project, onSettled?: () => void
       open={!!asking}
       title={tr(`إيقاف ${asking?.task.code ?? ""}`, `Block ${asking?.task.code ?? ""}`)}
       label={tr("لماذا توقفت المهمة؟", "Why is the task blocked?")}
-      hint={tr("يراه الفريق ومدير المشروع، ويبقى في سجل المهمة.", "The team and the project manager see it, and it stays in the task's history.")}
+      hint={tr("يراه الفريق ومدير القسم، ويبقى في سجل المهمة.", "The team and the department manager see it, and it stays in the task's history.")}
       submitLabel={tr("أوقف المهمة", "Block the task")}
       onClose={() => {
         setAsking(null);

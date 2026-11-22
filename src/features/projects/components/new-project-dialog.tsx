@@ -20,9 +20,9 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
   const { tr } = useFmt();
   const toast = useToast();
   const router = useRouter();
-  // A project manager creates projects they manage; the CEO picks the manager.
-  // A project manager runs what they create; anyone else who may create one (the CEO, the monitoring officer) picks
-  // the project manager.
+  // A department manager creates projects they manage; the CEO picks the manager.
+  // A department manager runs what they create; anyone else who may create one (the CEO, the monitoring officer) picks
+  // the department manager.
   const pickPm = canChangePm(user) || user.role !== "pm";
   const fresh = () => valuesOf(undefined, pickPm ? undefined : user.id);
   const [v, setV] = useState<ProjectValues>(fresh);
@@ -53,7 +53,7 @@ export function NewProjectDialog({ open, onClose, user, people }: { open: boolea
     // The checks a person can fix at once, before asking the server (the server checks everything again).
     const missing: Record<string, string> = {};
     if (!v.name.trim()) missing.name = tr("اكتب اسم المشروع.", "Enter the project's name.");
-    if (!v.pm_id) missing.pm_id = tr("اختر مدير المشروع.", "Choose the project manager.");
+    if (!v.pm_id) missing.pm_id = tr("اختر مدير القسم.", "Choose the department manager.");
     if (!v.start) missing.start = tr("اختر تاريخ البدء.", "Choose the start date.");
     if (!v.end) missing.end = tr("اختر التاريخ المتوقع للإنجاز.", "Choose the expected end date.");
     if (Object.keys(missing).length) return setErrors(missing);
