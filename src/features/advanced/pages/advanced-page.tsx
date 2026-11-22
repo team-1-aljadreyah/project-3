@@ -265,7 +265,7 @@ function Setup() {
 
       {/* The bar goes straight into <body>: the frame's settle-in effect would otherwise hold it inside the page. */}
       {dirty && typeof document !== "undefined" && createPortal(
-        <div role="region" aria-label={tr("حفظ التغييرات", "Save the changes")} className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 px-4 py-3 shadow-[0_-6px_24px_rgb(0_0_0/0.08)] backdrop-blur">
+        <div role="region" aria-label={tr("حفظ التغييرات", "Save the changes")} className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]shadow-[0_-6px_24px_rgb(0_0_0/0.08)] backdrop-blur">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2">
             <div className="me-auto flex min-w-0 items-center gap-2 text-sm font-semibold">
               {errorParts.length ? <AlertTriangle size={17} aria-hidden="true" className="shrink-0 text-danger" /> : <Save size={17} aria-hidden="true" className="shrink-0 text-accent" />}

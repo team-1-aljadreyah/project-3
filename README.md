@@ -34,6 +34,7 @@ no backend needed. The login page has a one-tap button for each job (demo only; 
 | `npm run typecheck` | Next.js route types, then TypeScript (no output files) |
 | `npm test` | Unit tests (Vitest) for the rules and helpers |
 | `npm run test:e2e` | Browser tests (Playwright) on phone and desktop sizes. Run `npm run build` first, with `NEXT_PUBLIC_USE_MOCK=true` |
+| `node scripts/make-icons.mjs` | Makes the app icons (`public/icons/`) from the logo again, after it changes |
 | `npm run check:no-demo` | After a real build (`NEXT_PUBLIC_USE_MOCK=false`): fails if a demo account or password is in `.next/` or `out/` |
 
 Jenkins runs `npm ci`, lint, typecheck, unit tests, the real build and the Cloudflare build with the no-demo check,
@@ -89,6 +90,7 @@ src/
 │   ├── ui/           the design system (tokens in app/styles.css)
 │   ├── shell/        the top bar, the account menu, the signed-in frame
 │   ├── api/          the HTTP client, errors, the demo switch, shared types
+│   ├── pwa/          the installable app: the service worker's app side, install offers, sounds, system notifications
 │   └── lib/          language, theme, dates, session, loading data, access rules
 └── mock/             the demo database (seed + browser storage) and helpers for the demo backends
 tests/
@@ -149,7 +151,7 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
 - **Quick ratings** (`src/features/ratings`): the monitoring officer (and the CEO; a PM in their own projects) rates any team
   or person at any time, for any reason: five labelled steps (ضعيف … ممتاز), a kind of reason («سبب آخر» always there),
   the reason in her words, visible or private. They show on `/teams`, each team's page `/teams/:id`, the performance page
-  and each person's page, apart from the periodic reviews (docs/backend.md section 20).
+  and each person's page, apart from the periodic reviews (docs/backend.md section 21).
 - **Quick search** (`src/features/search`, Ctrl+K or the top bar): pages, projects, tasks, bugs, announcements and
   people, only what the person may see (docs/backend.md section 18).
 - **Links everywhere:** numbers, rows and names open their pages (a person's name only when the viewer may open their
@@ -178,6 +180,13 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   short greeting with the person's first name, job and the day (and «عيد ميلاد سعيد» on their birthday) lifts away
   into their page. It never blocks a click.
 - **"Reduce motion"** (the device setting) turns all of it off: the page is simply there. No animation library is used.
+
+- **The installable app** (`src/shared/pwa`, `public/sw.js`, `src/app/manifest.ts`): the site installs on phones,
+  tablets and computers and opens without a connection (pages seen before, else an offline page); the account menu offers
+  «ثبّت التطبيق» when the browser can (a how-to on iPhone and iPad). While it is open, a new notification or chat message
+  from someone else rings and shows a system notification; the bell reminds of chats not read yet, and `/notifications`
+  sets the alerts of each device ([docs/deploy-cloudflare.md](docs/deploy-cloudflare.md); push while it is closed:
+  docs/backend.md section 22).
 
 ## Documentation
 

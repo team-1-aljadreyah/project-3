@@ -15,7 +15,7 @@ if (!existsSync(root)) {
   process.exit(1);
 }
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".webmanifest": "application/manifest+json" };
 
 // The "200" rules of _redirects: "/projects/:id/*  /projects/_/:splat  200". A ":name" is one part of the address,
 // a "*" at the end is the rest (":splat" in the target), like Cloudflare.
@@ -43,7 +43,7 @@ if (existsSync(join(root, "_headers"))) {
   }
 }
 const headersFor = (path) => Object.assign({}, ...headerRules.filter((r) => r.re.test(path)).map((r) => r.set));
-const TEXT = new Set([".html", ".js", ".css", ".json", ".txt", ".svg"]);
+const TEXT = new Set([".html", ".js", ".css", ".json", ".txt", ".svg", ".webmanifest"]);
 
 const target = (rule, path) => rule.to.replace(/:([a-z]+)/gi, (_, name) => rule.re.exec(path).groups?.[name] ?? "");
 

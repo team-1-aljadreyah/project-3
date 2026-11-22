@@ -12,6 +12,7 @@ import { USE_MOCK } from "@/shared/lib/config";
 import { setLang, useFmt } from "@/shared/lib/i18n";
 import { setTheme, useTheme } from "@/shared/lib/theme";
 import { cn } from "@/shared/lib/utils";
+import { InstallMenuItem } from "@/shared/pwa";
 
 /**
  * The profile window, drawn by the profile feature. `app/` passes it in (through the frame), so this shared menu never
@@ -282,6 +283,7 @@ export function AccountMenu({ user, profile }: { user: User; profile?: ProfileSl
                 {tr("إعادة البيانات التجريبية", "Reset demo data")}
               </button>
             )}
+            <InstallMenuItem className={rowClass} iconClassName={cn(iconBox, "bg-accent-soft text-accent-ink")} onPick={() => setOpen(false)} />
             <button type="button" role="menuitem" tabIndex={-1} className={cn(rowClass, "text-danger hover:bg-danger-soft focus-visible:bg-danger-soft")} onClick={signOut}>
               <span className={cn(iconBox, "bg-danger-soft")}>
                 <LogOut size={16} aria-hidden="true" className="rtl:-scale-x-100" />

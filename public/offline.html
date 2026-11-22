@@ -1,0 +1,201 @@
+<!doctype html>
+<!-- The page the service worker (public/sw.js) shows when there is no connection and the page asked for was never
+     opened before. Everything is inside this one file (no script or font to download), since nothing else may load.
+     It follows the person's saved language and day/night choice (the same keys as src/shared/lib/boot.ts). -->
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f9f7f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#170d12" media="(prefers-color-scheme: dark)" />
+    <title>لا يوجد اتصال · منصة المشاريع</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        try {
+          var d = document.documentElement;
+          if (localStorage.getItem("p3.locale") === "en") {
+            d.lang = "en";
+            d.dir = "ltr";
+          }
+          var t = localStorage.getItem("p3.theme");
+          if (t === "dark" || (t === null && matchMedia("(prefers-color-scheme: dark)").matches)) d.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      :root {
+        --bg: #f9f7f4;
+        --card: #ffffff;
+        --text: #2a1620;
+        --muted: #6b5560;
+        --line: #e9e3de;
+        --accent: #7c0e44;
+        --accent-hover: #650b37;
+        --on-accent: #ffffff;
+        --soft: #f2dace;
+      }
+      .dark {
+        --bg: #170d12;
+        --card: #22141b;
+        --text: #f6ebef;
+        --muted: #c4a9b4;
+        --line: #3a2530;
+        --accent: #d49a9a;
+        --accent-hover: #f2dace;
+        --on-accent: #3b0720;
+        --soft: #4a1830;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Readex Pro Variable", "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      }
+      main {
+        width: min(26rem, 100%);
+        text-align: center;
+      }
+      .mark {
+        position: relative;
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 28px;
+      }
+      .mark > svg {
+        display: block;
+        width: 76px;
+        height: 76px;
+        border-radius: 20px;
+        box-shadow: 0 14px 30px -14px rgb(124 14 68 / 0.55);
+      }
+      /* The link that is cut: a small round badge on the tile's corner. */
+      .cut {
+        position: absolute;
+        inset-inline-end: -10px;
+        bottom: -10px;
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--accent);
+        border: 1px solid var(--line);
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 1.45rem;
+        font-weight: 650;
+        line-height: 1.4;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.75;
+        font-size: 0.95rem;
+      }
+      .other {
+        margin-top: 14px;
+        font-size: 0.82rem;
+      }
+      button {
+        margin-top: 26px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 22px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--accent);
+        color: var(--on-accent);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s;
+      }
+      button:hover {
+        background: var(--accent-hover);
+      }
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      [lang="en"] .ar,
+      [lang="ar"] .en {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <rect width="64" height="64" fill="#7c0e44" />
+          <g transform="translate(8 8) scale(0.75)">
+            <rect x="44" y="41" width="13" height="14" rx="3.5" fill="#c07a92" />
+            <rect x="25.5" y="41" width="13" height="14" rx="3.5" fill="#d49a9a" />
+            <rect x="25.5" y="24" width="13" height="14" rx="3.5" fill="#d49a9a" />
+            <rect x="7" y="41" width="13" height="14" rx="3.5" fill="#f2dace" />
+            <rect x="7" y="24" width="13" height="14" rx="3.5" fill="#f2dace" />
+            <rect x="7" y="7" width="13" height="14" rx="3.5" fill="#f2dace" />
+          </g>
+        </svg>
+        <span class="cut">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h.01" />
+            <path d="M8.5 16.4a5 5 0 0 1 7 0" />
+            <path d="M5 12.9a10 10 0 0 1 5.2-2.7" />
+            <path d="M19 12.9a10 10 0 0 0-2.2-1.6" />
+            <path d="M2 8.8a15 15 0 0 1 4.2-2.6" />
+            <path d="M22 8.8a15 15 0 0 0-11.3-3.8" />
+            <path d="m2 2 20 20" />
+          </svg>
+        </span>
+      </div>
+
+      <div class="ar">
+        <h1>لا يوجد اتصال بالإنترنت</h1>
+        <p>تحقّق من اتصال جهازك ثم أعد المحاولة. الصفحات التي فتحتها من قبل تعمل حتى دون اتصال.</p>
+        <p class="other" lang="en" dir="ltr">No internet connection</p>
+      </div>
+      <div class="en">
+        <h1>No internet connection</h1>
+        <p>Check your device's connection, then try again. Pages you opened before still work offline.</p>
+        <p class="other" lang="ar" dir="rtl">لا يوجد اتصال بالإنترنت</p>
+      </div>
+
+      <button type="button" id="retry">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
+          <path d="M21 3v5h-5" />
+          <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
+          <path d="M3 21v-5h5" />
+        </svg>
+        <span class="ar">أعد المحاولة</span><span class="en">Try again</span>
+      </button>
+    </main>
+    <script>
+      // Try again: load the address the person asked for. Back online: the same, by itself.
+      document.getElementById("retry").addEventListener("click", function () {
+        location.reload();
+      });
+      window.addEventListener("online", function () {
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

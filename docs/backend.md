@@ -21,7 +21,7 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 106 calls** are there (the 5 request and sharing calls and the 9 rating calls of 22 November are new). Still to build on the server (each is in its section below; the demo backend in
+the front end's 108 calls** are there (the 5 request and sharing calls, the 9 rating calls and the 2 push calls of 22 November are new). Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
@@ -35,6 +35,7 @@ the front end's 106 calls** are there (the 5 request and sharing calls and the 9
 | Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
 | Birthdays | `birth_date` on the users calls (who sees the year), a daily job for `birthday_soon` and `birthday_today` | 20 |
 | Quick ratings of teams and people, the team pages | `GET /teams/ratings/summary`, `GET /teams/:id`, `GET`/`POST /teams/:id/ratings`, `GET /people/ratings/summary`, `GET`/`POST /people/:id/ratings`, `PATCH`/`DELETE /ratings/:id` | 21 |
+| Push notifications (the installed app, when it is closed) | `POST`/`DELETE /me/push-subscriptions`, sending Web Push with VAPID keys | 22 |
 
 Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); `Notification` gets `team_id` and the kinds `team_rated`, `person_rated` (7, 21); the audit log gets `rating_changed`, `rating_deleted` (14); the custom roles' actions get `give_ratings` (17.1); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
@@ -65,6 +66,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 10 | Profile pictures | 19 | let everyone put a face to their name |
 | 11 | Birthdays: the field, who sees the year, the daily reminders | 20 | remind monitoring of everyone's birthday |
 | 12 | Quick ratings of teams and people, the team pages | 21 | let monitoring rate any team or person, for any reason |
+| 13 | Push notifications (Web Push) | 22 | reach phones while the app is closed |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -118,6 +120,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 7 | `POST` | `/notifications/read-all` | signed in | Mark all read |
 | 7 | `GET` | `/notifications/preferences` | signed in | My notification choices |
 | 7 | `PUT` | `/notifications/preferences` | signed in | Save them (required kinds stay on) |
+| 22 | `POST` | `/me/push-subscriptions` | signed in | Keep this device's push address `{endpoint, keys: {p256dh, auth}, device}` (again: no change) |
+| 22 | `DELETE` | `/me/push-subscriptions` | signed in | Forget this device's push address `{endpoint}` |
 | 9 | `GET` | `/announcements` | signed in | Announcements, important first |
 | 9 | `GET` | `/announcements/:id` | signed in | One announcement |
 | 9 | `POST` | `/announcements` | ceo, admin, monitor | Post one (everyone is told) |
@@ -525,8 +529,11 @@ turned off** (`false` → 422 on `prefs`), and unknown kinds → 422. *Assumptio
 are `task_assigned`, `task_overdue`, `approval_requested`, `approval_decided`, `project_added`, `announcement` (the brief says
 employees receive a notification for each new announcement), `bug_assigned`.
 
-Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something; with the
-real server, a WebSocket message `notification` (planned, as in Project 2) will tell the site to load the list again.
+Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something, and the
+open app asks `GET /notifications` and `GET /chats` again **every 30 seconds** (to ring and show a system notification for
+what is new: section 22); with the real server, a WebSocket message `notification` (planned, as in Project 2) will tell the
+site to load the list again. The bell also lists the chats with unread messages (from `unread` in `GET /chats`, nothing
+stored), so `unread` must be right: messages from others after the person's last `POST /chats/:key/read`.
 
 ## 8. File attachments
 
@@ -852,7 +859,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 22):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 23):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -1277,7 +1284,65 @@ the performance page (the team cards and an «التقييم» column per person
 page (a «تقييمات سريعة» section apart from the periodic reviews), and the monitoring officer's dashboard ("Rate a
 team"). Every team name on the dashboard, the performance page, the reports and the admin's teams opens `/teams/:id`.
 
-## 22. Still open with the client
+## 22. Push notifications (the installed app, while it is closed)
+
+The site installs as an app on phones, tablets and computers (`docs/deploy-cloudflare.md`). **While it is open** (also in
+the background), it already plays a sound and shows a system notification for each new notification and each new chat
+message from someone else (`src/features/notifications/components/live-alerts.tsx`); that needs nothing new from the
+server. **When the app is closed**, only the server can wake the phone: that is **Web Push**, the browser standard
+(Android, computers, and iPhone/iPad from iOS 16.4 when the app is added to the home screen). The front end is ready;
+it switches on when the build has `NEXT_PUBLIC_PUSH_PUBLIC_KEY` (the VAPID public key below). The demo has no push.
+
+**1. Keys (once).** Make a VAPID key pair (any Web Push library: `web-push generate-vapid-keys`, or
+`minishlink/web-push` for Laravel/PHP: `VAPID::createVapidKeys()`). The **public** key goes to the front end's build
+as `NEXT_PUBLIC_PUSH_PUBLIC_KEY` (it is public by design); the **private** key stays on the server only, with a
+contact (`mailto:` the team's address) as the VAPID subject.
+
+**2. Keeping each device's address.** When a person allows notifications (and again on each start of the app), the
+site sends:
+
+`POST /me/push-subscriptions`
+```json
+{ "endpoint": "https://fcm.googleapis.com/fcm/send/…", "keys": { "p256dh": "BNc…", "auth": "tBH…" }, "device": "Android · Chrome" }
+```
+→ `{ "success": true, "data": null }`. Keep it **per person and per device** (a table `push_subscriptions`: `user_id`,
+`endpoint` unique, `p256dh`, `auth`, `device`, the token or session it came with, `created_at`, `last_used_at`). The same
+`endpoint` again → update that row (it may now belong to another person who signed in on that phone: move it). 422 on
+a missing field; the `endpoint` must be `https://`.
+
+`DELETE /me/push-subscriptions` with `{ "endpoint": "…" }` (the person turned system notifications off on that
+device) → delete that row if it is theirs; unknown → still `success` (nothing to do). **On `POST /auth/logout`**, delete
+the rows made with that token too: a phone that signed out must stop getting someone's messages.
+
+**3. Sending.** In the same place the server makes a notification (section 7) and when a chat message is saved (section
+11), for **each person told** (never the author or the actor; only kinds they did not turn off; for a message, every
+member but the author, and not while they are reading that chat if the server knows it), send to each of their
+subscriptions, in the background (a queue), with the private VAPID key, `TTL` about a day, `urgency: high` for chat:
+
+```json
+{ "title": "أحمد كريم", "body": "أحمد كريم أسند إليك TSK-118", "url": "/tasks/118", "tag": "n-512", "lang": "ar", "dir": "rtl" }
+```
+
+- `title`: who did it (the person's name in the language they use), or the platform's name for reminders. For a chat
+  message: the sender's name, then ` · ` and the chat's name for a project, team or group chat.
+- `body`: for a notification, the same sentence the site writes (`notificationText` in
+  `src/features/notifications/words.ts`); for a message, its first 100 letters (or «أرسل ملفاً» for a file alone).
+- `url`: the page a tap opens (`notificationLink` in the same file; a chat: `/chat/<key>`).
+- `tag` **must be the same as the open app uses**, so a notification the open app already showed is replaced, not shown
+  twice: `chat-<key>` for a message and for an @mention in that chat, `n-<id>` for any other notification.
+- `lang`/`dir`: the person's language (`Accept-Language` of their last request), `ar`/`rtl` by default. Optional
+  `icon`: the sender's `avatar_url` (an absolute https address).
+- Keep it under 3 KB; never put more in it than the person may see (it travels through Google's or Apple's servers,
+  encrypted).
+
+**4. Dead addresses.** The push service answers **404 or 410** when the app was removed or the permission taken back:
+**delete that subscription** at once. A 413 (too big) or 400 is a bug to log; 429/5xx: try again later (the queue). Also
+delete subscriptions unused for a few months.
+
+The service worker (`public/sw.js`) shows each push (`push` event) and opens `url` on a tap (`notificationclick`),
+bringing an open window of the app forward instead of opening a second one.
+
+## 23. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),

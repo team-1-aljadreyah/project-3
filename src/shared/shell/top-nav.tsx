@@ -32,7 +32,7 @@ export function TopNav({ user, actions, profile }: { user: User; actions?: React
   }, [active]);
 
   return (
-    <header className="sticky top-3 z-30 print:hidden mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 lg:flex-nowrap rounded-2xl border border-line bg-card px-2.5 py-2 shadow-card sm:mx-7">
+    <header className="sticky top-[calc(0.75rem+env(safe-area-inset-top))] z-30 print:hidden mx-3 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 lg:flex-nowrap rounded-2xl border border-line bg-card px-2.5 py-2 shadow-card sm:mx-7">
       <Logo />
       <nav ref={navRef} aria-label={tr("القائمة الرئيسية", "Main menu")} className="relative order-last -mx-1 w-full overflow-x-auto [scrollbar-width:none] lg:order-none lg:mx-0 lg:w-auto lg:min-w-0 lg:flex-1">
         {/* On a computer the menu shares the row with the logo and the account; if it is still too long it scrolls

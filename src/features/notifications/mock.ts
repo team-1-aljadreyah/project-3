@@ -64,4 +64,14 @@ export const notificationsMock: NotificationsApi = {
     commit({ own: true });
     return wait(db.notification_prefs[user.id]);
   },
+
+  // The demo has no push server: the open app alerts by itself, nothing reaches a closed one. Nothing to keep.
+  async addPushSubscription() {
+    currentUser();
+    return wait(undefined);
+  },
+
+  async removePushSubscription() {
+    return wait(undefined);
+  },
 };
