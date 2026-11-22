@@ -563,10 +563,10 @@ due?, created_at, updated_at, closed_at?}`. `code` is made by the server (`BUG-�
 **Reporting** (`POST /projects/:id/bugs {title, description, severity, priority, phase_id?, task_id?, assignee_id?, due?}`):
 everyone who takes part in the project (403 for `admin`). `title` required ≤ 160; `severity` required; the phase and the task
 must be of this project, the developer a member (422 on the field). `assignee_id` and `due` are kept **only when a manager
-reports** (the PM or a team leader in the project); from anyone else they are ignored. Starts `assigned` when it has a
+reports** (the PM or a team leader in the project, or the `monitor`); from anyone else they are ignored. Starts `assigned` when it has a
 developer, else `reported`. Notify `bug_reported` and, with a developer, `bug_assigned`.
 
-**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders only. Log `severity`, `priority`, `due`, `assignee`, and
+**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders, and the `monitor` on every project (her «إجراءات سريعة» / Quick actions page, the client 22 November 2026: every open bug on one line, assign, severity, priority, day and the next move, all with these same calls). "Managers" below includes her. Log `severity`, `priority`, `due`, `assignee`, and
 `edited` for the title or description. Giving a `reported` bug a developer also moves it to `assigned` (logged).
 
 **The flow** (`POST /bugs/:id/status {status, note?}`), from the brief:
