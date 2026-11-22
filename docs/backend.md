@@ -21,13 +21,14 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 92 calls** are there. Still to build on the server (each is in its section below; the demo backend in
+the front end's 97 calls** are there (the 5 request and sharing calls of 22 November are new). Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
 |---|---|---|
 | Group chats | `POST /chats/groups`, `PATCH /chats/:key`, `POST /chats/:key/leave` | 11 |
-| Monitoring notes, requests, the CEO's inbox | `GET`/`POST /monitoring/notes`, `POST /monitoring/notes/:id/send`, `GET /ceo/inbox`, `POST /ceo/inbox/:id/answer` (with `reopen`), `GET /monitoring/report-facts` | 16 |
+| Monitoring notes, requests, the CEO's inbox | `GET`/`POST /monitoring/notes` (with `share_ids`), `POST /monitoring/notes/:id/send`, `GET /ceo/inbox`, `POST /ceo/inbox/:id/answer` (with `reopen`), `GET /monitoring/report-facts` | 16 |
+| Requests pass through monitoring; notes to anyone | `POST /monitoring/requests/:id/forward`, `POST /monitoring/requests/:id/answer`, `POST /monitoring/notes/:id/share`, `GET /monitoring/received`, `POST /monitoring/notes/:id/seen` | 16 |
 | The CEO's advanced settings and new roles | `GET`/`PUT /ceo/advanced`, `GET /ceo/advanced/history`, `GET /site/live` | 17, 17.1 |
 | Audit details | `GET /audit/:id`; `GET /audit` with `q`, `kind`, `ip`; `ip`, `user_agent`, `session_id`, `request_id` on every line | 14 |
 | Quick search | `GET /search?q=` | 18 |
@@ -36,8 +37,9 @@ the front end's 92 calls** are there. Still to build on the server (each is in i
 
 Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
-with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
-every job except the CEO (16). The front end now calls `POST /auth/logout` when someone signs out (the server already
+with the CEO as the other person is 403 for every job **except the `monitor`** (16); requests (`kind: "request"`) come from
+every job except the CEO and **reach the monitoring officer first** (16, since 22 November 2026); the `pm` job is now
+called «مدير القسم» / "Department manager" on every screen (the code `pm` is unchanged). The front end now calls `POST /auth/logout` when someone signs out (the server already
 has it). `null` for an empty `name_en`, `phone` or `team_id` is fine: the front end treats it as empty.
 
 **See every screen working before you build:** `npm ci`, then `NEXT_PUBLIC_USE_MOCK=true npm run dev`, open
@@ -129,7 +131,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 11 | `GET` | `/chats/:key/messages` | its members | Messages |
 | 11 | `POST` | `/chats/:key/messages` | its members | Send (with @mentions) |
 | 11 | `POST` | `/chats/:key/read` | its members | Read up to here |
-| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (nobody but the CEO starts one with the CEO: 403) |
+| 11 | `POST` | `/chats/direct` | signed in | Open a private chat with someone (only the CEO and the monitor start one with the CEO: 403) |
 | 11 | `POST` | `/chats/groups` | monitor, pm, lead, ceo | Make a group chat `{name, member_ids}` |
 | 11 | `PATCH` | `/chats/:key` | the group's maker, ceo | Rename a group, change its members |
 | 11 | `POST` | `/chats/:key/leave` | its members | Leave a group |
@@ -156,9 +158,14 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 15 | `GET` | `/projects/:projectId/github` | its pm, ceo | GitHub settings |
 | 15 | `PUT` | `/projects/:projectId/github` | its pm, ceo | Save them |
 | 15 | `GET` | `/{tasks\|bugs}/:id/github` | see §2 | Linked pull requests and commits |
-| 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes (the CEO sees all) |
+| 16 | `GET` | `/monitoring/notes` | monitor, ceo | Her notes and everyone's requests (the CEO sees all) |
 | 16 | `POST` | `/monitoring/notes` | monitor, ceo; every job but the ceo (requests only) | Write a report, feedback or a problem; a request to the CEO |
 | 16 | `POST` | `/monitoring/notes/:id/send` | its writer, ceo | Send it to the CEO |
+| 16 | `POST` | `/monitoring/notes/:id/share` | its writer, ceo | Send a report, feedback or problem to more people |
+| 16 | `GET` | `/monitoring/received` | signed in | The notes sent to me |
+| 16 | `POST` | `/monitoring/notes/:id/seen` | a person it was sent to | I opened it (the writer sees it) |
+| 16 | `POST` | `/monitoring/requests/:id/forward` | monitor, ceo | Send a waiting request on to the CEO (optional note) |
+| 16 | `POST` | `/monitoring/requests/:id/answer` | monitor, ceo | Answer a waiting request herself (it never reaches the CEO) |
 | 16 | `GET` | `/monitoring/report-facts` | monitor, ceo | The report builder: counted numbers about a team, person or project over a period |
 | 16 | `GET` | `/ceo/inbox` | ceo | What monitoring sent |
 | 16 | `POST` | `/ceo/inbox/:id/answer` | ceo | Answer, mark seen or done, or reopen |
@@ -209,7 +216,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 
 ## 2. Jobs and who sees what
 
-`role`: `ceo`, `pm` (project manager), `monitor` (monitoring & evaluation), `lead` (team leader), `employee`, `admin`.
+`role`: `ceo`, `pm` (department manager), `monitor` (monitoring & evaluation), `lead` (team leader), `employee`, `admin`.
 
 The server must filter, not only the pages:
 
@@ -560,10 +567,10 @@ due?, created_at, updated_at, closed_at?}`. `code` is made by the server (`BUG-�
 **Reporting** (`POST /projects/:id/bugs {title, description, severity, priority, phase_id?, task_id?, assignee_id?, due?}`):
 everyone who takes part in the project (403 for `admin`). `title` required ≤ 160; `severity` required; the phase and the task
 must be of this project, the developer a member (422 on the field). `assignee_id` and `due` are kept **only when a manager
-reports** (the PM or a team leader in the project); from anyone else they are ignored. Starts `assigned` when it has a
+reports** (the PM or a team leader in the project, or the `monitor`); from anyone else they are ignored. Starts `assigned` when it has a
 developer, else `reported`. Notify `bug_reported` and, with a developer, `bug_assigned`.
 
-**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders only. Log `severity`, `priority`, `due`, `assignee`, and
+**Changing** (`PATCH /bugs/:id`): the project's PM and team leaders, and the `monitor` on every project (her «إجراءات سريعة» / Quick actions page, the client 22 November 2026: every open bug on one line, assign, severity, priority, day and the next move, all with these same calls). "Managers" below includes her. Log `severity`, `priority`, `due`, `assignee`, and
 `edited` for the title or description. Giving a `reported` bug a developer also moves it to `assigned` (logged).
 
 **The flow** (`POST /bugs/:id/status {status, note?}`), from the brief:
@@ -825,6 +832,9 @@ MonitorNote {
   people?: [{ id, label, label_en? }],      // problems: the people involved (≤30, anyone active; names copied)
   author_id, created_at,
   sent_at?, ceo_state?: "new" | "seen" | "done", ceo_reply? (≤2000), replied_at?,
+  triage?: "pending" | "forwarded" | "answered",   // requests only: what the monitoring officer did with it
+  forward_note? (≤2000), monitor_reply? (≤2000), triaged_by?, triaged_at?,
+  shared_with?: [{ id, label, label_en?, at, seen_at? }],   // reports, feedback, problems sent to people other than the CEO
   facts?: ReportFacts                       // reports from the report builder: the numbers counted when it was saved
 }
 
@@ -843,25 +853,43 @@ ReportFacts {
 
 | Call | Who | Notes |
 |---|---|---|
-| `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers; the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
-| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once. A report from the builder also sends `period: { from, to }`: the server counts the numbers **again** itself (never trusts numbers from the browser) and keeps them in `facts`; `period` on another kind, or with `about: general`, is **422**. |
+| `GET /monitoring/notes` | `monitor`, `ceo` | The writer sees hers, and the `monitor` also every request (`kind: "request"`, for the Incoming requests tab); the CEO sees all. Newest first (by `sent_at`, else `created_at`). |
+| `POST /monitoring/notes` | `monitor`, `ceo` | Body: `{ kind, title, body, about: { type, id? }, tone?, subject?, people_ids?, send? }`. A problem may be `about: general` with a free `subject` and any `people_ids`. The server copies the name into `about.label`. Feedback must be about a person, not yourself. `send: true` sends it at once to the CEO. `share_ids: number[]` (optional, ≤30, active people; the writer and the CEO are skipped) sends it to those people too (see below). A report from the builder also sends `period: { from, to }`: the server counts the numbers **again** itself (never trusts numbers from the browser) and keeps them in `facts`; `period` on another kind, or with `about: general`, is **422**. |
 | `GET /monitoring/report-facts?type=&id=&from=&to=` | `monitor`, `ceo` | The report builder. `type` is `team`, `person` or `project`. A team: its members' tasks in every project, one row per member (members with no task included). A person: their tasks, one row per project they have tasks in. A project: its tasks, one row per person with tasks in it. Bugs: a project's bugs; for a team or a person, the bugs assigned to them. Bad period or unknown `id`: **422** (`period`, `about`). Others: **403**. |
 | `POST /monitoring/notes/:id/send` | its writer, `ceo` | Sets `sent_at` = now and `ceo_state` = "new" (sending again brings it back to "new"). Notifies every active CEO: kind `note_sent`, `data.title`. |
+| `POST /monitoring/notes/:id/share` | its writer, `ceo` | Body: `{ user_ids: number[] }` (at least one: **422** `share_ids`). Not for requests (**403**). Adds each new person to `shared_with` (the writer, the CEO and people already there are skipped) and notifies them: kind `note_sent`, `data.title`, `data.queue: "received"`. |
+| `GET /monitoring/received` | signed in | The notes whose `shared_with` holds me, newest first (the "Received from monitoring" tab of the Requests page). |
+| `POST /monitoring/notes/:id/seen` | a person in `shared_with` | Sets my `seen_at` once (the writer sees who opened it). Not sent to me: **404**. |
+| `POST /monitoring/requests/:id/forward` | `monitor`, `ceo` | Body: `{ note? }` (≤2000, for the CEO's eyes). Only a `triage: "pending"` request (else **409 `BAD_STATE`**). Sets `triage: "forwarded"`, `triaged_by`, `triaged_at`, `forward_note`, then sends it to the CEO like `/send` (`sent_at`, `ceo_state: "new"`, `note_sent` to the CEOs). |
+| `POST /monitoring/requests/:id/answer` | `monitor`, `ceo` | Body: `{ reply }` (required, ≤2000: **422** `reply`). Only a pending request (**409**). Sets `triage: "answered"`, `monitor_reply`, `triaged_by`, `triaged_at`; it is **not** sent to the CEO. Notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply, `data.note_kind: "request"`. |
 | `GET /ceo/inbox` | `ceo` | Every sent note, newest first. Others: **403**. |
 | `POST /ceo/inbox/:id/answer` | `ceo` | Body: `{ state: "seen" | "done", reply?, reopen? }`. Opening a note sends "seen". A reply notifies the writer: kind `note_answered`, `data.title`, `data.note` = the reply. "done" stays done when only opened again; `reopen: true` (with "seen") takes a done note back to "seen". Done notes are never deleted: the inbox shows them under "Done" (the CEO's archive), so `GET /ceo/inbox` keeps returning them. |
 
 - A note you may not see answers **404** (like one that doesn't exist). Validation errors are **422** with per-field
   messages (`title`, `body`, `about`, `kind`, `reply`) in Arabic and English, like every other form.
 - `note_sent` and `note_answered` are **required** notifications (nobody can turn them off). `note_answered` carries
-  `data.note_kind` ("request" opens the Requests page).
+  `data.note_kind` ("request" opens the Requests page). `note_sent` carries `data.queue`: `"monitor"` (a request waiting
+  for the monitoring officer: opens `/monitoring?show=requests`), `"received"` (a note sent to me: opens
+  `/requests?tab=received`), or nothing (the CEO's inbox).
 
-**Requests (every job but the CEO, since 21 November 2026):** nobody starts a chat with the CEO. Anyone except the
-CEO sends a note with `kind: "request"`, a `subject` (required, anything) and `about: { type: "general" }`; it is sent
-to the CEO at once (as if `send: true`) and answered in `/ceo/inbox`. The CEO: **403** for `kind: "request"` (the one
-agreed exception to the CEO rule: requests go to the CEO).
+**Requests (every job but the CEO, since 21 November 2026):** anyone except the CEO sends a note with
+`kind: "request"`, a `subject` (required, anything) and `about: { type: "general" }`. The CEO: **403** for
+`kind: "request"` (the one agreed exception to the CEO rule: requests go to the CEO).
 
-**Private chats with the CEO:** `POST /chats/direct` with the CEO as the other person answers **403** for **every** job
-(only the CEO starts a private chat with someone). In a private chat the CEO started, the other person may send only
+**Requests pass through the monitoring officer (the client, 22 November 2026):** a new request is **not** sent to the
+CEO. It gets `triage: "pending"` (no `sent_at`) and every active `monitor` is notified (`note_sent`,
+`data.queue: "monitor"`). She then either **forwards** it to the CEO (`/forward`, with an optional note) or **answers**
+it herself (`/answer`). Once forwarded, the CEO's answer (`/ceo/inbox/:id/answer`) goes **straight to the writer**, not
+back to her. Two cases go straight to the CEO (as before: `sent_at` set at once, no `triage`): a request written by the
+`monitor` herself, and any request when there is no active `monitor`.
+
+**Reports to anyone (22 November 2026):** the monitoring officer chooses who gets a report, feedback or problem: the
+CEO (`send`), and/or any people (`share_ids` on create, or `/share` later). They find it on their Requests page under
+"Received from monitoring"; opening it calls `/seen`. Every report and list can be printed or saved as a PDF from the
+browser (no server call).
+
+**Private chats with the CEO (22 November 2026):** `POST /chats/direct` with the CEO as the other person answers **403**
+for every job **except the `monitor`**: only the monitoring officer speaks directly with the CEO (and writes freely there). In a private chat the CEO started, the other person may send only
 after the CEO has written there (403 before).
 
 ## 17. The CEO's advanced settings

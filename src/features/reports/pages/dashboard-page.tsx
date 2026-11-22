@@ -15,6 +15,7 @@ import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
 import { LeadSphere } from "../components/lead-sphere";
 import { MonitorSummary } from "../components/monitor-summary";
+import { PmOrbit } from "../components/pm-orbit";
 import { PmPlan } from "../components/pm-plan";
 import { UpcomingBirthdays } from "../components/upcoming-birthdays";
 import { teamShares, totals } from "../compute";
@@ -27,7 +28,7 @@ import { canSeeReports } from "../rules";
  */
 export function DashboardPage() {
   const { tr, lang, num, pct, day } = useFmt();
-  usePageTitle(tr("لوحة القيادة", "Dashboard"));
+  usePageTitle(tr("لوحة التحكم", "Dashboard"));
   const user = useUser();
   const allowed = canSeeReports(user);
   const load = useLoad(
@@ -43,7 +44,7 @@ export function DashboardPage() {
     [allowed],
   );
 
-  if (!allowed) return <Empty title={tr("لوحة القيادة للإدارة", "The dashboard is for management")} body={tr("افتح «مهامي» لترى مهامك.", 'Open "My tasks" to see your tasks.')} />;
+  if (!allowed) return <Empty title={tr("لوحة التحكم للإدارة", "The dashboard is for management")} body={tr("افتح «مهامي» لترى مهامك.", 'Open "My tasks" to see your tasks.')} />;
   if (load.state.status === "loading") {
     return (
       <LoadingBlock className="mx-auto flex w-full max-w-6xl flex-col gap-4">
@@ -91,13 +92,16 @@ export function DashboardPage() {
       ) : user.role === "lead" ? (
         // The team leader: a slide with the team's tasks as spheres in a glass one.
         <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
+      ) : user.role === "pm" ? (
+        // The department manager: a greeting, and their projects turning round the department's progress.
+        <PmOrbit user={user} projects={o.projects} date={day(o.today)} />
       ) : monitor ? (
         // Monitoring and evaluation: a banner, the summary cards and every project against its plan.
         <MonitorSummary user={user} o={o} t={t} />
       ) : (
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold">{tr("لوحة القيادة", "Dashboard")}</h1>
+            <h1 className="text-2xl font-semibold">{tr("لوحة التحكم", "Dashboard")}</h1>
             <p className="text-sm text-muted">{tr(`الأرقام حتى ${day(o.today)}، للمشاريع التي تراها.`, `Numbers up to ${day(o.today)}, for the projects you can see.`)}</p>
           </div>
           <ButtonLink href="/reports" variant="secondary" pill>
@@ -144,7 +148,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* The project manager: the task calendar and the board over all their projects. */}
+      {/* The department manager: the task calendar and the board over all their projects. */}
       {user.role === "pm" && <PmPlan today={o.today} people={people} />}
 
       {!monitor && (

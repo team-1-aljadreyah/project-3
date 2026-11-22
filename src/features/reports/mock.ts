@@ -12,7 +12,7 @@ export const reportsMock: ReportsApi = {
   async overview() {
     const user = currentUser();
     if (!canSeeReports(user)) {
-      return fail(403, "FORBIDDEN", "التقارير للإدارة ومديري المشاريع والمتابعة وقادة الفرق.", "Reports are for management, project managers, M&E and team leaders.");
+      return fail(403, "FORBIDDEN", "التقارير للإدارة ومديري الأقسام والمتابعة وقادة الفرق.", "Reports are for management, department managers, M&E and team leaders.");
     }
     const db = getDb();
     return wait(

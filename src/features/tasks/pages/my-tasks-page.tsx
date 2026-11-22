@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { isDone, lateDays, projectsApi, type ProjectSummary } from "@/features/projects";
 import { useFmt } from "@/shared/lib/i18n";
+import { isCeo } from "@/shared/lib/access";
 import { usePageTitle } from "@/shared/lib/page-title";
+import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { daysBetween, today as todayIso } from "@/shared/lib/utils";
 import { Empty, ErrorBox, LoadingBlock, PriorityPill, Skeleton, StatusPill } from "@/shared/ui";
@@ -25,7 +28,14 @@ type GroupKey = (typeof GROUPS)[number]["key"];
 export function MyTasksPage() {
   const { tr } = useFmt();
   usePageTitle(tr("مهامي", "My tasks"));
-  const load = useLoad(() => Promise.all([tasksApi.myTasks(), projectsApi.projects()]));
+  const user = useUser();
+  const router = useRouter();
+  // Nobody gives the CEO tasks (the page is not in their menu): an old link takes them to their dashboard.
+  const ceo = isCeo(user);
+  useEffect(() => {
+    if (ceo) router.replace("/dashboard");
+  }, [ceo, router]);
+  const load = useLoad(() => (ceo ? new Promise<never>(() => {}) : Promise.all([tasksApi.myTasks(), projectsApi.projects()])), [ceo]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
@@ -75,7 +85,7 @@ function MyTasks({ tasks, projects }: { tasks: Task[]; projects: ProjectSummary[
   };
 
   if (tasks.length === 0) {
-    return <Empty title={tr("لا توجد مهام مسندة إليك", "No tasks assigned to you")} body={tr("حين يسند إليك مدير المشروع مهمة، تظهر هنا.", "When a project manager gives you a task, it shows here.")} />;
+    return <Empty title={tr("لا توجد مهام مسندة إليك", "No tasks assigned to you")} body={tr("حين يسند إليك مدير القسم مهمة، تظهر هنا.", "When a department manager gives you a task, it shows here.")} />;
   }
 
   return (

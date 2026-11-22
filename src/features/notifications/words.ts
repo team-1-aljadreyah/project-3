@@ -23,7 +23,7 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   task_due_changed: { ar: "تغيير موعد التسليم", en: "A due date changes", hint_ar: "عند تغيير موعد تسليم مهمة مسندة إليك.", hint_en: "When the due date of your task changes." },
   task_due_soon: { ar: "اقتراب موعد التسليم", en: "A due date is near", hint_ar: "قبل موعد التسليم بيوم، ويوم التسليم.", hint_en: "The day before, and on the day." },
   task_overdue: { ar: "تجاوز موعد التسليم", en: "A task is late", hint_ar: "عند تجاوز مهمتك موعد تسليمها.", hint_en: "When your task passes its due date." },
-  approval_requested: { ar: "طلب اعتماد إكمال", en: "Approval is requested", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
+  approval_requested: { ar: "طلب اعتماد إكمال", en: "Approval is requested", hint_ar: "لمدير القسم وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
   github_pr_merged: { ar: "دمج طلب سحب مرتبط بمهمتك", en: "A PR for your task is merged", hint_ar: "عند دمج طلب سحب في GitHub يذكر مهمتك، لتنقلها.", hint_en: "When a GitHub pull request that mentions your task is merged, so you can move it." },
   team_joined: { ar: "انضمامك إلى فريق", en: "You join a team", hint_ar: "عند إضافتك إلى فريق أو جعلك قائده.", hint_en: "When you are put in a team or made its leader." },
   account_locked: { ar: "قفل حساب", en: "An account is locked", hint_ar: "للمسؤول: عند قفل حساب بعد محاولات دخول خاطئة.", hint_en: "For the admin: when an account locks after wrong passwords." },
@@ -31,15 +31,15 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   dependency_done: { ar: "انتهاء ما تنتظره مهمتك", en: "A task yours waits for is done", hint_ar: "عند إنجاز آخر مهمة كانت مهمتك تنتظرها.", hint_en: "When the last task yours was waiting for is done." },
   approval_decided: { ar: "قرار الاعتماد", en: "Approval is decided", hint_ar: "عند اعتماد إكمال مهمة طلبتَه أو إرجاعها.", hint_en: "When a completion you asked for is approved or sent back." },
   project_added: { ar: "إضافتك إلى مشروع", en: "You're added to a project", hint_ar: "عند إضافتك إلى أعضاء مشروع.", hint_en: "When you become a project member." },
-  project_pm: { ar: "تغيير مدير المشروع", en: "A project's manager changes", hint_ar: "لكل أعضاء المشروع.", hint_en: "For all the project's members." },
+  project_pm: { ar: "تغيير مدير القسم", en: "A project's manager changes", hint_ar: "لكل أعضاء المشروع.", hint_en: "For all the project's members." },
   chat_mention: { ar: "ذكر اسمك في محادثة", en: "You're mentioned in a chat", hint_ar: "عند ذكرك بـ @ في محادثة.", hint_en: "When someone writes @ and your name." },
-  bug_reported: { ar: "تسجيل مشكلة برمجية", en: "A bug is reported", hint_ar: "لمدير المشروع وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
+  bug_reported: { ar: "تسجيل مشكلة برمجية", en: "A bug is reported", hint_ar: "لمدير القسم وقادة الفرق فيه.", hint_en: "For the project's manager and team leaders." },
   bug_assigned: { ar: "إسناد مشكلة إليك", en: "A bug is given to you", hint_ar: "عند تحويل مشكلة إليك لإصلاحها.", hint_en: "When a bug is given to you to fix." },
-  bug_status: { ar: "تغيير حالة مشكلة", en: "A bug's status changes", hint_ar: "لمن سجّلها والمطور ومدير المشروع.", hint_en: "For its reporter, developer and project manager." },
-  bug_late: { ar: "تأخر إصلاح مشكلة", en: "A bug fix is late", hint_ar: "للمطور ومدير المشروع بعد الموعد المتوقع.", hint_en: "For the developer and the PM, after the expected day." },
+  bug_status: { ar: "تغيير حالة مشكلة", en: "A bug's status changes", hint_ar: "لمن سجّلها والمطور ومدير القسم.", hint_en: "For its reporter, developer and department manager." },
+  bug_late: { ar: "تأخر إصلاح مشكلة", en: "A bug fix is late", hint_ar: "للمطور ومدير القسم بعد الموعد المتوقع.", hint_en: "For the developer and the department manager, after the expected day." },
   announcement: { ar: "إعلان جديد من الإدارة", en: "A new announcement", hint_ar: "عند نشر إعلان لكل الشركة.", hint_en: "When the management posts one for everyone." },
-  note_sent: { ar: "وارد إلى المدير التنفيذي", en: "Sent to the CEO", hint_ar: "للمدير التنفيذي: عند إرسال تقرير أو ملاحظة أو مشكلة أو طلب إليه.", hint_en: "For the CEO: when a report, feedback, a problem or a request is sent to you." },
-  note_answered: { ar: "رد المدير التنفيذي", en: "The CEO's answer", hint_ar: "عند رد المدير التنفيذي على ما أرسلته.", hint_en: "When the CEO answers what you sent." },
+  note_sent: { ar: "وارد من المتابعة والطلبات", en: "Notes and requests sent to you", hint_ar: "عند إرسال تقرير أو ملاحظة أو مشكلة إليك، أو طلب ينتظر مسؤول المتابعة.", hint_en: "When a report, feedback or a problem is sent to you, or a request waits for the monitoring officer." },
+  note_answered: { ar: "رد على ما أرسلته", en: "An answer to what you sent", hint_ar: "عند رد المدير التنفيذي أو مسؤول المتابعة على ما أرسلته.", hint_en: "When the CEO or the monitoring officer answers what you sent." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
   birthday_soon: { ar: "عيد ميلاد بعد أسبوع", en: "A birthday in a week", hint_ar: "للمتابعة والمدير التنفيذي: قبل عيد ميلاد أحد الزملاء بأسبوع.", hint_en: "For monitoring and the CEO: a week before a colleague's birthday." },
   birthday_today: { ar: "عيد ميلاد اليوم", en: "A birthday today", hint_ar: "للمتابعة والمدير التنفيذي: صباح يوم عيد ميلاد أحد الزملاء.", hint_en: "For monitoring and the CEO: on the morning of a colleague's birthday." },
@@ -147,7 +147,8 @@ export function notificationLink(n: Notification, viewer?: Pick<User, "id" | "ro
   if (n.chat_key) return `/chat/${n.chat_key}`;
   // A final review is about the person told: it opens their own performance page.
   if (n.kind === "review_final") return `/performance/${n.user_id}`;
-  if (n.kind === "note_sent") return "/inbox";
+  // A request waiting for the monitoring officer opens her queue; a note sent to me opens what I received.
+  if (n.kind === "note_sent") return n.data.queue === "monitor" ? "/monitoring?show=requests" : n.data.queue === "received" ? "/requests?tab=received" : "/inbox";
   if (n.kind === "note_answered") return n.data.note_kind === "request" ? "/requests" : "/monitoring";
   if (n.kind === "account_locked") return "/admin";
   if (n.project_id) return `/projects/${n.project_id}`;

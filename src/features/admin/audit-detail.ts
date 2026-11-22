@@ -120,7 +120,7 @@ export const FIELD_WORDS: Record<string, { ar: string; en: string }> = {
   team: { ar: "الفريق", en: "Team" },
   birth_date: { ar: "تاريخ الميلاد", en: "Birth date" },
   lead: { ar: "قائد الفريق", en: "Team leader" },
-  pm: { ar: "مدير المشروع", en: "Project manager" },
+  pm: { ar: "مدير القسم", en: "Department manager" },
   template: { ar: "من القالب", en: "From template" },
   moved_to: { ar: "نُقل ما تبقى إلى", en: "Remaining work moved to" },
   done: { ar: "المنجز من المخطط", en: "Done of planned" },

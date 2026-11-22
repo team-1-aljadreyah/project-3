@@ -54,8 +54,10 @@ const CHECKS: Record<string, () => boolean> = {
   // monitoring
   canWriteNotes: () => monitoring.canWriteNotes(ceo),
   // The one exception (the client: requests go TO the CEO, "who will he request?"): checked below, not here.
-  canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3 }),
+  canSeeNote: () => monitoring.canSeeNote(ceo, { author_id: 3, kind: "report" }),
   canSendToCeo: () => monitoring.canSendToCeo(ceo, { author_id: 3 }),
+  canTriageRequests: () => monitoring.canTriageRequests(ceo),
+  canShareNote: () => monitoring.canShareNote(ceo, { author_id: 3, kind: "report" }),
   canUseCeoInbox: () => monitoring.canUseCeoInbox(ceo),
   // performance
   canSeePeoplePerf: () => performance.canSeePeoplePerf(ceo),
@@ -127,6 +129,6 @@ describe("the CEO rule: the CEO may do everything any job can", () => {
 
   it("the menu shows the CEO every item, also the ones added later (except \"My requests\")", () => {
     expect(access.navFor("ceo")).toEqual(access.NAV.filter((n) => !n.notForCeo));
-    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["requests"]);
+    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["my-tasks", "requests"]);
   });
 });

@@ -52,6 +52,8 @@ export interface NotificationData {
   person_id?: number;
   person_name?: string;
   person_name_en?: string;
+  /** note_sent: whose queue it lands in: "monitor" (a request waiting for the monitoring officer) or "received" (a note sent to me); none: the CEO's inbox. */
+  queue?: "monitor" | "received";
 }
 
 /** Which notifications a person wants. A missing kind means "on". Required kinds are always on. */

@@ -120,7 +120,7 @@ export function totals(o: Overview) {
   };
 }
 
-// ── The project manager's plan: the task calendar and the board over all their projects ──
+// ── The department manager's plan: the task calendar and the board over all their projects ──
 
 /** One task as the plan shows it: its project, its status family, how late it is and how far along. */
 export interface PlanTask {
