@@ -127,3 +127,20 @@ test("employees don't have the dashboard or the reports", async ({ page }) => {
   await page.goto("/reports");
   await expect(page.getByText("التقارير للإدارة")).toBeVisible();
 });
+
+test("each dashboard greets the person by name, with the time and the date", async ({ page }) => {
+  for (const [who, first, path] of [
+    [/هدى ناصر/, "هدى", "/dashboard"],
+    [/مريم العبيدي/, "مريم", "/dashboard"],
+    [/مصطفى جواد/, "مصطفى", "/dashboard"],
+    [/أحمد كريم/, "أحمد", "/dashboard"],
+    [/سارة علي/, "سارة", "/my-tasks"],
+  ] as const) {
+    await signInAs(page, who);
+    await page.goto(path);
+    await expect(page.getByText(new RegExp(`(صباح الخير|نهارك سعيد|مساء الخير)، ${first}`))).toBeVisible();
+    await expect(page.locator("time").filter({ hasText: /\d{1,2}:\d{2}/ }).first()).toBeVisible();
+    await page.getByRole("button", { name: /حسابي/ }).click();
+    await page.getByRole("menuitem", { name: "تسجيل الخروج" }).click();
+  }
+});

@@ -534,6 +534,37 @@ body {
   }
 }
 
+/* The dashboard greeting (greeting.tsx): it settles in, the clock's colon breathes, a new minute rolls up. */
+.greet-in {
+  animation: settle 0.7s 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.greet-later {
+  animation-delay: 0.35s;
+}
+.clock-colon {
+  animation: clock-breathe 2s ease-in-out infinite;
+}
+@keyframes clock-breathe {
+  50% {
+    opacity: 0.25;
+  }
+}
+.clock-roll {
+  display: inline-block;
+  animation: clock-roll 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes clock-roll {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clock-colon {
+    animation: none;
+  }
+}
+
 /* The department manager's slide (pm-orbit.tsx): the orbits draw themselves, the ring fills, the planets arrive and
    then turn slowly round the centre. */
 .orbit-path {
