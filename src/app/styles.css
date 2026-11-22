@@ -372,6 +372,14 @@ body {
 .frost[data-frost="soft"]::after {
   background: var(--frost-tint, rgb(23 13 18 / 0.16));
 }
+/* On phones and tablets the small blurred picture was stretched into big blocky smears (the client, 22 November 2026:
+   "remove the blur, make it normal like the rest of the page"): there each card and section keeps the page's own
+   background, and the threads stay sharp. */
+@media (max-width: 1023px), (pointer: coarse) {
+  .frost {
+    display: none;
+  }
+}
 /* The curtains: blocks of the page's colour with a soft top edge (220px, FADE in light-threads.tsx). The script slides
    them down to uncover the threads as they drop. Off until the script turns them on (never with "reduce motion"). */
 .threads-curtain,
