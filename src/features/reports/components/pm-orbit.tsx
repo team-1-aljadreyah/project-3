@@ -60,9 +60,15 @@ export function PmOrbit({ user, projects, date }: { user: Pick<User, "id" | "nam
               <span className="font-normal text-[#f2dace]">{first}</span>
             </p>
             <p className="hero-in mt-3 max-w-72 text-sm leading-relaxed text-[#e6d3da]">
-              {mine.length
-                ? tr(`مشاريع قسمك تدور حول هدف واحد. الجارية اليوم: ${num(mine.length)}`, `Your department's projects turn around one goal. Running today: ${mine.length}`)
-                : tr("لا مشاريع جارية في قسمك بعد.", "No running projects in your department yet.")}
+              {mine.length ? (
+                <>
+                  {tr("مشاريع قسمك تدور حول هدف واحد.", "Your department's projects turn around one goal.")}
+                  <br />
+                  {tr(`الجارية اليوم: ${num(mine.length)}`, `Running today: ${mine.length}`)}
+                </>
+              ) : (
+                tr("لا مشاريع جارية في قسمك بعد.", "No running projects in your department yet.")
+              )}
             </p>
           </div>
           <dl className="orbit-late grid grid-cols-3 gap-3 border-t border-white/20 pt-4">
