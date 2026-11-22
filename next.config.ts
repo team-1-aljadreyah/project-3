@@ -1,5 +1,9 @@
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
+
+/** The front end's version (package.json), shown on the admin's system health page. */
+const version = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string }).version;
 
 // Two ways to build the site:
 // - `npm run build` + `npm run start`: a Node server serves .next/ (Jenkins and the browser tests use this).
@@ -35,6 +39,7 @@ const nextConfig: NextConfig = {
     // accounts would reach the real site. `npm run check:no-demo` and the clean copy check prove it.
     NEXT_PUBLIC_USE_MOCK: process.env.NEXT_PUBLIC_USE_MOCK === "true" ? "true" : "false",
     NEXT_PUBLIC_APP_BUILD: process.env.P3_APP_BUILD,
+    NEXT_PUBLIC_APP_VERSION: version,
   },
 };
 

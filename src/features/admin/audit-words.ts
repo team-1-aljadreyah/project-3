@@ -24,6 +24,9 @@ export const ACTION_WORDS: Record<AuditAction, { ar: string; en: string }> = {
   criteria_approved: { ar: "اعتمد معايير التقييم", en: "approved the review criteria" },
   review_finalized: { ar: "اعتمد تقييم أداء", en: "made a review final" },
   picture_removed: { ar: "أزال صورة شخصية", en: "removed a profile picture" },
+  session_ended: { ar: "أنهى جلسة دخول", en: "ended a sign-in session" },
+  sessions_ended: { ar: "أخرج حساباً من كل الأجهزة", en: "signed an account out everywhere" },
+  users_imported: { ar: "استورد حسابات", en: "imported accounts" },
   rating_changed: { ar: "عدّل تقييماً سريعاً كتبه غيره", en: "changed someone else's quick rating" },
   rating_deleted: { ar: "حذف تقييماً سريعاً", en: "removed a quick rating" },
 };
@@ -49,6 +52,9 @@ export const ACTION_KIND: Record<AuditAction, AuditKind> = {
   criteria_approved: "review",
   review_finalized: "review",
   picture_removed: "account",
+  session_ended: "signin",
+  sessions_ended: "signin",
+  users_imported: "account",
   rating_changed: "review",
   rating_deleted: "review",
 };
@@ -85,6 +91,8 @@ export function targetHref(target: { type: string; id?: number }): string | unde
       return target.id ? `/teams/${target.id}` : "/admin?tab=teams";
     case "settings":
       return "/admin?tab=settings";
+    case "import":
+      return "/admin/import";
     default:
       return undefined;
   }

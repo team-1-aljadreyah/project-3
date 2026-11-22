@@ -1,9 +1,9 @@
 // The demo backend for signing in and people. Only the demo build loads it (see ./api.ts).
 // Wrong passwords: after the admin's `lock_after` in a row, the account locks for `lock_minutes`, the admins are told,
 // and the audit log records it (the brief: "a user who can't sign in for a while"; docs/backend.md section 14).
-import { audit, newSessionId } from "@/mock/audit";
+import { audit, demoIp, demoUserAgent, newSessionId } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
-import { currentUser, fail, nowIso, wait } from "@/mock/helpers";
+import { browserSessionId, currentUser, fail, nowIso, setBrowserSessionId, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import { DEMO_PASSWORD } from "@/mock/seed";
 import { birthdayView } from "@/shared/lib/birthday";
@@ -45,6 +45,10 @@ export const authMock: AuthApi = {
     login!.last_login_at = now;
     // A new session: the audit log writes it on everything this person does until they sign in again.
     login!.session_id = newSessionId();
+    // The session the admin sees on the security page (who, on what, from where), and this browser is in it.
+    db.sessions ??= [];
+    db.sessions.push({ id: login!.session_id, user_id: user.id, ip: demoIp(user.id), user_agent: demoUserAgent(), started_at: now, last_seen_at: now });
+    setBrowserSessionId(login!.session_id);
     commit({ own: true });
     return wait({ token: `demo-${user.id}`, user: birthdayView(user, user) });
   },
@@ -54,8 +58,16 @@ export const authMock: AuthApi = {
     return wait(birthdayView(me, me));
   },
 
-  // The demo keeps no tokens on a server: nothing to cancel.
+  // Signing out ends this browser's session (the token itself is only "demo-<id>": nothing else to cancel).
   async logout() {
+    const db = getDb();
+    const session = db.sessions?.find((s) => s.id === browserSessionId());
+    if (session && !session.ended_at) {
+      session.ended_at = nowIso();
+      session.end_reason = "signed_out";
+      commit({ own: true });
+    }
+    setBrowserSessionId(null);
     return wait(undefined);
   },
 

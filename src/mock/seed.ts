@@ -6,7 +6,7 @@ import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
 import type { Message } from "@/features/chat";
 import type { Criteria, Review } from "@/features/performance";
-import type { AuditEntry, Settings } from "@/features/admin";
+import type { AuditEntry, SessionRecord, Settings } from "@/features/admin";
 import type { GithubItem, GithubSettings } from "@/features/github";
 import type { MonitorNote } from "@/features/monitoring";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
@@ -131,6 +131,8 @@ export interface MockDb {
   settings: Settings;
   /** `session_id`: the session the last good sign-in started (the audit log writes it on each line). */
   logins: { user_id: number; failed: number; locked_until?: string; last_login_at?: string; session_id?: string }[];
+  /** Every sign-in session (one per good sign-in): the active ones and, with `ended_at`, the ended ones. */
+  sessions: SessionRecord[];
   /** The GitHub link: each project's setting, and the pull requests and commits the server got from GitHub. */
   github: GithubSettings[];
   github_items: GithubItem[];
@@ -517,6 +519,32 @@ export function seed(now = new Date()): MockDb {
     Object.assign(e, seededOrigin(e));
   });
 
+  // Who is signed in now, on what and from where: one session per device, the CEO on her Mac and her phone, Sara on
+  // her computer and her phone, Zainab not since four days ago. The phones come from a mobile network (still RFC 5737).
+  const minutesAgo = (m: number) => new Date(now.getTime() - m * 60_000).toISOString();
+  const H = 60;
+  const D = 24 * H;
+  const signedIn: [userId: number, device: string, ip: string, started: number, seen: number][] = [
+    [1, UA.safariMac, demoIp(1), 2 * D + 3 * H, 18],
+    [1, UA.safariIphone, "198.51.100.201", 5 * D, 3 * H],
+    [2, UA.edgeWin, demoIp(2), 6 * H, 12],
+    [3, UA.chromeWin, demoIp(3), D + 2 * H, 55],
+    [4, UA.chromeWin, demoIp(4), 5 * H, 7],
+    [5, UA.chromeWin, demoIp(5), 4 * H, 2],
+    [5, UA.chromeAndroid, "192.0.2.211", 3 * D, 20 * H],
+    [6, UA.firefoxUbuntu, demoIp(6), 7 * H, 40],
+    [7, UA.chromeWin, demoIp(7), 6 * D, 4 * D],
+    [8, UA.firefoxUbuntu, demoIp(8), 3 * H, 1],
+  ];
+  const sessions: SessionRecord[] = signedIn.map(([user_id, user_agent, ip, started, seen], i) => ({
+    id: `s_${hashHex(`session-${user_id}-${i}`, 16)}`, user_id, ip, user_agent, started_at: minutesAgo(started), last_seen_at: minutesAgo(seen),
+  }));
+  // Each person's last good sign-in is their newest session.
+  const logins: MockDb["logins"] = users.map((u) => {
+    const last = sessions.filter((x) => x.user_id === u.id).sort((a, b) => b.started_at.localeCompare(a.started_at))[0];
+    return { user_id: u.id, failed: 0, ...(last ? { last_login_at: last.started_at, session_id: last.id } : {}) };
+  });
+
   // GitHub is on for project 1 (two repositories). Made-up pull requests and commits that mention task and bug codes.
   const github: GithubSettings[] = [{ project_id: 1, enabled: true, repos: ["aljadreyah/booking-web", "aljadreyah/booking-api"] }];
   const gh = (id: string, kind: "pr" | "commit", repo: string, ref: string, title: string, author: string, when: string, state?: GithubItem["state"]): GithubItem => ({
@@ -606,7 +634,7 @@ export function seed(now = new Date()): MockDb {
   return {
     monitor_notes, ratings,
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
-    announcements, announcement_reads, bugs, bug_events, teams, directs, groups, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
+    announcements, announcement_reads, bugs, bug_events, teams, directs, groups, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins, sessions,
     github, github_items,
     advanced: {}, advanced_log: [],
     seq: {

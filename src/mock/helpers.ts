@@ -22,11 +22,37 @@ export const invalid = (field: string, ar: string, en: string): never => fail(42
 
 export const nowIso = () => new Date().toISOString();
 
+// The demo token is only "demo-<id>", so the sign-in session this browser is in is kept beside it (a real server knows
+// it from the token). The admin can end it (the security page): then the next call answers 401 and the page signs out.
+const SESSION_KEY = "p3.demo.session";
+
+/** The sign-in session of this browser (set by the demo sign-in), if any. */
+export function browserSessionId(): string | undefined {
+  try {
+    return (typeof localStorage === "undefined" ? null : localStorage.getItem(SESSION_KEY)) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function setBrowserSessionId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(SESSION_KEY, id);
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
+
 export function currentUser(): User {
   const token = getToken();
   const id = token?.startsWith("demo-") ? Number(token.slice(5)) : NaN;
-  const user = getDb().users.find((u) => u.id === id && u.active);
+  const db = getDb();
+  const user = db.users.find((u) => u.id === id && u.active);
   if (!user) return fail(401, "UNAUTHENTICATED", "انتهت الجلسة، سجّل الدخول من جديد.", "Your session ended. Please sign in again.");
+  // This browser's session: ended by an admin → signed out; else it was just used (kept in memory, saved with the next change).
+  const sid = browserSessionId();
+  const session = sid ? db.sessions?.find((s) => s.id === sid && s.user_id === user.id) : undefined;
+  if (session?.ended_at) return fail(401, "UNAUTHENTICATED", "أنهى مسؤول النظام هذه الجلسة. سجّل الدخول من جديد.", "The system admin ended this session. Please sign in again.");
+  if (session) session.last_seen_at = nowIso();
   return user;
 }
 

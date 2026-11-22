@@ -12,6 +12,7 @@ import { ACTION_KIND, ACTION_WORDS, KIND_WORDS, targetHref } from "../audit-word
 import { isLocked } from "../rules";
 import { adminOverview } from "../summary";
 import type { AdminUser } from "../types";
+import { AdminAttention } from "./attention-list";
 import { ActivityChart, Sparkline } from "./charts";
 import { UserDialog } from "./user-dialog";
 
@@ -84,7 +85,8 @@ export function AdminOverview({ me }: { me: number }) {
     },
     {
       key: "active",
-      href: "/admin?tab=users",
+      // Stopped and locked accounts, and who is signed in where: the security page.
+      href: "/admin/security",
       label: tr("حسابات نشطة", "Active accounts"),
       icon: UserCheck,
       tone: "done",
@@ -95,7 +97,8 @@ export function AdminOverview({ me }: { me: number }) {
     },
     {
       key: "teams",
-      href: "/admin?tab=teams",
+      // Who is in which team, and what to fix: the structure page.
+      href: "/admin/structure",
       label: tr("الفرق", "Teams"),
       icon: Network,
       tone: "testing",
@@ -139,6 +142,8 @@ export function AdminOverview({ me }: { me: number }) {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* What needs the admin now (locked accounts, teams without a leader…), each line a link to its fix. */}
+      <AdminAttention />
       <section aria-labelledby="overview-title">
         <h2 id="overview-title" className="sr-only">
           {tr("نظرة عامة", "Overview")}
