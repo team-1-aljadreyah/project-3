@@ -121,7 +121,7 @@ describe("the checks on a birth date", () => {
       expect(e?.status).toBe(422);
       expect(e?.errors).toHaveProperty("birth_date");
     }
-    expect((await fails(adminMock.createUser({ name: "ليلى", email: "laila@demo.test", role: "employee", title: "", birth_date: today(1) })))?.errors).toHaveProperty("birth_date");
+    expect((await fails(adminMock.createUser({ name: "ليلى", email: "laila@demo.test", role: "employee", title: "", birth_date: today(1), password: "Start-Pass-1" })))?.errors).toHaveProperty("birth_date");
     await adminMock.updateUser(6, { birth_date: "1994-03-07" });
     expect(getDb().users.find((u) => u.id === 6)!.birth_date).toBe("1994-03-07");
     // The audit log says the field changed, never the dates themselves.
@@ -129,7 +129,7 @@ describe("the checks on a birth date", () => {
     await adminMock.updateUser(6, { birth_date: null });
     expect(getDb().users.find((u) => u.id === 6)!.birth_date).toBeUndefined();
     // Optional: an account without one is fine.
-    const added = await adminMock.createUser({ name: "ليلى", email: "laila@demo.test", role: "employee", title: "" });
+    const added = await adminMock.createUser({ name: "ليلى", email: "laila@demo.test", role: "employee", title: "", password: "Start-Pass-1" });
     expect(added.birth_date).toBeUndefined();
   });
 });

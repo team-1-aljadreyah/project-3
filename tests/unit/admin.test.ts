@@ -40,12 +40,12 @@ beforeEach(() => {
 describe("users", () => {
   it("the admin adds a user; email must be valid and free; the audit log has it; the person hears their team", async () => {
     as(8);
-    const u = await api.createUser({ name: " ليلى سمير ", email: "Laila@Demo.test", role: "employee", title: "مصممة", team_id: 1 });
+    const u = await api.createUser({ name: " ليلى سمير ", email: "Laila@Demo.test", role: "employee", title: "مصممة", team_id: 1, password: "Start-Pass-1" });
     expect(u).toMatchObject({ name: "ليلى سمير", email: "laila@demo.test", active: true, team_id: 1 });
     expect(lastAudit()).toMatchObject({ actor_id: 8, action: "user_created", target: { type: "user", id: u.id } });
     expect(getDb().notifications.at(-1)).toMatchObject({ user_id: u.id, kind: "team_joined" });
-    expect((await fails(api.createUser({ name: "x", email: "laila@demo.test", role: "employee", title: "" })))?.errors).toHaveProperty("email");
-    expect((await fails(api.createUser({ name: "x", email: "not-an-email", role: "employee", title: "" })))?.errors).toHaveProperty("email");
+    expect((await fails(api.createUser({ name: "x", email: "laila@demo.test", role: "employee", title: "", password: "Start-Pass-1" })))?.errors).toHaveProperty("email");
+    expect((await fails(api.createUser({ name: "x", email: "not-an-email", role: "employee", title: "", password: "Start-Pass-1" })))?.errors).toHaveProperty("email");
   });
 
   it("guards: not your own role, never zero admins, a PM with open projects keeps the role", async () => {
@@ -112,7 +112,7 @@ describe("teams and settings", () => {
 describe("the audit log", () => {
   it("records important actions from other parts (a new PM); the CEO and admin read it, newest first; filters work", async () => {
     as(8);
-    const pm = await api.createUser({ name: "كريم عادل", email: "pm2@demo.test", role: "pm", title: "مدير مشاريع" });
+    const pm = await api.createUser({ name: "كريم عادل", email: "pm2@demo.test", role: "pm", title: "مدير مشاريع", password: "Start-Pass-1" });
     as(1);
     await projectsMock.updateProject(3, { pm_id: pm.id });
     const log = await api.audit({});
