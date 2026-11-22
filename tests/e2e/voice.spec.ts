@@ -41,7 +41,8 @@ test("Sara records a voice message, hears it, sends it; Ahmed sees its length an
   const send = page.getByRole("button", { name: "أرسل الرسالة الصوتية" });
   await expect(send).toBeFocused();
   await preview.getByRole("button", { name: /^شغّل الرسالة الصوتية/ }).click();
-  await expect.poll(() => preview.locator("audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(false);
+  // "Played", not "playing now": a 2-second recording may have ended before the first look on a busy machine.
+  await expect.poll(() => preview.locator("audio").evaluate((a: HTMLAudioElement) => !a.paused || a.played.length > 0)).toBe(true);
   await send.click();
 
   const messages = page.getByRole("list", { name: "الرسائل" });
@@ -59,7 +60,7 @@ test("Sara records a voice message, hears it, sends it; Ahmed sees its length an
   // Nothing is downloaded before playing.
   await expect(received.locator("audio")).toHaveAttribute("preload", "none");
   await received.getByRole("button", { name: /^شغّل الرسالة الصوتية/ }).click();
-  await expect.poll(() => received.locator("audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(false);
+  await expect.poll(() => received.locator("audio").evaluate((a: HTMLAudioElement) => !a.paused || a.played.length > 0)).toBe(true);
   await expect(received.getByText("لم تستمع إليها بعد")).toHaveCount(0);
   // The speed goes 1× → 1.5×, and the audio follows.
   await received.getByRole("button", { name: /سرعة التشغيل 1×/ }).click();
