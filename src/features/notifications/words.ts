@@ -1,5 +1,6 @@
 // What each notification says, where a click on it goes, and the names of the kinds for the preferences.
 import type { User } from "@/shared/api/types";
+import { personHref } from "@/shared/lib/access";
 import type { Fmt } from "@/shared/lib/i18n";
 import { daysBetween, today } from "@/shared/lib/utils";
 import type { Notification, NotificationKind } from "./types";
@@ -40,6 +41,8 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   note_sent: { ar: "وارد إلى المدير التنفيذي", en: "Sent to the CEO", hint_ar: "للمدير التنفيذي: عند إرسال تقرير أو ملاحظة أو مشكلة أو طلب إليه.", hint_en: "For the CEO: when a report, feedback, a problem or a request is sent to you." },
   note_answered: { ar: "رد المدير التنفيذي", en: "The CEO's answer", hint_ar: "عند رد المدير التنفيذي على ما أرسلته.", hint_en: "When the CEO answers what you sent." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
+  birthday_soon: { ar: "عيد ميلاد بعد أسبوع", en: "A birthday in a week", hint_ar: "للمتابعة والمدير التنفيذي: قبل عيد ميلاد أحد الزملاء بأسبوع.", hint_en: "For monitoring and the CEO: a week before a colleague's birthday." },
+  birthday_today: { ar: "عيد ميلاد اليوم", en: "A birthday today", hint_ar: "للمتابعة والمدير التنفيذي: صباح يوم عيد ميلاد أحد الزملاء.", hint_en: "For monitoring and the CEO: on the morning of a colleague's birthday." },
 };
 
 /** The notification in one sentence, in the person's language: "أحمد كريم أسند إليك TSK-118". */
@@ -109,6 +112,16 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أرسل إليك: ${d.title ?? ""}`, `${who} sent you: ${d.title ?? ""}`);
     case "note_answered":
       return tr(`${who} ردّ على: ${d.title ?? ""}`, `${who} answered: ${d.title ?? ""}`);
+    case "birthday_soon":
+    case "birthday_today": {
+      // d.due = the birthday's day that year. Counted from today, so an old reminder still says the truth.
+      const name = (lang === "en" && d.person_name_en) || d.person_name || "-";
+      const left = d.due ? daysBetween(today(), d.due) : 0;
+      if (left === 0) return tr(`اليوم عيد ميلاد ${name}`, `Today is ${name}'s birthday`);
+      if (left < 0) return tr(`كان عيد ميلاد ${name} في ${day(d.due)}`, `${name}'s birthday was on ${day(d.due)}`);
+      const when = left === 7 ? tr("بعد أسبوع", "in a week") : fmt.due(left);
+      return tr(`عيد ميلاد ${name} ${when} (${day(d.due)})`, `${name}'s birthday is ${when} (${day(d.due)})`);
+    }
     case "project_plan":
       return tr(`${who} غيّر خطة ${project}: الإنجاز المتوقع ${d.due ? day(d.due) : "-"}`, `${who} changed ${project}'s plan: expected end ${d.due ? day(d.due) : "-"}`);
   }
@@ -119,8 +132,15 @@ export function notificationDetail(n: Notification) {
   return n.data.note || n.data.task_title || n.data.bug_title || undefined;
 }
 
-/** Where a click on the notification goes: its task, its announcement, else its project. */
-export function notificationLink(n: Notification) {
+/**
+ * Where a click on the notification goes: its task, its announcement, else its project. A birthday opens the person's
+ * performance page when the viewer may open it (personHref), else the birthdays card on the dashboard.
+ */
+export function notificationLink(n: Notification, viewer?: Pick<User, "id" | "role" | "team_id">, people?: Map<number, User>) {
+  if (n.kind === "birthday_soon" || n.kind === "birthday_today") {
+    const person = n.data.person_id ? people?.get(n.data.person_id) : undefined;
+    return (viewer && person && personHref(viewer, person)) || "/dashboard#birthdays-title";
+  }
   if (n.task_id) return `/tasks/${n.task_id}`;
   if (n.announcement_id) return `/announcements/${n.announcement_id}`;
   if (n.bug_id) return `/bugs/${n.bug_id}`;

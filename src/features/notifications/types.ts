@@ -48,6 +48,10 @@ export interface NotificationData {
   bug_status?: string;
   /** note_answered: the kind of note ("request" opens the Requests page). */
   note_kind?: string;
+  /** birthday_soon, birthday_today: whose birthday, and their name then (`due` = the birthday's day that year). */
+  person_id?: number;
+  person_name?: string;
+  person_name_en?: string;
 }
 
 /** Which notifications a person wants. A missing kind means "on". Required kinds are always on. */

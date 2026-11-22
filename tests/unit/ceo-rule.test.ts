@@ -34,6 +34,7 @@ const CHECKS: Record<string, () => boolean> = {
   canSeeProject: () => access.canSeeProject(ceo, project),
   canManageProjectSetup: () => access.canManageProjectSetup(ceo, project),
   canTakePart: () => access.canTakePart(ceo, project),
+  canSeeBirthDate: () => access.canSeeBirthDate(ceo, someone),
   // admin
   canAdminister: () => admin.canAdminister(ceo),
   canSeeAudit: () => admin.canSeeAudit(ceo),

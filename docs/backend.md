@@ -32,8 +32,9 @@ the front end's 92 calls** are there. Still to build on the server (each is in i
 | Audit details | `GET /audit/:id`; `GET /audit` with `q`, `kind`, `ip`; `ip`, `user_agent`, `session_id`, `request_id` on every line | 14 |
 | Quick search | `GET /search?q=` | 18 |
 | Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
+| Birthdays | `birth_date` on the users calls (who sees the year), a daily job for `birthday_soon` and `birthday_today` | 20 |
 
-Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); error codes `FEATURE_OFF` (403) and
+Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
 with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
 every job except the CEO (16). The front end now calls `POST /auth/logout` when someone signs out (the server already
@@ -58,6 +59,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
 | 9 | The CEO's advanced settings and what they switch | 17 | let the CEO run the rules without a developer |
 | 10 | Profile pictures | 19 | let everyone put a face to their name |
+| 11 | Birthdays: the field, who sees the year, the daily reminders | 20 | remind monitoring of everyone's birthday |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -73,7 +75,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 1 | `POST` | `/auth/login` | anyone | Sign in → `{ token, user }` |
 | 1 | `POST` | `/auth/logout` | signed in | Sign out: cancel this token (the front end calls it, then forgets the token) |
 | 1 | `GET` | `/me` | signed in | The signed-in person |
-| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`) for pickers and avatars |
+| 2 | `GET` | `/users` | signed in | Everyone's public profile (names, roles, teams, `avatar_url`, `birthday` "MM-DD") for pickers and avatars; the year (`birth_date`) only your own, or for the admin and the CEO (20) |
 | 19 | `PUT` | `/me/avatar` | signed in (only yourself) | Set or replace my picture (`multipart/form-data`, field `file`) → the updated `User` |
 | 19 | `DELETE` | `/me/avatar` | signed in (only yourself) | Remove my picture → the updated `User` |
 | 19 | `DELETE` | `/users/:id/avatar` | admin, ceo | Remove someone's picture that is not appropriate → that `User` |
@@ -141,8 +143,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 13 | `PATCH` | `/reviews/:id` | its reviewer, ceo | Change a draft |
 | 13 | `POST` | `/reviews/:id/finalize` | its reviewer, ceo | Make it final (the person is told) |
 | 14 | `GET` | `/admin/users` | admin, ceo | Accounts with their sign-in state |
-| 14 | `POST` | `/admin/users` | admin, ceo | Add an account |
-| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock; give or clear a custom role (`custom_role`, §17.1) |
+| 14 | `POST` | `/admin/users` | admin, ceo | Add an account (an optional `birth_date`, §20) |
+| 14 | `PATCH` | `/admin/users/:id` | admin, ceo | Change, stop, restart, unlock; give or clear a custom role (`custom_role`, §17.1); set or clear `birth_date` (§20) |
 | 14 | `GET` | `/teams` | signed in | Teams |
 | 14 | `POST` | `/admin/teams` | admin, ceo | Add a team |
 | 14 | `PATCH` | `/admin/teams/:id` | admin, ceo | Change a team |
@@ -489,8 +491,10 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `review_final` | a performance review of you is made final (data: `note` = the period) | the reviewed person |
 | `dependency_done` | the last unfinished task another task waited for is done (`task_id` = the waiting task; data: `note` = the finished task's code) | the waiting task's assignee |
 | `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
+| `birthday_soon` | a colleague's birthday is exactly 7 days away (data: `person_id`, `person_name`, `person_name_en`, `due`) | every active `monitor` and the `ceo`, once per person and year (section 20) |
+| `birthday_today` | a colleague's birthday is today (the same data) | the same, once per person and year (section 20) |
 
-**Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
+**Reminders** (`task_due_soon`, `task_overdue`, and the birthdays of section 20) come from the calendar, not from an action: the real server should make
 them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
 
 **Preferences** (`PUT /notifications/preferences`, `{ [kind]: boolean }`; a missing kind means on): **required kinds can't be
@@ -728,7 +732,7 @@ the sign-in lock in `src/features/auth/mock.ts`, the audit helper in `src/mock/a
 `POST /admin/users`; `PATCH /admin/users/:id`): the `admin` only (403).
 
 - `name` required ≤ 120; `email` valid, stored lower case, **unique** (422 on `email`); `role` one of the six; `title` ≤ 80;
-  `team_id` an existing team or null (422).
+  `team_id` an existing team or null (422); `birth_date` optional, a real past day, age 16–80 (422; section 20).
 - **No account is deleted:** `active: false` stops it (it can't sign in: 403), `true` restarts it. The history stays.
 - **Guards (409):** an admin can't change their own role or stop themselves; at least one active admin always stays; a
   `pm` who manages projects that aren't `done` can't lose the role or be stopped (the message names the projects:
@@ -778,7 +782,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 20):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 21):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -1048,9 +1052,68 @@ is not appropriate (the admin's user window has "Remove picture"). Anyone else �
 yourself this way is allowed too. Log **`picture_removed`** in the audit log (`target: {type: "user", id, label: name}`)
 when it is someone else's. The person can set a new one. *(Not decided with the client: whether the person is told.)*
 
-## 20. Still open with the client
+## 20. Birthdays
+
+The client (22 November 2026): "all the accounts should have a birth date, and when that day comes the monitor should be
+notified; also notified a week before". The date maths: `src/shared/lib/birthday.ts`; the privacy rule: `canSeeBirthDate`
+in `src/shared/lib/access.ts`, applied by `birthdayView`; the demo reminders: `remindBirthdays` in `src/mock/notify.ts`;
+the tests: `tests/unit/birthdays.test.ts` and `tests/e2e/birthdays.spec.ts`.
+
+**The field.** `User` gets **`birth_date?: "YYYY-MM-DD"`** (the full date) and **`birthday?: "MM-DD"`** (the day and
+month only). The admin and the CEO set it with `POST /admin/users` and `PATCH /admin/users/:id` (`birth_date`; `null`
+clears it). Nobody else can change it, not even the person (as with the name and the job).
+
+- **Optional, but asked for** *(our choice, to confirm with the client)*: the accounts already on the server have none,
+  and a required field would block every change to them until someone knows the date. The admin's form suggests it,
+  and the admin's list marks the active accounts without one, with a filter to find them. No date: no reminders.
+- **Checks (422 on `birth_date`, in the request's language):** a real day written `YYYY-MM-DD` (not 2026-02-30), not
+  after today, and an age **from 16 to 80** on today (the company's time zone). The check: `birthDateProblem`; the
+  messages: `BIRTH_DATE_ERRORS` in `src/features/admin/rules.ts`.
+- The audit log's `user_changed` line names the field (`birth_date`) but **writes neither the old nor the new date**.
+
+**Privacy (birthdays are personal).** Only the person themself, the `admin` and the `ceo` see the year (and so the age):
+
+| Call | `birth_date` (with the year) | `birthday` ("MM-DD") |
+|---|---|---|
+| `/auth/login`, `/me` (yourself) | yes | yes |
+| `/admin/users` (admin, ceo) | yes, everyone's | yes |
+| `/users` asked by the admin or the ceo | yes, everyone's | yes |
+| `/users` asked by anyone else | **only their own** | yes, everyone's who has a date |
+
+No other call returns either field, and no notification or export carries a year of birth (the reminders carry only the
+day of that year's birthday).
+
+**The reminders.** Two kinds, **not required** (each person may turn them off; the CEO's notification table, section 17,
+may stop them for a whole job):
+
+| `kind` | When | Data |
+|---|---|---|
+| `birthday_soon` | exactly **7 days before** the birthday | `person_id`, `person_name`, `person_name_en`, `due` = the day of the birthday that year |
+| `birthday_today` | **on the day** | the same |
+
+- **Who gets them:** every **active** `monitor` (the client) and the `ceo` (the CEO rule; *our choice*: she can untick her
+  job for these kinds in the notification table). Never the person whose birthday it is, and only about **active**
+  accounts. No `actor_id`.
+- **A daily job** each morning (for example 07:00) **in the company's time zone, Asia/Baghdad**: for every active person
+  with a birth date, take their next birthday on or after today; 0 days away → `birthday_today`, exactly 7 days away →
+  `birthday_soon`. The week before works across the year end: a 3 January birthday is reminded on 27 December.
+- **29 February:** in a year without one, the birthday is **28 February** (both reminders count from that day).
+- **No duplicates:** at most one notification per receiver, person, kind and `due`, so once a year each. A unique key on
+  (`user_id`, `kind`, `data.person_id`, `data.due`) makes running the job twice safe; after a missed morning, run it
+  for the missed day (with that day as "today"). The demo makes them when someone opens their notifications
+  (`GET /notifications`), with the same rule.
+- The site writes the sentence from `kind` and `data`, counted from today: «عيد ميلاد سارة علي بعد أسبوع (29 تشرين
+  الثاني)», «اليوم عيد ميلاد سارة علي». A click opens the person's performance page when the reader may open it, else
+  the birthdays card on the dashboard.
+
+**Where people see them** (no new call): the "Upcoming birthdays" card on the monitoring officer's and the CEO's
+dashboard (the next 30 days, from `GET /users`: day and month only), and «عيد ميلاد سعيد» in the person's own welcome
+splash on the day.
+
+## 21. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
 the review criteria and who reviews whom (13), the sign-in lock and backups (14), how long the audit log keeps IP
-addresses and devices (14), GitHub one-way or two-way (15).
+addresses and devices (14), GitHub one-way or two-way (15), whether a birth date must be required and whether the CEO gets the birthday
+reminders too (20).
