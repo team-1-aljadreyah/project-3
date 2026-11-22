@@ -1,6 +1,7 @@
 // The design system (board D). Pages import from "@/shared/ui".
 export { Button, ButtonLink, IconButton } from "./button";
 export { Field, Input, Textarea, Select } from "./field";
+export { PasswordInput } from "./password-input";
 export { Dialog } from "./dialog";
 export { ToastProvider } from "./toast";
 export { useToast } from "./use-toast";

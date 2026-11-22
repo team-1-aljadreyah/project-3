@@ -39,7 +39,7 @@ beforeEach(() => {
   setDbForTests(seed());
 });
 
-const row = (more: Partial<ImportRow> = {}): ImportRow => ({ name: "ليلى", name_en: "", email: "laila@demo.test", phone: "", role: "", title: "", team: "", ...more });
+const row = (more: Partial<ImportRow> = {}): ImportRow => ({ name: "ليلى", name_en: "", email: "laila@demo.test", phone: "", role: "", title: "", team: "", password: "Laila-Start-1", ...more });
 
 describe("reading a CSV", () => {
   it("quotes keep commas, quotes written twice and new lines; CRLF and LF; the BOM and empty lines go", () => {

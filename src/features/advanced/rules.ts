@@ -384,7 +384,7 @@ export function checkRoles(roles: CustomRole[]): Problems {
 export function liveFor(r: AdvancedRules, role: Role, now = new Date()): SiteLive {
   const b = r.banner;
   const forMe = !!b && (!b.roles.length || b.roles.includes(role)) && (!b.until || Date.parse(b.until) > now.getTime());
-  return { features: r.features, banner: forMe ? b : null, read_only: r.read_only, roles: r.roles };
+  return { features: r.features, banner: forMe ? b : null, read_only: r.read_only, roles: r.roles, password_min: r.security.password_min };
 }
 
 /** The words the quick find knows each part by (the names of the settings inside it), Arabic and English. */

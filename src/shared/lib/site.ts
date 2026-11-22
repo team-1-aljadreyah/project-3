@@ -103,6 +103,8 @@ export interface SiteLive {
   roles: CustomRole[];
   /** The person's job as the server has it now (an admin may have given them a custom role since they signed in). */
   me?: Pick<User, "role" | "custom_role">;
+  /** The shortest password allowed for new and changed passwords (the CEO's security.password_min; 8 when missing). */
+  password_min?: number;
 }
 
 export const ALL_FEATURES_ON = Object.fromEntries(FEATURE_KEYS.map((k) => [k, true])) as Record<FeatureKey, boolean>;
