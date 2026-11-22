@@ -207,10 +207,11 @@ test("a long chat opens with the newest messages; scrolling up loads the older o
   await expect(list.getByText("رسالة قديمة 10", { exact: true })).toBeAttached();
   await expect.poll(() => list.getByRole("listitem").count()).toBeGreaterThan(30);
 
-  // Sending: the list goes to the new message, the page itself stays where it is.
-  const pageTop = await page.evaluate(() => window.scrollY);
+  // Sending: the list goes to the new message, the page itself stays where it is. (Typing first: the test tool scrolls
+  // a box into view before it types in it, so the page is measured just before pressing send.)
   await page.getByLabel("اكتب رسالة").fill("رسالة جديدة في الأسفل");
-  await page.getByRole("button", { name: "أرسل" }).click();
+  const pageTop = await page.evaluate(() => window.scrollY);
+  await page.getByLabel("اكتب رسالة").press("Enter");
   await expect(list.getByText("رسالة جديدة في الأسفل")).toBeInViewport();
   expect(await page.evaluate(() => window.scrollY)).toBe(pageTop);
 });
