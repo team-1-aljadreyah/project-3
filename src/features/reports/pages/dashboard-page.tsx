@@ -14,6 +14,7 @@ import { reportsApi } from "../api";
 import { CeoHero } from "../components/ceo-hero";
 import { LeadSphere } from "../components/lead-sphere";
 import { MonitorSummary } from "../components/monitor-summary";
+import { PmOrbit } from "../components/pm-orbit";
 import { PmPlan } from "../components/pm-plan";
 import { teamShares, totals } from "../compute";
 import { canSeeReports } from "../rules";
@@ -87,6 +88,9 @@ export function DashboardPage() {
       ) : user.role === "lead" ? (
         // The team leader: a slide with the team's tasks as spheres in a glass one.
         <LeadSphere shares={teamShares(o, user.team_id)} team={teamName} date={day(o.today)} href={user.team_id ? `/reports?tab=people&team=${user.team_id}` : "/reports"} />
+      ) : user.role === "pm" ? (
+        // The department manager: a greeting, and their projects turning round the department's progress.
+        <PmOrbit user={user} projects={o.projects} date={day(o.today)} />
       ) : monitor ? (
         // Monitoring and evaluation: a banner, the summary cards and every project against its plan.
         <MonitorSummary user={user} o={o} t={t} />
