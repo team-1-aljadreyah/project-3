@@ -30,7 +30,7 @@ export function wants(userId: number, kind: NotificationKind) {
 export function notify(
   to: (number | undefined)[],
   kind: NotificationKind,
-  about: { actor_id?: number; project_id?: number; task_id?: number; announcement_id?: number; bug_id?: number; chat_key?: string; data: NotificationData },
+  about: { actor_id?: number; project_id?: number; task_id?: number; announcement_id?: number; bug_id?: number; chat_key?: string; team_id?: number; data: NotificationData },
 ) {
   const db = getDb();
   for (const userId of new Set(to)) {

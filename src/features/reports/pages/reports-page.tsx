@@ -178,7 +178,8 @@ export function ReportsPage() {
 
         {o && tab === "people" && (
           <div className="flex flex-col gap-3">
-            <Select aria-label={tr("اختر الفريق", "Choose the team")} value={team} onChange={(e) => setTeam(e.target.value)} className="h-9 w-auto self-start">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Select aria-label={tr("اختر الفريق", "Choose the team")} value={team} onChange={(e) => setTeam(e.target.value)} className="h-9 w-auto">
               <option value="">{tr("كل الفرق", "All teams")}</option>
               {o.teams.map((t) => (
                 <option key={t.team_id} value={t.team_id}>
@@ -187,6 +188,13 @@ export function ReportsPage() {
               ))}
               <option value="none">{tr("بلا فريق", "No team")}</option>
             </Select>
+            {/* A chosen team: the way to its own page (its people and quick ratings). */}
+            {team && team !== "none" && (
+              <Link href={`/teams/${team}`} className="text-sm font-medium text-accent underline-offset-4 hover:underline">
+                {tr("صفحة الفريق وتقييماته", "The team's page and ratings")}
+              </Link>
+            )}
+            </div>
             <div className="overflow-x-auto rounded-xl border border-line bg-card">
               <table className="w-full text-sm">
                 <caption className="sr-only">{tr("تقرير الموظفين", "People report")}</caption>

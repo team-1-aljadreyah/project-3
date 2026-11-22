@@ -20,6 +20,7 @@ import { canPostAnnouncements } from "@/features/announcements/rules";
 import { canCreateGroupChat } from "@/features/chat/rules";
 import { canSeePeoplePerf } from "@/features/performance/rules";
 import { canCreateProject } from "@/features/projects/rules";
+import { canGiveRatings } from "@/features/ratings/rules";
 import { canSeeReports } from "@/features/reports/rules";
 import { ApiError } from "@/shared/api/errors";
 import { REQUIRED_NOTIFICATIONS } from "@/shared/api/notification-kinds";
@@ -76,6 +77,7 @@ describe("the rules: defaults, merge, changes", () => {
       expect(def("create_group_chat").includes(role), `create_group_chat ${role}`).toBe(canCreateGroupChat(u));
       expect(def("see_reports").includes(role), `see_reports ${role}`).toBe(canSeeReports(u));
       expect(def("see_scores").includes(role), `see_scores ${role}`).toBe(canSeePeoplePerf(u));
+      expect(def("give_ratings").includes(role), `give_ratings ${role}`).toBe(canGiveRatings(u));
     }
   });
 

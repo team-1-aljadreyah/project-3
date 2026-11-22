@@ -1,4 +1,5 @@
-import { Cake, Lock, Plus } from "lucide-react";
+import { Cake, ChevronLeft, Lock, Plus } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
 import type { Team } from "@/shared/api/types";
@@ -193,8 +194,13 @@ function TeamsTab() {
       </Button>
       <ul aria-label={tr("الفرق", "Teams")} className="grid gap-3 md:grid-cols-2">
         {teams.map((t) => (
-          <li key={t.id}>
-            <button type="button" onClick={() => open(t)} className="flex w-full flex-col gap-1 rounded-xl border border-line bg-card p-4 text-start hover:border-accent">
+          // The whole card opens the edit window; "Team page" sits above it and opens the team's own page.
+          <li key={t.id} className="relative">
+            <Link href={`/teams/${t.id}`} className="absolute end-3 top-3 z-10 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-accent hover:bg-accent-soft hover:underline">
+              {tr("صفحة الفريق", "Team page")}
+              <ChevronLeft size={13} aria-hidden="true" className="ltr:rotate-180" />
+            </Link>
+            <button type="button" onClick={() => open(t)} className="flex w-full flex-col gap-1 rounded-xl border border-line bg-card p-4 pe-28 text-start hover:border-accent">
               <b dir="auto">{lang === "en" && t.name_en ? t.name_en : t.name}</b>
               <span className="text-sm text-muted">
                 {tr(`القائد: ${nameOf(t.lead_id)} · ${num(users.filter((u) => u.active && u.team_id === t.id).length)} أعضاء`, `Leader: ${nameOf(t.lead_id)} · ${users.filter((u) => u.active && u.team_id === t.id).length} people`)}

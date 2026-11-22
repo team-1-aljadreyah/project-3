@@ -15,6 +15,15 @@ const bugStatusAr: Record<string, string> = {
   closed: "مغلقة",
 };
 
+/** The five steps of a team rating (the same words as the ratings feature's SCORE_WORDS), for the sentence. */
+const scoreWords: Record<string, [string, string]> = {
+  "1": ["ضعيف", "Poor"],
+  "2": ["مقبول", "Fair"],
+  "3": ["جيد", "Good"],
+  "4": ["جيد جداً", "Very good"],
+  "5": ["ممتاز", "Excellent"],
+};
+
 /** The kinds as people see them in the preferences, with a short explanation. */
 export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint_ar: string; hint_en: string }> = {
   task_assigned: { ar: "إسناد مهمة إليك", en: "A task is given to you", hint_ar: "عند إسناد مهمة جديدة إليك.", hint_en: "When a task is assigned to you." },
@@ -40,6 +49,8 @@ export const KIND_WORDS: Record<NotificationKind, { ar: string; en: string; hint
   announcement: { ar: "إعلان جديد من الإدارة", en: "A new announcement", hint_ar: "عند نشر إعلان لكل الشركة.", hint_en: "When the management posts one for everyone." },
   note_sent: { ar: "وارد من المتابعة والطلبات", en: "Notes and requests sent to you", hint_ar: "عند إرسال تقرير أو ملاحظة أو مشكلة إليك، أو طلب ينتظر مسؤول المتابعة.", hint_en: "When a report, feedback or a problem is sent to you, or a request waits for the monitoring officer." },
   note_answered: { ar: "رد على ما أرسلته", en: "An answer to what you sent", hint_ar: "عند رد المدير التنفيذي أو مسؤول المتابعة على ما أرسلته.", hint_en: "When the CEO or the monitoring officer answers what you sent." },
+  person_rated: { ar: "تقييم سريع لك", en: "A quick rating of you", hint_ar: "عند تقييمك تقييماً سريعاً غير خاص.", hint_en: "When someone gives you a quick rating that isn't private." },
+  team_rated: { ar: "تقييم فريقك", en: "Your team is rated", hint_ar: "لقائد الفريق: عند تقييم فريقه تقييماً غير خاص.", hint_en: "For the team leader: when their team gets a rating that isn't private." },
   project_plan: { ar: "تغيير خطة مشروع", en: "A project's plan changes", hint_ar: "عند تغيير مواعيد مشروع أنت فيه.", hint_en: "When the dates of your project change." },
   birthday_soon: { ar: "عيد ميلاد بعد أسبوع", en: "A birthday in a week", hint_ar: "للمتابعة والمدير التنفيذي: قبل عيد ميلاد أحد الزملاء بأسبوع.", hint_en: "For monitoring and the CEO: a week before a colleague's birthday." },
   birthday_today: { ar: "عيد ميلاد اليوم", en: "A birthday today", hint_ar: "للمتابعة والمدير التنفيذي: صباح يوم عيد ميلاد أحد الزملاء.", hint_en: "For monitoring and the CEO: on the morning of a colleague's birthday." },
@@ -112,6 +123,15 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} أرسل إليك: ${d.title ?? ""}`, `${who} sent you: ${d.title ?? ""}`);
     case "note_answered":
       return tr(`${who} ردّ على: ${d.title ?? ""}`, `${who} answered: ${d.title ?? ""}`);
+    case "person_rated": {
+      const [ar, en] = scoreWords[d.score ?? ""] ?? ["-", "-"];
+      return tr(`${who} قيّمك تقييماً سريعاً: ${ar} (${d.score ?? "-"} من 5)`, `${who} gave you a quick rating: ${en} (${d.score ?? "-"} of 5)`);
+    }
+    case "team_rated": {
+      const team = (lang === "en" && d.team_name_en) || d.team_name || "-";
+      const [ar, en] = scoreWords[d.score ?? ""] ?? ["-", "-"];
+      return tr(`${who} قيّم «${team}»: ${ar} (${d.score ?? "-"} من 5)`, `${who} rated "${team}": ${en} (${d.score ?? "-"} of 5)`);
+    }
     case "birthday_soon":
     case "birthday_today": {
       // d.due = the birthday's day that year. Counted from today, so an old reminder still says the truth.
@@ -151,6 +171,8 @@ export function notificationLink(n: Notification, viewer?: Pick<User, "id" | "ro
   if (n.kind === "note_sent") return n.data.queue === "monitor" ? "/monitoring?show=requests" : n.data.queue === "received" ? "/requests?tab=received" : "/inbox";
   if (n.kind === "note_answered") return n.data.note_kind === "request" ? "/requests" : "/monitoring";
   if (n.kind === "account_locked") return "/admin";
+  if (n.kind === "person_rated") return `/performance/${n.user_id}#ratings`;
+  if (n.kind === "team_rated" && n.team_id) return `/teams/${n.team_id}`;
   if (n.project_id) return `/projects/${n.project_id}`;
   return "/notifications";
 }
