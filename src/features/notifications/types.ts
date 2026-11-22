@@ -19,6 +19,8 @@ export interface Notification {
   bug_id?: number;
   /** A chat's key ("p-3"), for chat mentions. */
   chat_key?: string;
+  /** A team (team_rated: the team that was rated). */
+  team_id?: number;
   data: NotificationData;
   at: string;
   read: boolean;
@@ -48,6 +50,10 @@ export interface NotificationData {
   bug_status?: string;
   /** note_answered: the kind of note ("request" opens the Requests page). */
   note_kind?: string;
+  /** team_rated: the team's name in both languages; team_rated and person_rated: the score ("1"–"5"). The reason is in `note`. */
+  team_name?: string;
+  team_name_en?: string;
+  score?: string;
 }
 
 /** Which notifications a person wants. A missing kind means "on". Required kinds are always on. */

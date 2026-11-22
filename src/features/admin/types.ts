@@ -75,7 +75,9 @@ export type AuditAction =
   | "criteria_changed"
   | "criteria_approved"
   | "review_finalized"
-  | "picture_removed";
+  | "picture_removed"
+  | "rating_changed"
+  | "rating_deleted";
 
 /** The part of the platform an action is about (the audit log shows it as a small label and filters by it). */
 export type AuditKind = "account" | "team" | "settings" | "signin" | "project" | "announcement" | "review";

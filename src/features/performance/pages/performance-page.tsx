@@ -2,6 +2,7 @@ import { SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { authApi } from "@/features/auth";
+import { AverageMark, RateButton, ratingsApi } from "@/features/ratings";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
@@ -41,6 +42,12 @@ function PeopleList() {
   const [period, setPeriod] = useState<Period>(() => presetPeriods(today).d90);
   const load = useLoad(() => Promise.all([performanceApi.overview(period), authApi.users()]), [period]);
   const people = new Map((load.data?.[1] ?? []).map((u) => [u.id, u]));
+  // Quick ratings (the ratings feature): the teams' and people's averages this person may see, and who they may rate.
+  const quick = useLoad(() => Promise.all([ratingsApi.teams().catch(() => []), ratingsApi.people().catch(() => [])]));
+  const teamRatings = new Map((quick.data?.[0] ?? []).map((r) => [r.team.id, r]));
+  const personRatings = new Map((quick.data?.[1] ?? []).map((r) => [r.user_id, r]));
+  const ratingColumn = (load.data?.[0].people ?? []).some((r) => personRatings.has(r.user_id));
+  const nameOf = (u?: { name: string; name_en?: string }) => (u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-");
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
@@ -72,14 +79,23 @@ function PeopleList() {
               <h2 id="teams-perf" className="sr-only">
                 {tr("أداء الفرق", "Team performance")}
               </h2>
-              {load.data[0].teams.map((t) => (
-                // The whole card opens the people report of that team.
+              {load.data[0].teams.map((t) => {
+                const rated = teamRatings.get(t.team_id);
+                const teamName = lang === "en" && t.name_en ? t.name_en : t.name;
+                return (
+                // The whole card opens the team's page; its average and "Rate" sit above that link.
                 <article key={t.team_id} className="relative flex flex-col gap-2 rounded-xl border border-line bg-card p-4 text-sm transition-colors focus-within:border-accent hover:border-accent">
-                  <div className="flex justify-between gap-2">
-                    <Link href={`/reports?tab=people&team=${t.team_id}`} dir="auto" className="font-bold after:absolute after:inset-0 after:rounded-xl hover:underline">
-                      {lang === "en" && t.name_en ? t.name_en : t.name}
-                    </Link>
-                    <span className="text-muted">{tr(`${num(t.members)} أعضاء`, `${t.members} people`)}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <Link href={`/teams/${t.team_id}`} dir="auto" className="font-bold after:absolute after:inset-0 after:rounded-xl hover:underline">
+                        {teamName}
+                      </Link>
+                      {rated?.ratings && <AverageMark summary={rated.ratings} href={`/teams/${t.team_id}#ratings`} />}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-muted">{tr(`${num(t.members)} أعضاء`, `${t.members} people`)}</span>
+                      {rated?.can_rate && <RateButton target={{ subject: { type: "team", id: t.team_id }, name: teamName }} onSaved={quick.reload} />}
+                    </span>
                   </div>
                   <ProgressBar value={t.completion} planned={t.planned} label={tr(`إنجاز ${t.name}`, `${t.name_en ?? t.name} done`)} />
                   <p className="text-xs text-muted">
@@ -89,7 +105,8 @@ function PeopleList() {
                     )}
                   </p>
                 </article>
-              ))}
+                );
+              })}
             </section>
           )}
 
@@ -108,6 +125,7 @@ function PeopleList() {
                     <th className={th}>{tr("في الموعد", "On time")}</th>
                     <th className={th}>{tr("متأخرة", "Late")}</th>
                     <th className={th}>{tr("متوقفة", "Blocked")}</th>
+                    {ratingColumn && <th className={th}>{tr("التقييم", "Rating")}</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -119,7 +137,7 @@ function PeopleList() {
                         <td className={td}>
                           <Link href={`/performance/${r.user_id}`} className="flex items-center gap-2 font-medium after:absolute after:inset-0 hover:underline">
                             {u && <Avatar user={u} size="sm" />}
-                            {u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-"}
+                            {nameOf(u)}
                           </Link>
                         </td>
                         <td className={cn(td, "num")}>{num(r.assigned)}</td>
@@ -128,6 +146,20 @@ function PeopleList() {
                         <td className={cn(td, "num")}>{r.on_time === null ? "-" : pct(r.on_time)}</td>
                         <td className={cn(td, "num", r.late > 0 && "font-semibold text-danger")}>{num(r.late)}</td>
                         <td className={cn(td, "num")}>{num(r.blocked)}</td>
+                        {ratingColumn && (
+                          <td className={td}>
+                            {(() => {
+                              const q = personRatings.get(r.user_id);
+                              if (!q) return null;
+                              return (
+                                <span className="flex items-center gap-2">
+                                  <AverageMark summary={q.ratings} href={q.ratings.count > 0 ? `/performance/${r.user_id}#ratings` : undefined} />
+                                  {q.can_rate && <RateButton target={{ subject: { type: "person", id: r.user_id }, name: nameOf(u) }} onSaved={quick.reload} />}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

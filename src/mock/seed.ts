@@ -11,6 +11,7 @@ import type { GithubItem, GithubSettings } from "@/features/github";
 import type { MonitorNote } from "@/features/monitoring";
 import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
+import type { Rating } from "@/features/ratings";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
 import type { Priority, TaskStatus, Team, User } from "@/shared/api/types";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
@@ -137,6 +138,8 @@ export interface MockDb {
   announcement_reads: { announcement_id: number; user_id: number; at: string }[];
   /** The monitoring officer's reports, feedback and problems, and what was sent to the CEO. */
   monitor_notes: MonitorNote[];
+  /** Quick ratings of teams and people (a score with a reason, any time; not the periodic reviews). */
+  ratings: Rating[];
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
   /** The CEO's advanced settings: only what differs from the defaults (the security numbers live in `settings`). */
@@ -147,7 +150,7 @@ export interface MockDb {
   seq: {
     project: number; task: number; comment: number; event: number; phase: number; sprint: number; project_event: number; notification: number;
     attachment: number; announcement: number; bug: number; bug_event: number; direct: number; group: number; message: number; template: number; review: number; audit: number; team: number;
-    note: number; advanced_change: number;
+    note: number; advanced_change: number; rating: number;
   };
 }
 
@@ -550,8 +553,43 @@ export function seed(now = new Date()): MockDb {
     },
   ];
 
+  // Quick ratings: the development team over five months (better lately), one private note only the CEO and Huda see,
+  // and two about Sara. Older than a day, so they are history now (nobody can change them but the CEO).
+  const ratings: Rating[] = [
+    {
+      id: 1, subject_type: "team", subject_id: 1, rater_id: 3, score: 3, reason_type: "deadlines", created_at: at(130, 11),
+      reason: "تأخر تسليم النماذج الأولى أسبوعاً عن الموعد المتفق عليه، مع أن الجودة كانت مقبولة.",
+    },
+    {
+      id: 2, subject_type: "team", subject_id: 1, rater_id: 1, score: 3, reason_type: "quality", created_at: at(100, 9),
+      reason: "ظهرت أخطاء كثيرة في الاختبار الأول. نحتاج مراجعة أدق قبل التسليم.",
+    },
+    {
+      id: 3, subject_type: "team", subject_id: 1, rater_id: 2, score: 4, reason_type: "teamwork", created_at: at(30, 14), project_id: 1,
+      project_name: "منصة الحجز الإلكتروني", project_name_en: "Online booking platform",
+      reason: "تنسيق جيد بين الواجهات والخوادم في الدورة الثالثة، والاجتماعات اليومية قصيرة ومفيدة.",
+    },
+    {
+      id: 4, subject_type: "team", subject_id: 1, rater_id: 3, score: 5, reason_type: "incident", created_at: at(12, 22),
+      reason: "توقف خادم الاختبار ليلة الخميس، فأعاده الفريق خلال ساعة وكتب ما حدث وكيف يُمنع تكراره.",
+    },
+    {
+      id: 5, subject_type: "team", subject_id: 1, rater_id: 3, score: 2, reason_type: "attitude", created_at: at(3, 16), private: true,
+      reason: "ملاحظة للإدارة فقط: تأخر الحضور إلى اجتماع العميل مرتين هذا الأسبوع.",
+    },
+    {
+      id: 6, subject_type: "person", subject_id: 5, rater_id: 2, score: 4, reason_type: "deadlines", created_at: at(45, 10), project_id: 1,
+      project_name: "منصة الحجز الإلكتروني", project_name_en: "Online booking platform",
+      reason: "سلّمت شاشات الحجز في موعدها رغم تغيّر التصميم في آخر لحظة.",
+    },
+    {
+      id: 7, subject_type: "person", subject_id: 5, rater_id: 3, score: 5, reason_type: "quality", created_at: at(6, 12),
+      reason: "صفحة الإعلانات مرتبة وسهلة القراءة على الهاتف، وكتبت ملاحظات مفيدة للمراجعة.",
+    },
+  ].map((r) => ({ private: false, ...r }) as Rating);
+
   return {
-    monitor_notes,
+    monitor_notes, ratings,
     users, projects, sprints, tasks, comments, events, project_events, notifications, notification_prefs: {}, attachments,
     announcements, announcement_reads, bugs, bug_events, teams, directs, groups, messages, chat_reads, templates, criteria, reviews, audit, settings: { due_soon_days: 1, lock_after: 5, lock_minutes: 15 }, logins: [],
     github, github_items,
@@ -560,7 +598,7 @@ export function seed(now = new Date()): MockDb {
       project: projects.length, task: id, comment: commentId, event: eventId, phase: 3, sprint: sprints.length,
       project_event: projectEventId, notification: notificationId, attachment: attachments.length, announcement: announcements.length,
       bug: bugs.length, bug_event: bugEventId, direct: directs.length, group: groups.length, message: messageId, template: templates.length, review: reviews.length, audit: audit.length, team: teams.length,
-      note: monitor_notes.length, advanced_change: 0,
+      note: monitor_notes.length, advanced_change: 0, rating: ratings.length,
     },
   };
 }

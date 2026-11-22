@@ -94,6 +94,7 @@ export const NAV: NavItem[] = [
   { key: "bugs", ar: "الأخطاء البرمجية", en: "Bugs", href: "/bugs", roles: WORK, ready: true },
   { key: "announcements", ar: "الإعلانات", en: "Announcements", href: "/announcements", roles: ALL, ready: true },
   { key: "performance", ar: "الأداء", en: "Performance", href: "/performance", roles: WORK, ready: true },
+  { key: "teams", ar: "الفرق", en: "Teams", href: "/teams", roles: ["ceo", "pm", "monitor"], ready: true },
   { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
   { key: "monitoring", ar: "المتابعة", en: "Monitoring", href: "/monitoring", roles: ["monitor"], ready: true },
   { key: "inbox", ar: "الوارد", en: "Inbox", href: "/inbox", roles: ["ceo"], ready: true },

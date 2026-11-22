@@ -4,6 +4,7 @@ import { announcementsApi } from "@/features/announcements";
 import { authApi } from "@/features/auth";
 import { monitoringApi } from "@/features/monitoring";
 import { PROJECT_STATE, projectsApi } from "@/features/projects";
+import { TeamsToRate } from "@/features/ratings";
 import { personHref } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
@@ -102,6 +103,9 @@ export function DashboardPage() {
         </div>
       )}
 
+      {/* Monitoring and evaluation: a quick way to rate a team, any team, for any reason. */}
+      {monitor && <TeamsToRate />}
+
       {/* The CEO: new things in the inbox, one line that opens it. */}
       {waiting.length > 0 && (
         <Link href="/inbox" className="flex items-center gap-3 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm text-accent-ink hover:border-accent">
@@ -188,10 +192,10 @@ export function DashboardPage() {
           ) : (
             <ul className="flex flex-col gap-3">
               {o.teams.map((team) => (
-                // The whole row opens the people report of that team.
+                // The whole row opens the team's page (its people, numbers and ratings).
                 <li key={team.team_id} className="relative -mx-2 flex flex-col gap-1.5 rounded-lg px-2 py-1 hover:bg-card-2">
                   <div className="flex justify-between gap-2 text-sm">
-                    <Link href={`/reports?tab=people&team=${team.team_id}`} dir="auto" className="font-medium after:absolute after:inset-0 hover:underline">
+                    <Link href={`/teams/${team.team_id}`} dir="auto" className="font-medium after:absolute after:inset-0 hover:underline">
                       {lang === "en" && team.name_en ? team.name_en : team.name}
                     </Link>
                     <span className="text-muted">

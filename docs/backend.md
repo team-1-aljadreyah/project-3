@@ -21,7 +21,7 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 92 calls** are there. Still to build on the server (each is in its section below; the demo backend in
+the front end's 101 calls** are there. Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
@@ -32,8 +32,9 @@ the front end's 92 calls** are there. Still to build on the server (each is in i
 | Audit details | `GET /audit/:id`; `GET /audit` with `q`, `kind`, `ip`; `ip`, `user_agent`, `session_id`, `request_id` on every line | 14 |
 | Quick search | `GET /search?q=` | 18 |
 | Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
+| Quick ratings of teams and people, the team pages | `GET /teams/ratings/summary`, `GET /teams/:id`, `GET`/`POST /teams/:id/ratings`, `GET /people/ratings/summary`, `GET`/`POST /people/:id/ratings`, `PATCH`/`DELETE /ratings/:id` | 20 |
 
-Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); error codes `FEATURE_OFF` (403) and
+Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); `Notification` gets `team_id` and the kinds `team_rated`, `person_rated` (7, 20); the audit log gets `rating_changed`, `rating_deleted` (14); the custom roles' actions get `give_ratings` (17.1); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
 with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
 every job except the CEO (16). The front end now calls `POST /auth/logout` when someone signs out (the server already
@@ -58,6 +59,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 8 | GitHub, monitoring notes and the CEO's inbox | 15, 16 | the extras |
 | 9 | The CEO's advanced settings and what they switch | 17 | let the CEO run the rules without a developer |
 | 10 | Profile pictures | 19 | let everyone put a face to their name |
+| 11 | Quick ratings of teams and people, the team pages | 20 | let monitoring rate any team or person, for any reason |
 
 **Rules that apply to everything:**
 - **The server is the judge.** The menu hides what a job can't use, but the server must refuse it (**403**), and must
@@ -166,6 +168,15 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 17 | `GET` | `/ceo/advanced/history` | ceo | Every save, from → to, newest first |
 | 17 | `GET` | `/site/live` | signed in | What this person must obey: features on/off, the banner for their job, read-only mode, the custom roles, their own job (`me`) |
 | 17.1 | `PUT` | `/ceo/advanced` (`rules.roles`) | ceo | Make, change, copy or remove the CEO's custom roles (a role in use can't be removed: 409) |
+| 20 | `GET` | `/teams/ratings/summary` | signed in | The teams this person may see, each with its members count, its ratings in numbers (or null) and `can_rate` |
+| 20 | `GET` | `/teams/:id` | ceo, monitor, pm, admin; lead and employee: their own team | One team, its active members (the leader first), `can_see_ratings` and the members' task numbers (`tasks`, or null) |
+| 20 | `GET` | `/teams/:id/ratings` | see §20 | The team's quick ratings this person may read, newest first, and `can_rate` |
+| 20 | `POST` | `/teams/:id/ratings` | monitor, ceo; pm: teams in their projects | Rate a team (the leader is told `team_rated` unless private) |
+| 20 | `GET` | `/people/ratings/summary` | signed in | The people whose ratings this person may read, each with the numbers and `can_rate` |
+| 20 | `GET` | `/people/:id/ratings` | see §20 | A person's quick ratings this person may read, and `can_rate` |
+| 20 | `POST` | `/people/:id/ratings` | monitor, ceo; pm: people in their projects (never yourself) | Rate a person (they are told `person_rated` unless private) |
+| 20 | `PATCH` | `/ratings/:id` | its writer (24 h), ceo | Change a rating |
+| 20 | `DELETE` | `/ratings/:id` | its writer (24 h), ceo | Remove a rating (always written in the audit log) |
 
 ### Who may do what (summary)
 
@@ -185,6 +196,8 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | Remove someone else's picture | ✓ | | | | | ✓ |
 | Monitoring notes | ✓ | | ✓ | | | |
 | The CEO's inbox | ✓ | | | | | |
+| Quick ratings: give (§20) | ✓ | teams and people in their projects | any team, anyone | | | |
+| Quick ratings: read | ✓ | the ones they may give | ✓ | their team's, their own | their team's, their own | |
 
 ---
 
@@ -489,6 +502,8 @@ a kind the person turned off isn't sent (unless it is required). Each person rea
 | `review_final` | a performance review of you is made final (data: `note` = the period) | the reviewed person |
 | `dependency_done` | the last unfinished task another task waited for is done (`task_id` = the waiting task; data: `note` = the finished task's code) | the waiting task's assignee |
 | `chat_mention` | someone writes @ and your name in a chat (`chat_key`; data: `note` = the message's start) | the mentioned members (section 11) |
+| `team_rated` | a team gets a quick rating that isn't private, or one is made visible (`team_id`; data: `team_name`, `team_name_en`, `score`, `note` = the reason's start) | the team's leader (section 20) |
+| `person_rated` | a person gets a quick rating that isn't private, or one is made visible (data: `score`, `note` = the reason's start) | that person (section 20) |
 
 **Reminders** (`task_due_soon`, `task_overdue`) come from the calendar, not from an action: the real server should make
 them **once a day** (a scheduled job). The demo makes them when someone opens their notifications.
@@ -778,7 +793,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 20):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 21):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -786,7 +801,8 @@ Written for:
 `user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
 `team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
-`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19), `rating_deleted` (every removed quick
+rating), `rating_changed` (the CEO changing someone else's; section 20). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
 
 ## 15. GitHub
 
@@ -990,6 +1006,7 @@ rules first (everything above, unchanged), **and then against the role**: these 
 | `create_group_chat` | creating a group chat |
 | `write_reviews` | `POST /reviews`, `PATCH /reviews/:id`, `POST /reviews/:id/finalize`; and `can_review: false` in `GET /performance/people/:id` |
 | `report_bugs` | `POST /projects/:projectId/bugs` |
+| `give_ratings` | `POST /teams/:id/ratings`, `POST /people/:id/ratings`; and `can_rate: false` in the ratings calls (section 20) |
 
 The pages hide the matching buttons. **The CEO is never limited** (the CEO rule), and people without a custom role are
 unaffected. The menu hides the pages the role doesn't see (now). **Later:** refusing those pages' calls for the role
@@ -1048,9 +1065,84 @@ is not appropriate (the admin's user window has "Remove picture"). Anyone else �
 yourself this way is allowed too. Log **`picture_removed`** in the audit log (`target: {type: "user", id, label: name}`)
 when it is someone else's. The person can set a new one. *(Not decided with the client: whether the person is told.)*
 
-## 20. Still open with the client
+## 20. Quick ratings of teams and people, and the team pages
+
+The client (22 November 2026): "add a rating system for teams, and make sure the monitor can rate for whatever reason",
+then, on the performance page, "here it should be able to give a rating as a monitor". A **quick rating** is a score
+with a reason, given at any time and for any reason, about a **team** or a **person**. It is not the periodic
+performance review of section 13 (the pages call them «تقييمات سريعة» and «التقييم الدوري»): reviews keep working as
+they are.
+
+Shapes: `src/features/ratings/types.ts`; rules, checks and the numbers: `src/features/ratings/rules.ts` (pure, tested in
+`tests/unit/ratings.test.ts`); the demo backend (the reference): `src/features/ratings/mock.ts`.
+
+```text
+Rating {
+  id, subject_type: "team" | "person", subject_id,        // the team's id or the person's user id
+  rater_id, score: 1..5,                                   // 1 ضعيف Poor · 2 مقبول Fair · 3 جيد Good · 4 جيد جداً Very good · 5 ممتاز Excellent
+  reason_type: "quality" | "deadlines" | "teamwork" | "attitude" | "incident" | "other",
+  reason (1–1000, trimmed),                                // in the rater's own words, required
+  project_id?, project_name?, project_name_en?,            // optional; the names are copied when it is written
+  period?: { from, to },                                   // optional, "YYYY-MM-DD", from ≤ to
+  private: boolean,                                        // only the CEO and the rater see it
+  created_at, edited_at?, edited_by?                       // edited_by: set when someone other than the rater changed it (the CEO)
+}
+RatingInput { score, reason_type, reason, project_id?: number | null, period?: { from, to } | null, private?: boolean }
+RatingSummary { count, average (1 decimal) | null, recent: {count, average}, before: {count, average},   // last 90 days / older
+                by_type: { [reason_type]: n }, by_score: [n1..n5], last?: { score, reason_type, created_at } }
+```
+
+One table holds both kinds (`subject_type`, `subject_id`), so a person's and a team's ratings follow the same rules.
+
+**Who (assumptions, to confirm with the client):**
+
+| | ceo | monitor | pm | lead | employee | admin |
+|---|---|---|---|---|---|---|
+| Rate a team | any | any | the teams with a member in a project they run | | | |
+| Rate a person | anyone | anyone | the people in the projects they run | | | |
+| Read a team's ratings | all | all | the teams they may rate | their own team's | their own team's | |
+| Read a person's ratings | all | all | the people they may rate | their own | their own | |
+| See a team page `/teams/:id` | all | all | all | their own team | their own team | all (members only) |
+
+- **Nobody rates themselves**, and the CEO and the system admin are never rated (403).
+- **Private** ratings are read only by the CEO and their writer: not by the team, its leader, the person, other raters
+  or PMs. Nobody is told about a private rating.
+- **Changing and removing:** the writer may change (`PATCH`) or remove (`DELETE`) a rating for **24 hours** after
+  `created_at`; after that it stays as history: **409 `BAD_STATE`** for the writer. The CEO may change or remove any
+  rating at any time (the CEO rule). Someone else who may read it: **403**. **Every removal** is written in the audit
+  log (`rating_deleted`, target the team (`team`) or the person (`user`), changes: the score, kind, reason and who wrote
+  it), and so is the CEO changing someone else's (`rating_changed`, before → after; the rating gets `edited_by`).
+- **Custom roles** (section 17.1): the action `give_ratings` («التقييمات السريعة للفرق والأشخاص», default: pm,
+  monitor). A role without it gets **403** on both `POST` calls, and `can_rate: false`.
+- Read-only mode (section 17) refuses the three changing calls (423) like any other change.
+
+**Calls:**
+
+| Call | Answer, rules |
+|---|---|
+| `GET /teams/ratings/summary` | `[{ team, member_count, ratings: RatingSummary \| null, can_rate }]`: the teams this person may see (see the table); `ratings` is null when they may not read the team's ratings, and counts only the ratings they may read (private ones only for the CEO and their writer). Declare it before `/teams/:id` (or keep `:id` numeric). |
+| `GET /teams/:id` | `{ team, members: User[], can_see_ratings, tasks: {open, late, blocked, done} \| null }`. Members are the active users with this `team_id`, the leader first. `tasks`: the members' tasks now, over the projects this person may see (done = a status of tone `done`; late = not done and `due` before today; blocked = tone `blocked`), only for the jobs that see the reports (ceo, pm, monitor, lead); null for others. A team they may not see: **404**. |
+| `GET /teams/:id/ratings` | `{ items: Rating[], can_rate }`, newest first, only the ones they may read. **404** for a team they may not see; **403** when they may see the team but not its ratings (the admin; a PM for a team outside their projects). |
+| `POST /teams/:id/ratings` | Body `RatingInput` → the new `Rating`. **403** for who may not rate it; **422** per field (`score`, `reason_type`, `reason`, `period`, `project_id`: a project this person may see). Unless private: notify the team's leader `team_rated`. |
+| `GET /people/ratings/summary` | `[{ user_id, ratings: RatingSummary, can_rate }]`: every active person (not the CEO or the admin) whose ratings this person may read. The performance page shows them in its «التقييم» column. |
+| `GET /people/:id/ratings` | `{ items, can_rate }` like a team's. Unknown user **404**; not allowed **403**. |
+| `POST /people/:id/ratings` | Like a team's. Unless private: notify the person `person_rated` (it opens `/performance/:id#ratings`). |
+| `PATCH /ratings/:id` | Body `RatingInput` → the changed `Rating` (`edited_at`). A private rating made visible notifies then. **404** if they may not read it, **403** / **409** as above. |
+| `DELETE /ratings/:id` | Removes it (an audit line). **404** / **403** / **409** as above. |
+
+**Notifications** (section 7): `team_rated` and `person_rated` are **not required** (people may turn them off), and the
+CEO's table of who gets what lists them like the others.
+
+**Where it shows:** `/teams` (the list: leader, people, average and trend, the last rating, "Rate"; a menu item for the
+ceo, pm and monitor), `/teams/:id` (people, the task numbers, the ratings: average, trend, by kind of reason, the list),
+the performance page (the team cards and an «التقييم» column per person, each with "Rate"), the person's performance
+page (a «تقييمات سريعة» section apart from the periodic reviews), and the monitoring officer's dashboard ("Rate a
+team"). Every team name on the dashboard, the performance page, the reports and the admin's teams opens `/teams/:id`.
+
+## 21. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
 the review criteria and who reviews whom (13), the sign-in lock and backups (14), how long the audit log keeps IP
-addresses and devices (14), GitHub one-way or two-way (15).
+addresses and devices (14), GitHub one-way or two-way (15), who gives and reads quick ratings and
+the 24-hour window to change one (20).

@@ -78,6 +78,7 @@ src/
 │   ├── chat/         project, team, private and group chats: replies, @mentions, files, unread counts
 │   ├── performance/  per person and team over a period, review criteria (CEO), reviews and their trend
 │   ├── profile/      my profile and my picture: pick, crop, the small square the browser sends
+│   ├── ratings/      quick ratings of teams and people (a score and a reason, any time), the teams list and team pages
 │   ├── reports/      the CEO dashboard and the reports (by project, team and person, sprint), CSV download
 │   ├── projects/     the projects list, project setup (members, statuses, phases, sprints, history), sprint rules, templates, counts
 │   ├── bugs/         the bug tracker: report, the fix flow, reports
@@ -102,7 +103,7 @@ tests/
 3. `shared/` never imports a feature. The direction is `app → features → shared`.
 4. Each feature owns its `api.ts`, `mock.ts` and `types.ts`.
 
-Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements` and `auth`; `performance` uses `projects` and `auth`; `admin` uses `auth` and `profile` (`profile` uses no feature); `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
+Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `tasks` uses `attachments`, `projects` and `auth`; `chat` uses `attachments` and `auth`; `reports` uses `bugs`, `projects`, `announcements`, `ratings` and `auth`; `performance` uses `ratings`, `projects` and `auth`; `ratings` uses `projects` and `auth`; `admin` uses `auth` and `profile` (`profile` uses no feature); `advanced` uses `admin`, `bugs`, `reports` and `notifications` (nothing uses it but `app/`); `projects`, `tasks` and `bugs` use `github` (it uses no feature); `attachments` uses `projects` and `auth`; `projects`,
 `notifications` and `announcements` use `auth`. Never the other way, so there is no loop.
 
 **How data flows:**
@@ -143,6 +144,10 @@ Between features: `bugs` uses `tasks`, `attachments`, `projects` and `auth`; `ta
   on anyone and problems at `/monitoring` (or builds a report from the numbers at `/monitoring/report`), and sends any
   of them to the CEO. Every other job sends the CEO requests at `/requests` (nobody starts a chat with the CEO). The CEO
   answers in `/inbox`: "To handle", and "Done", the archive kept to read again.
+- **Quick ratings** (`src/features/ratings`): the monitoring officer (and the CEO; a PM in their own projects) rates any team
+  or person at any time, for any reason: five labelled steps (ضعيف … ممتاز), a kind of reason («سبب آخر» always there),
+  the reason in her words, visible or private. They show on `/teams`, each team's page `/teams/:id`, the performance page
+  and each person's page, apart from the periodic reviews (docs/backend.md section 20).
 - **Quick search** (`src/features/search`, Ctrl+K or the top bar): pages, projects, tasks, bugs, announcements and
   people, only what the person may see (docs/backend.md section 18).
 - **Links everywhere:** numbers, rows and names open their pages (a person's name only when the viewer may open their
