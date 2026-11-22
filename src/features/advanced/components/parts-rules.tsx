@@ -211,7 +211,7 @@ export function TasksPart(c: Ctx) {
         <FlagRow
           c={c}
           label={tr("يعيد الموظف فتح مهمته المنتهية", "An employee may reopen their finished task")}
-          hint={tr("متوقف: يعيدها مدير المشروع أو قائد الفريق فقط", "Off: only the PM or a team leader moves it back")}
+          hint={tr("متوقف: يعيدها مدير القسم أو قائد الفريق فقط", "Off: only the department manager or a team leader moves it back")}
           value={t.employee_reopen}
           def={D.tasks.employee_reopen}
           put={(employee_reopen) => setT({ employee_reopen })}

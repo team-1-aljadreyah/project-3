@@ -6,7 +6,7 @@ import { MaybeLink } from "./maybe-link";
 
 /**
  * A person's name that opens their performance page when the signed-in person may open it (personHref), else plain
- * text. `projects`: the projects around it (a project manager's links need them). `cover`: the link covers the nearest
+ * text. `projects`: the projects around it (a department manager's links need them). `cover`: the link covers the nearest
  * `relative` box (a whole row).
  */
 export function PersonName({

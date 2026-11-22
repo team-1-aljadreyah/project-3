@@ -1,10 +1,11 @@
-import { FileText, FolderKanban, HandHelping, MessageSquareHeart, Send, TriangleAlert, User, Users } from "lucide-react";
+import { Check, FileText, FolderKanban, HandHelping, MessageSquareHeart, Send, TriangleAlert, User, Users } from "lucide-react";
+import { useRef } from "react";
 import type { StatusTone } from "@/shared/api/types";
 import { isCeo } from "@/shared/lib/access";
 import { useFmt } from "@/shared/lib/i18n";
 import { useSession } from "@/shared/lib/session";
 import { cn } from "@/shared/lib/utils";
-import { MaybeLink, Pill } from "@/shared/ui";
+import { MaybeLink, Pill, PrintButton } from "@/shared/ui";
 import type { MonitorNote, ReportFacts } from "../types";
 import { KIND } from "./note-dialog";
 
@@ -12,8 +13,10 @@ const KIND_ICON = { report: FileText, feedback: MessageSquareHeart, problem: Tri
 const ABOUT_ICON = { team: Users, person: User, project: FolderKanban, general: FileText };
 const KIND_TONE: Record<MonitorNote["kind"], StatusTone> = { report: "testing", feedback: "done", problem: "blocked", request: "todo" };
 
-/** Where a note stands with the CEO, in words and a colour. */
+/** Where a note stands: with the monitoring officer (requests), answered by her, or with the CEO. */
 export function ceoStateOf(note: MonitorNote): { ar: string; en: string; tone: StatusTone } | null {
+  if (note.triage === "pending") return { ar: "عند مسؤول المتابعة", en: "With the monitoring officer", tone: "todo" };
+  if (note.triage === "answered") return { ar: "أجاب عنه مسؤول المتابعة", en: "Answered by the monitoring officer", tone: "done" };
   if (!note.sent_at) return null;
   if (note.ceo_state === "done") return { ar: "أنجزها المدير التنفيذي", en: "Done by the CEO", tone: "done" };
   if (note.ceo_state === "seen") return { ar: "اطّلع عليها", en: "Seen", tone: "review" };
@@ -71,8 +74,12 @@ export function NoteCard({
   const aboutHref = !opensAll || !note.about.id ? undefined : note.about.type === "project" ? `/projects/${note.about.id}` : note.about.type === "person" ? `/performance/${note.about.id}` : note.about.type === "team" ? `/reports?tab=people&team=${note.about.id}` : undefined;
   // Above the card's own button (which covers the card), so these links get the click.
   const inner = "relative z-10";
+  const box = useRef<HTMLElement>(null);
+  const mine = viewer?.id === note.author_id;
+  // Who it went to, with who opened it: for its writer and the CEO.
+  const showRecipients = !!note.shared_with?.length && (mine || (!!viewer && isCeo(viewer)));
   return (
-    <article className={cn("relative flex flex-col gap-3 rounded-xl border border-line bg-card p-4", onToggle && "hover:border-accent")}>
+    <article ref={box} className={cn("relative flex flex-col gap-3 rounded-xl border border-line bg-card p-4", onToggle && "hover:border-accent")}>
       <header className="flex flex-wrap items-center gap-2 text-xs text-muted">
         <span className={cn("flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-ink")}>
           <Icon size={16} aria-hidden="true" />
@@ -89,6 +96,7 @@ export function NoteCard({
           {author && `${author} · `}
           {ago(note.sent_at ?? note.created_at)}
         </span>
+        <PrintButton compact target={() => box.current} className={inner} />
       </header>
       {(note.subject || note.people?.length) && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
@@ -128,6 +136,43 @@ export function NoteCard({
       {open && (
         <p dir="auto" className="text-sm leading-relaxed whitespace-pre-line text-muted">
           {note.body}
+        </p>
+      )}
+      {/* The monitoring officer's note to the CEO when she forwarded a request (not for the person who asked). */}
+      {note.forward_note && !mine && (
+        <div className="rounded-lg border-s-4 border-line-strong bg-card-2 px-3 py-2 text-sm">
+          <b className="text-xs font-medium text-muted">{tr("ملاحظة مسؤول المتابعة للمدير التنفيذي", "The monitoring officer's note to the CEO")}</b>
+          <p dir="auto" className="mt-1 whitespace-pre-line">
+            {note.forward_note}
+          </p>
+        </div>
+      )}
+      {note.monitor_reply && (
+        <div className="rounded-lg border-s-4 border-accent bg-card-2 px-3 py-2 text-sm">
+          <b className="text-xs font-medium text-accent-ink">{tr("رد مسؤول المتابعة", "The monitoring officer's answer")}</b>
+          <p dir="auto" className="mt-1 whitespace-pre-line">
+            {note.monitor_reply}
+          </p>
+        </div>
+      )}
+      {showRecipients && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+          <span>{tr("أُرسلت أيضاً إلى", "Also sent to")}:</span>
+          {note.shared_with!.map((s) => (
+            <span key={s.id} className="inline-flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5">
+              <span dir="auto" className="text-text">
+                {lang === "en" && s.label_en ? s.label_en : s.label}
+              </span>
+              {s.seen_at ? (
+                <span title={tr("فتحها", "Opened it")} className="inline-flex items-center text-success">
+                  <Check size={12} aria-hidden="true" />
+                  <span className="sr-only">{tr("فتحها", "opened it")}</span>
+                </span>
+              ) : (
+                <span className="text-faint">{tr("لم تُفتح", "not opened")}</span>
+              )}
+            </span>
+          ))}
         </p>
       )}
       {note.ceo_reply && (

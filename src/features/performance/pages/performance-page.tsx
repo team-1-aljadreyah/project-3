@@ -7,7 +7,7 @@ import { usePageTitle } from "@/shared/lib/page-title";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, today as todayIso } from "@/shared/lib/utils";
-import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, ProgressBar, Skeleton } from "@/shared/ui";
+import { Avatar, ButtonLink, Empty, ErrorBox, LoadingBlock, PrintButton, ProgressBar, Skeleton } from "@/shared/ui";
 import { performanceApi } from "../api";
 import { PeriodPicker } from "../components/period-picker";
 import { PersonView } from "../components/person-view";
@@ -55,6 +55,7 @@ function PeopleList() {
             <SlidersHorizontal size={15} aria-hidden="true" />
             {tr("معايير التقييم", "Review criteria")}
           </ButtonLink>
+          <PrintButton target={() => null} />
         </div>
       </div>
 

@@ -51,7 +51,7 @@ export function ProjectFields({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
-          label={tr("مدير المشروع", "Project manager")}
+          label={tr("مدير القسم", "Department manager")}
           htmlFor="project-pm"
           error={errors.pm_id}
           hint={canPickPm ? undefined : tr("يغيّره المدير التنفيذي فقط.", "Only the CEO can change it.")}

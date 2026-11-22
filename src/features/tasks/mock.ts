@@ -247,7 +247,7 @@ export const tasksMock: TasksApi = {
   async setDependencies(id, dependsOn) {
     const user = currentUser();
     const { task, project } = taskFor(user, id);
-    if (!canManageTasks(user, project)) return fail(403, "FORBIDDEN", "يحدد ما تنتظره المهمة مديرُ المشروع وقادة الفرق.", "Only the PM and team leaders set what a task waits for.");
+    if (!canManageTasks(user, project)) return fail(403, "FORBIDDEN", "يحدد ما تنتظره المهمة مديرُ المشروع وقادة الفرق.", "Only the department manager and team leaders set what a task waits for.");
     const all = data().tasks.filter((t) => t.project_id === project.id);
     const next = [...new Set(dependsOn)];
     if (next.length > LIMITS.dependencies) invalid("depends_on", `مهمة واحدة تنتظر ${LIMITS.dependencies} مهام على الأكثر.`, `A task can wait for at most ${LIMITS.dependencies} tasks.`);

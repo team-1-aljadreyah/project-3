@@ -17,11 +17,11 @@ const GROUP_MAKERS: Role[] = ["monitor", "pm", "lead"];
 
 /** Who may make a group chat. */
 /**
- * Start a private chat with someone. Nobody starts a private chat with the CEO (the client, 21 November 2026: "no one can
- * create a chat with him unless the CEO does it"): they send a request instead (/requests), answered in the CEO's inbox.
- * The CEO may start a chat with anyone.
+ * Start a private chat with someone. Only the monitoring officer talks to the CEO directly (the client, 22 November 2026:
+ * "only the monitor can speak directly with the CEO in the chat"); everyone else sends a request (/requests), which
+ * reaches the monitoring officer first. The CEO may start a chat with anyone, and that person may then answer.
  */
-export const canStartDirect = (user: Pick<User, "role">, other: Pick<User, "role">) => isCeo(user) || !isCeo(other);
+export const canStartDirect = (user: Pick<User, "role">, other: Pick<User, "role">) => isCeo(user) || !isCeo(other) || user.role === "monitor";
 
 /** Write in a private chat: always, except with the CEO, where you may answer only once the CEO has written. */
 export const canWriteInDirect = (user: Pick<User, "role">, other: Pick<User, "role">, otherHasWritten: boolean) => canStartDirect(user, other) || otherHasWritten;
