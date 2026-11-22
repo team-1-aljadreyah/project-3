@@ -126,3 +126,24 @@ test("on a phone: the list, then the chat with a way back", async ({ page }) => 
   await page.getByRole("link", { name: "رجوع إلى المحادثات" }).click();
   await expect(chatList(page)).toBeVisible();
 });
+
+test("a picture sent in a chat shows as a preview and opens in the viewer, with a download button", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  // A real 1×1 PNG (the server checks the file's first bytes).
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  await page.locator('input[type="file"]').setInputFiles({ name: "لقطة-الشاشة.png", mimeType: "image/png", buffer: png });
+  await page.getByLabel("اكتب رسالة").fill("هذه لقطة الشاشة");
+  await page.getByRole("button", { name: "أرسل" }).click();
+  const sent = page.getByRole("list", { name: "الرسائل" }).getByRole("listitem").filter({ hasText: "هذه لقطة الشاشة" });
+
+  // The picture itself is in the message, and pressing it opens the viewer instead of downloading.
+  await sent.getByRole("button", { name: "اعرض الصورة لقطة-الشاشة.png" }).click();
+  const viewer = page.getByRole("dialog", { name: "صورة: لقطة-الشاشة.png" });
+  await expect(viewer.getByRole("img", { name: "لقطة-الشاشة.png" })).toBeVisible();
+  await expect(viewer.getByRole("link", { name: "نزّل الصورة" })).toHaveAttribute("download", "لقطة-الشاشة.png");
+  await viewer.getByRole("button", { name: "كبّر" }).click();
+  await expect(viewer.getByRole("button", { name: "صغّر" })).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+  await expect(viewer).toBeHidden();
+});

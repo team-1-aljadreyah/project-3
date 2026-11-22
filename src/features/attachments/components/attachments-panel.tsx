@@ -8,6 +8,7 @@ import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { Button, Dialog, errorText, IconButton, Skeleton, useToast } from "@/shared/ui";
 import { attachmentsApi } from "../api";
+import { ImageViewer } from "./image-viewer";
 import { ACCEPT, fileProblem, isImage, MAX_FILE_BYTES, sizeText } from "../rules";
 import type { Attachment, AttachmentOwner } from "../types";
 
@@ -27,6 +28,7 @@ export function AttachmentsPanel({ owner, canAdd, canManage }: { owner: Attachme
   const [problems, setProblems] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const [removing, setRemoving] = useState<Attachment | null>(null);
+  const [viewing, setViewing] = useState<number | null>(null);
 
   /** Uploads the chosen files one after another; files that can't go are listed with the reason. */
   const add = async (files: File[]) => {
@@ -57,6 +59,8 @@ export function AttachmentsPanel({ owner, canAdd, canManage }: { owner: Attachme
 
   const people = new Map((load.data?.[1] ?? []).map((u) => [u.id, u]));
   const files = load.data?.[0] ?? [];
+  // The pictures among them open in the viewer, one after the other.
+  const pictures = files.filter((f) => isImage(f.mime));
 
   return (
     <div className="flex flex-col gap-3">
@@ -71,8 +75,18 @@ export function AttachmentsPanel({ owner, canAdd, canManage }: { owner: Attachme
             const by = people.get(a.uploaded_by);
             return (
               <li key={a.id} className="flex items-center gap-2 rounded-lg border border-line bg-card-2 pe-1.5">
-                {/* The whole row downloads the file (click anywhere); the remove button sits apart. */}
-                <a href={a.url} download={a.name} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 hover:bg-chip">
+                {/* The whole row opens the file (click anywhere): a picture in the viewer, anything else downloads. The
+                    remove button sits apart. */}
+                <a
+                  href={a.url}
+                  download={a.name}
+                  onClick={(e) => {
+                    if (!isImage(a.mime)) return;
+                    e.preventDefault();
+                    setViewing(pictures.findIndex((p) => p.id === a.id));
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 hover:bg-chip"
+                >
                   {isImage(a.mime) ? (
                     // A user's file (a data: link in the demo, a short-lived link later): next/image can't optimise those.
                     // eslint-disable-next-line @next/next/no-img-element
@@ -161,6 +175,15 @@ export function AttachmentsPanel({ owner, canAdd, canManage }: { owner: Attachme
         </ul>
       )}
 
+      <ImageViewer
+        images={pictures.map((f) => {
+          const by = people.get(f.uploaded_by);
+          return { id: f.id, url: f.url, name: f.name, size: f.size, caption: by ? (lang === "en" && by.name_en ? by.name_en : by.name) : undefined };
+        })}
+        index={viewing}
+        onIndex={setViewing}
+        onClose={() => setViewing(null)}
+      />
       <Dialog
         open={!!removing}
         onClose={() => setRemoving(null)}

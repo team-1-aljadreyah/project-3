@@ -1,5 +1,6 @@
 import { FileText, Reply } from "lucide-react";
-import { isImage } from "@/features/attachments";
+import { useState } from "react";
+import { ImageViewer, isImage } from "@/features/attachments";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -38,7 +39,10 @@ export function MessageItem({
   // Mentions are written with the Arabic name (as they were typed), so both names are looked for.
   const mentionNames = m.mentions.flatMap((id) => [people.get(id)?.name ?? "", people.get(id)?.name_en ?? ""]);
   const voices = m.files.filter((f) => f.voice);
-  const files = m.files.filter((f) => !f.voice);
+  const files = m.files.filter((f) => !f.voice && !isImage(f.mime));
+  // Pictures show as a preview and open in the viewer (not a download).
+  const pictures = m.files.filter((f) => !f.voice && isImage(f.mime));
+  const [viewing, setViewing] = useState<number | null>(null);
 
   return (
     <li id={`msg-${m.id}`} className="group flex gap-2.5 rounded-lg px-2 py-1.5 target:bg-accent-soft hover:bg-card-2">
@@ -83,20 +87,43 @@ export function MessageItem({
             download={{ name: f.name, size: f.size }}
           />
         ))}
+        {pictures.length > 0 && (
+          <ul className="flex flex-wrap gap-2" aria-label={tr("صور", "Pictures")}>
+            {pictures.map((f, i) => (
+              <li key={f.id}>
+                <button
+                  type="button"
+                  onClick={() => setViewing(i)}
+                  aria-label={tr(`اعرض الصورة ${f.name}`, `View the picture ${f.name}`)}
+                  className="group block overflow-hidden rounded-xl border border-line bg-card-2 transition-colors hover:border-accent"
+                >
+                  {/* A user's file (a data: link in the demo, a short-lived link later): next/image can't optimise those. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={f.url}
+                    alt=""
+                    loading="lazy"
+                    className={cn("block object-cover transition-transform duration-300 group-hover:scale-[1.02]", pictures.length === 1 ? "max-h-72 w-auto max-w-[min(18rem,70vw)]" : "size-32")}
+                  />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <ImageViewer
+          images={pictures.map((f) => ({ id: f.id, url: f.url, name: f.name, size: f.size, caption: `${author ? (lang === "en" && author.name_en ? author.name_en : author.name) : nameOf(m.author_id)} · ${dateTime(m.created_at)}` }))}
+          index={viewing}
+          onIndex={setViewing}
+          onClose={() => setViewing(null)}
+        />
         {files.length > 0 && (
           <ul className="flex flex-wrap gap-2">
             {files.map((f) => (
               <li key={f.id}>
                 <a href={f.url} download={f.name} className="flex items-center gap-2 rounded-lg border border-line bg-card p-1.5 pe-3 text-xs hover:border-accent">
-                  {isImage(f.mime) ? (
-                    // A user's file (a data: link in the demo, a short-lived link later): next/image can't optimise those.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={f.url} alt="" className="size-14 rounded-md object-cover" />
-                  ) : (
-                    <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-md bg-chip text-muted">
-                      <FileText size={16} />
-                    </span>
-                  )}
+                  <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-md bg-chip text-muted">
+                    <FileText size={16} />
+                  </span>
                   <span dir="auto" className="max-w-40 truncate">
                     {f.name}
                   </span>
