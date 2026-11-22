@@ -1,4 +1,5 @@
 import { Download, EllipsisVertical, Pause, Play } from "lucide-react";
+import { renewUrl, stableUrl } from "@/shared/lib/stable-url";
 import { useEffect, useId, useRef, useState } from "react";
 import { sizeText } from "@/features/attachments";
 import { useFmt } from "@/shared/lib/i18n";
@@ -47,6 +48,10 @@ export function VoiceNote({
   const total = duration > 0 ? duration : 0;
   const progress = total ? Math.min(1, time / total) : 0;
   const missing = !src;
+  // The first link to this recording, kept while it works: the server signs a new one on every answer, and a changed
+  // link made the player start loading again from nothing (shared/lib/stable-url.ts).
+  const [, setRenewals] = useState(0);
+  const url = stableUrl(src);
 
   // While playing, follow the sound every frame (the audio's own event comes only 4 times a second).
   useEffect(() => {
@@ -147,7 +152,7 @@ export function VoiceNote({
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio
         ref={audio}
-        src={src || undefined}
+        src={url || undefined}
         preload="none"
         onLoadedMetadata={() => {
           if (pending.current !== null && audio.current) audio.current.currentTime = pending.current;
@@ -174,6 +179,13 @@ export function VoiceNote({
         }}
         onError={() => {
           if (!src) return;
+          // The kept link ran out: take the fresher one the server sent since, and say nothing yet.
+          if (url !== src) {
+            renewUrl(src);
+            setRenewals((n) => n + 1);
+            setLoading(false);
+            return;
+          }
           setFailed(true);
           setLoading(false);
         }}
@@ -256,7 +268,7 @@ export function VoiceNote({
         <span dir="ltr">{rate}×</span>
       </button>
 
-      {download && src && <DownloadMenu src={src} name={download.name} size={download.size} />}
+      {download && url && <DownloadMenu src={url} name={download.name} size={download.size} />}
     </div>
   );
 }
