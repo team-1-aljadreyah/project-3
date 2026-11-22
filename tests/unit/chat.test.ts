@@ -102,6 +102,24 @@ describe("who sees which chat", () => {
   });
 });
 
+describe("loading a chat a page at a time", () => {
+  it("the newest messages first, then the older ones before a message, always oldest first", async () => {
+    as(5);
+    // 40 more messages in the project chat, straight into the demo data (sending each one would be slow).
+    const db = getDb();
+    for (let i = 1; i <= 40; i++) db.messages.push({ id: ++db.seq.message, chat: "p-1", author_id: 2, body: `رسالة ${i}`, mentions: [], created_at: new Date().toISOString() });
+    const all = await api.messages("p-1");
+    const newest = await api.messages("p-1", { limit: 30 });
+    expect(newest).toHaveLength(30);
+    expect(newest.map((m) => m.id)).toEqual(all.slice(-30).map((m) => m.id));
+    const older = await api.messages("p-1", { before: newest[0].id, limit: 30 });
+    expect(older.map((m) => m.id)).toEqual(all.slice(-60, -30).map((m) => m.id));
+    // The oldest page is shorter than the limit: nothing older is left.
+    const first = await api.messages("p-1", { before: all[0].id + 1, limit: 30 });
+    expect(first.map((m) => m.id)).toEqual([all[0].id]);
+  });
+});
+
 describe("writing", () => {
   it("sends, answers a message, and notifies only members who are mentioned", async () => {
     as(6);

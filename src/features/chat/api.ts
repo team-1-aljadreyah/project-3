@@ -1,12 +1,16 @@
 // The internal chat. Pages call `chatApi`; the .env switch decides if it is the real server or the demo backend
 // (./mock.ts). Both follow `ChatApi`. Files go through the attachments feature (owner type "message").
 import { http, lazyApi } from "@/shared/api";
-import type { ChatKey, Conversation, GroupChange, GroupInput, Message, MessageInput } from "./types";
+import type { ChatKey, Conversation, GroupChange, GroupInput, Message, MessageInput, MessagePage } from "./types";
 
 export interface ChatApi {
   /** This person's chats: their projects, their team, their private chats; the latest message first. */
   conversations(): Promise<Conversation[]>;
-  messages(key: ChatKey): Promise<Message[]>;
+  /**
+   * A chat's messages, oldest first. With `limit`: only the newest `limit` (the chat opens with those); with `before`
+   * too: the `limit` messages just older than that message id (scrolling up loads them). Without both: all of them.
+   */
+  messages(key: ChatKey, page?: MessagePage): Promise<Message[]>;
   send(key: ChatKey, input: MessageInput): Promise<Message>;
   /** This person has read everything in the chat so far. */
   markRead(key: ChatKey): Promise<void>;
@@ -24,7 +28,7 @@ const data = <T>(p: Promise<{ data: T }>) => p.then((r) => r.data);
 
 export const chatHttp: ChatApi = {
   conversations: () => data(http.get<Conversation[]>("/chats")),
-  messages: (key) => data(http.get<Message[]>(`/chats/${key}/messages`)),
+  messages: (key, page) => data(http.get<Message[]>(`/chats/${key}/messages`, { params: page })),
   send: (key, input) => data(http.post<Message>(`/chats/${key}/messages`, input)),
   markRead: (key) => data(http.post<void>(`/chats/${key}/read`)),
   startDirect: (userId) => data(http.post<Conversation>("/chats/direct", { user_id: userId })),

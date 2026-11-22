@@ -54,7 +54,7 @@ export function Composer({
     if (voiceState === "recording" || voiceState === "preview") wasVoice.current = true;
     else if (voiceState === "idle" && wasVoice.current) {
       wasVoice.current = false;
-      box.current?.focus();
+      box.current?.focus({ preventScroll: true });
     }
   }, [voiceState]);
   // A microphone problem shows where the other errors show, with how to fix it.
@@ -78,7 +78,7 @@ export function Composer({
   useLayoutEffect(() => {
     const el = box.current;
     if (caret.current === null || !el) return;
-    el.focus();
+    el.focus({ preventScroll: true });
     el.selectionStart = el.selectionEnd = caret.current;
     caret.current = null;
   }, [text]);
@@ -101,7 +101,7 @@ export function Composer({
       setError(errorText(e, tr));
     } finally {
       setBusy(false);
-      box.current?.focus();
+      box.current?.focus({ preventScroll: true });
     }
   };
 
