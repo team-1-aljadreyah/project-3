@@ -37,6 +37,7 @@ const CHECKS: Record<string, () => boolean> = {
   // admin
   canAdminister: () => admin.canAdminister(ceo),
   canSeeAudit: () => admin.canSeeAudit(ceo),
+  canManageSessions: () => admin.canManageSessions(ceo),
   // advanced settings (the CEO only)
   canUseAdvancedSettings: () => advanced.canUseAdvancedSettings(ceo),
   // announcements

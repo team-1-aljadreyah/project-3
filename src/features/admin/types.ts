@@ -8,6 +8,8 @@ export interface AdminUser extends User {
   /** Until when the account is locked after too many wrong passwords. */
   locked_until?: string;
   last_login_at?: string;
+  /** When the account was made (the never-signed-in check counts from it). Older servers may not send it. */
+  created_at?: string;
 }
 
 export interface UserInput {
@@ -53,6 +55,111 @@ export interface DataHealth {
   files: number;
   files_bytes: number;
   audit_entries: number;
+  /** The storage used by each kind of file (docs/backend.md section 14). Optional: older servers don't send it. */
+  storage?: StorageUse;
+  /** How much the server may store in all, in bytes (the "storage over 80%" check). */
+  storage_quota_bytes?: number;
+  /** The last backup as the server reports it (DevOps runs it). */
+  backup?: BackupState;
+  /** The server's own version, when it says it. */
+  server_version?: string;
+}
+
+/** Storage by kind, in bytes, with how many files of each. */
+export interface StorageUse {
+  attachments_bytes: number;
+  attachments: number;
+  pictures_bytes: number;
+  pictures: number;
+  /** Voice messages in chat (0 until the server keeps them). */
+  voice_bytes: number;
+  voice: number;
+  /** The audit log's table, roughly. */
+  audit_bytes: number;
+}
+
+export interface BackupState {
+  /** When the last backup ended. None: there has been none. */
+  at?: string;
+  status: "ok" | "failed" | "running" | "unknown";
+  size_bytes?: number;
+  /** Where it went or what failed, in the server's words (shown as written). */
+  note?: string;
+}
+
+/** One sign-in session (a token the server gave at sign-in) that is still in use. */
+export interface AdminSession {
+  id: string;
+  user_id: number;
+  /** Where the sign-in came from, and the browser's User-Agent (cut to 300), as the server saw them. */
+  ip?: string;
+  user_agent?: string;
+  started_at: string;
+  /** The last request made with it. */
+  last_seen_at: string;
+  /** The session making this request (the admin's own): it can't be ended from the list. */
+  current?: boolean;
+}
+
+/** `GET /admin/security/summary`: failed sign-ins of the last days, locked accounts, accounts never used. */
+export interface SecuritySummary {
+  /** How many days back the failed sign-ins are counted (7). */
+  days: number;
+  failed_total: number;
+  /** By account, the most first. `user_id` when the email is an account's; `label` is what was typed (cut). */
+  by_account: { user_id?: number; label: string; count: number; last_at: string; ips: string[] }[];
+  /** By address, the most first; `accounts` = how many different accounts were tried from it. */
+  by_ip: { ip: string; count: number; last_at: string; accounts: number }[];
+  /** Accounts locked now. */
+  locked: { user_id: number; locked_until: string; failed: number }[];
+  /** Active accounts that have never signed in, the oldest first. */
+  never_signed_in: { user_id: number; created_at?: string }[];
+  /** The lock rules in force (they are changed in the settings). */
+  lock_after: number;
+  lock_minutes: number;
+}
+
+/** One row of an accounts import, as read from the CSV (every value is text; an empty cell is ""). */
+export interface ImportRow {
+  name: string;
+  name_en: string;
+  email: string;
+  phone: string;
+  /** The job: a key ("employee") or its name in Arabic or English. Empty = employee. */
+  role: string;
+  title: string;
+  /** A team's name in Arabic or English. Empty = no team. */
+  team: string;
+}
+
+/** Why a row can't be imported (the page says it in words). */
+export type ImportProblem =
+  | "name_missing"
+  | "name_too_long"
+  | "email_missing"
+  | "email_bad"
+  | "email_twice"
+  | "email_taken"
+  | "role_unknown"
+  | "role_not_allowed"
+  | "title_too_long"
+  | "team_unknown";
+
+/** The check of one row: its problems (none = it can be created) and, after a real run, the new account's id. */
+export interface ImportCheck {
+  /** The row's place in the list sent (1 = the first row under the column names). */
+  line: number;
+  /** `other_line`: for email_twice, the first line with the same email. */
+  problems: { field: keyof ImportRow; problem: ImportProblem; other_line?: number }[];
+  user_id?: number;
+}
+
+/** `POST /admin/users/import`: each row checked; with `dry_run: false` the valid ones are created. */
+export interface ImportResult {
+  dry_run: boolean;
+  rows: ImportCheck[];
+  created: number;
+  skipped: number;
 }
 
 /** The kinds of action the audit log records. */
@@ -75,7 +182,10 @@ export type AuditAction =
   | "criteria_changed"
   | "criteria_approved"
   | "review_finalized"
-  | "picture_removed";
+  | "picture_removed"
+  | "session_ended"
+  | "sessions_ended"
+  | "users_imported";
 
 /** The part of the platform an action is about (the audit log shows it as a small label and filters by it). */
 export type AuditKind = "account" | "team" | "settings" | "signin" | "project" | "announcement" | "review";
@@ -86,7 +196,7 @@ export interface AuditEntry {
   /** Who did it. None for a failed sign-in (nobody is signed in yet). */
   actor_id?: number;
   action: AuditAction;
-  target: { type: "user" | "team" | "settings" | "project" | "sprint" | "template" | "announcement" | "criteria" | "review" | "login"; id?: number; label: string };
+  target: { type: "user" | "team" | "settings" | "project" | "sprint" | "template" | "announcement" | "criteria" | "review" | "login" | "import"; id?: number; label: string };
   /** What data changed: field, old and new value as text. */
   changes?: { field: string; from?: string; to?: string }[];
   at: string;

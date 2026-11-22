@@ -2,16 +2,18 @@
 // (docs/backend.md, section 14). Only the demo build loads it.
 import { audit } from "@/mock/audit";
 import { commit, getDb } from "@/mock/db";
-import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
+import { browserSessionId, currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import type { Team, User } from "@/shared/api/types";
 import { matches } from "@/shared/lib/utils";
 import type { AdminApi } from "./api";
-import { ipMatches, searchText } from "./audit-detail";
+import { deviceWords, ipMatches, parseUserAgent, searchText, shortSession } from "./audit-detail";
 import { ACTION_KIND, ACTION_WORDS } from "./audit-words";
-import { ADMIN_LIMITS as L, canAdminister, canSeeAudit, isEmail, RELATED_LIMIT, ROLE_KEYS, settingsProblem } from "./rules";
+import { checkImportRows, IMPORT_LIMIT, roleFromText, teamFromText } from "./csv-import";
+import { ADMIN_LIMITS as L, canAdminister, canManageSessions, canSeeAudit, isEmail, isLocked, RELATED_LIMIT, ROLE_KEYS, settingsProblem } from "./rules";
+import { activeSessions, endSessionProblem, securitySummary, sessionsToEnd, type SessionRecord } from "./security";
 import { dayOf } from "./summary";
-import type { AuditEntry, TeamInput, UserInput, UserPatch } from "./types";
+import type { AdminUser, AuditEntry, ImportCheck, TeamInput, UserInput, UserPatch } from "./types";
 
 function admin() {
   const user = currentUser();
@@ -78,13 +80,7 @@ function joinLead(team: Team, leadId: number | null | undefined, actorId: number
 export const adminMock: AdminApi = {
   async users() {
     admin();
-    const db = getDb();
-    return wait(
-      db.users.map((u) => {
-        const login = db.logins.find((l) => l.user_id === u.id);
-        return { ...u, failed_logins: login?.failed ?? 0, locked_until: login?.locked_until, last_login_at: login?.last_login_at };
-      }),
-    );
+    return wait(adminUsers());
   },
 
   async createUser(input) {
@@ -170,6 +166,8 @@ export const adminMock: AdminApi = {
     if (patch.active !== undefined && patch.active !== user.active) {
       user.active = patch.active;
       audit(actor.id, patch.active ? "user_restarted" : "user_stopped", target);
+      // A stopped account is signed out everywhere at once.
+      if (!patch.active) endSessions(sessionsToEnd(db.sessions ?? [], id, undefined, new Date()), actor.id, "stopped");
     }
     if (patch.unlock) {
       const login = db.logins.find((l) => l.user_id === id);
@@ -251,6 +249,7 @@ export const adminMock: AdminApi = {
       files: db.attachments.length,
       files_bytes: db.attachments.reduce((s, a) => s + a.size, 0),
       audit_entries: db.audit.length,
+      ...demoStorage(),
     });
   },
 
@@ -285,7 +284,171 @@ export const adminMock: AdminApi = {
     const byTarget = newestFirst.filter((e) => sameTarget(e.target) || samePerson(e.target));
     return wait({ ...entry, related_by_actor: byActor.slice(0, RELATED_LIMIT), related_by_target: byTarget.slice(0, RELATED_LIMIT) });
   },
+
+  async sessions() {
+    sessionsAdmin();
+    const current = browserSessionId();
+    return wait(activeSessions(getDb().sessions ?? [], new Date()).map(({ id, user_id, ip, user_agent, started_at, last_seen_at }) => ({ id, user_id, ip, user_agent, started_at, last_seen_at, current: id === current })));
+  },
+
+  async endSession(id) {
+    const actor = sessionsAdmin();
+    const session = (getDb().sessions ?? []).find((s) => s.id === id);
+    if (!session) return fail(404, "NOT_FOUND", "لم يُعثر على الجلسة.", "Session not found.");
+    const problem = endSessionProblem(session, browserSessionId(), new Date());
+    if (problem === "ended") return fail(404, "NOT_FOUND", "انتهت هذه الجلسة من قبل.", "This session has already ended.");
+    if (problem === "current") return fail(409, "BAD_STATE", "هذه جلستك أنت: للخروج استعمل «تسجيل الخروج» من قائمة حسابك.", "This is your own session: to leave, use Sign out in your account menu.");
+    endSessions([session], actor.id, "admin");
+    commit();
+    return wait(undefined);
+  },
+
+  async endUserSessions(userId) {
+    const actor = sessionsAdmin();
+    const db = getDb();
+    if (!db.users.some((u) => u.id === userId)) return fail(404, "NOT_FOUND", "لم يُعثر على المستخدم.", "User not found.");
+    const list = sessionsToEnd(db.sessions ?? [], userId, browserSessionId(), new Date());
+    endSessions(list, actor.id, "everywhere");
+    commit();
+    return wait({ ended: list.length });
+  },
+
+  async unlockUser(userId) {
+    const actor = admin();
+    const db = getDb();
+    const user = db.users.find((u) => u.id === userId);
+    if (!user) return fail(404, "NOT_FOUND", "لم يُعثر على المستخدم.", "User not found.");
+    const login = db.logins.find((l) => l.user_id === userId);
+    if (!login || !isLocked(login, nowIso())) return fail(409, "BAD_STATE", "هذا الحساب غير مقفل.", "This account isn't locked.");
+    login.failed = 0;
+    login.locked_until = undefined;
+    audit(actor.id, "user_unlocked", { type: "user", id: userId, label: user.name });
+    commit();
+    return wait(adminUsers().find((u) => u.id === userId)!);
+  },
+
+  async securitySummary() {
+    sessionsAdmin();
+    const db = getDb();
+    return wait(securitySummary(db.audit, adminUsers(), db.settings, new Date()));
+  },
+
+  async importUsers(rows, dryRun) {
+    const actor = admin();
+    if (!Array.isArray(rows) || rows.length === 0) invalid("rows", "لا صفوف في الملف.", "The file has no rows.");
+    if (rows.length > IMPORT_LIMIT) invalid("rows", `الحد ${IMPORT_LIMIT} صف في المرة الواحدة.`, `At most ${IMPORT_LIMIT} rows at a time.`);
+    const db = getDb();
+    const checks: ImportCheck[] = checkImportRows(rows, { emails: db.users.map((u) => u.email), teams: db.teams });
+    if (dryRun) return wait({ dry_run: true, rows: checks, created: 0, skipped: checks.filter((c) => c.problems.length).length });
+    let created = 0;
+    for (const check of checks) {
+      if (check.problems.length) continue;
+      const row = rows[check.line - 1];
+      const team = teamFromText(row.team, db.teams) ?? undefined;
+      const user: User = {
+        id: Math.max(...db.users.map((u) => u.id)) + 1,
+        name: row.name.trim(),
+        name_en: row.name_en.trim() || undefined,
+        email: row.email.trim().toLowerCase(),
+        phone: row.phone.trim() || undefined,
+        role: roleFromText(row.role)!,
+        title: row.title.trim(),
+        team_id: team?.id,
+        active: true,
+      };
+      db.users.push(user);
+      check.user_id = user.id;
+      created++;
+      audit(actor.id, "user_created", { type: "user", id: user.id, label: user.name }, [
+        { field: "role", to: user.role },
+        ...(team ? [{ field: "team", to: team.name }] : []),
+        { field: "source", to: "import" },
+      ]);
+      if (team) notify([user.id], "team_joined", { actor_id: actor.id, data: { note: team.name } });
+    }
+    const skipped = checks.length - created;
+    audit(actor.id, "users_imported", { type: "import", label: `${created} / ${checks.length}` }, [
+      { field: "created", to: String(created) },
+      { field: "skipped", to: String(skipped) },
+    ]);
+    commit();
+    return wait({ dry_run: false, rows: checks, created, skipped });
+  },
 };
+
+/** The users as the admin sees them: with their sign-in record and when each account was made. */
+function adminUsers(): AdminUser[] {
+  const db = getDb();
+  // When an account was made: its "added" line in the log (the seeded people from before the log have none).
+  const made = new Map(db.audit.filter((e) => e.action === "user_created" && e.target.id !== undefined).map((e) => [e.target.id!, e.at]));
+  return db.users.map((u) => {
+    const login = db.logins.find((l) => l.user_id === u.id);
+    const created = made.get(u.id);
+    return { ...u, failed_logins: login?.failed ?? 0, locked_until: login?.locked_until, last_login_at: login?.last_login_at, ...(created ? { created_at: created } : {}) };
+  });
+}
+
+/** Sessions are read and ended by the admin and the CEO only. */
+function sessionsAdmin() {
+  const user = currentUser();
+  if (!canManageSessions(user)) return fail(403, "FORBIDDEN", "الجلسات لمسؤول النظام والمدير التنفيذي.", "Sessions are for the system admin and the CEO.");
+  return user;
+}
+
+/** Ends sessions and logs it: one line for one session (with its device and address), one line for "everywhere". */
+function endSessions(list: SessionRecord[], actorId: number, reason: NonNullable<SessionRecord["end_reason"]>) {
+  if (!list.length) return;
+  const db = getDb();
+  const at = nowIso();
+  for (const s of list) Object.assign(s, { ended_at: at, ended_by: actorId, end_reason: reason });
+  const person = db.users.find((u) => u.id === list[0].user_id);
+  const target = { type: "user" as const, id: list[0].user_id, label: person?.name ?? "-" };
+  const english = (_ar: string, en: string) => en;
+  if (reason === "admin") {
+    const s = list[0];
+    audit(actorId, "session_ended", target, [
+      { field: "session", to: shortSession(s.id) },
+      { field: "device", to: deviceWords(parseUserAgent(s.user_agent), english) },
+      ...(s.ip ? [{ field: "ip", to: s.ip }] : []),
+    ]);
+  } else if (reason === "everywhere") {
+    audit(actorId, "sessions_ended", target, [{ field: "sessions", to: String(list.length) }]);
+  }
+}
+
+/**
+ * The demo's storage by kind: files (voice messages are the audio ones), profile pictures (kept as data: addresses),
+ * the audit log as saved. The quota and the backup are invented here; the real server reports its own.
+ */
+function demoStorage() {
+  const db = getDb();
+  const voice = db.attachments.filter((a) => a.mime.startsWith("audio/"));
+  const files = db.attachments.filter((a) => !a.mime.startsWith("audio/"));
+  const pictures = db.users.filter((u) => u.avatar_url);
+  // A data: address holds base64: 4 letters for 3 bytes.
+  const pictureBytes = pictures.reduce((sum, u) => sum + Math.round(((u.avatar_url!.length - u.avatar_url!.indexOf(",") - 1) * 3) / 4), 0);
+  const storage = {
+    attachments_bytes: files.reduce((sum, a) => sum + a.size, 0),
+    attachments: files.length,
+    pictures_bytes: pictureBytes,
+    pictures: pictures.length,
+    voice_bytes: voice.reduce((sum, a) => sum + a.size, 0),
+    voice: voice.length,
+    audit_bytes: JSON.stringify(db.audit).length,
+  };
+  // The backup ran last night at 02:00 (the night before, when it is not yet 03:00).
+  const backup = new Date();
+  if (backup.getHours() < 3) backup.setDate(backup.getDate() - 1);
+  backup.setHours(2, 0, 0, 0);
+  const used = storage.attachments_bytes + storage.pictures_bytes + storage.voice_bytes + storage.audit_bytes;
+  return {
+    storage,
+    storage_quota_bytes: 5 * 1024 ** 3,
+    backup: { at: backup.toISOString(), status: "ok" as const, size_bytes: Math.round(used * 1.4 + 2_400_000), note: "nightly-backup (demo: invented)" },
+    server_version: "demo",
+  };
+}
+
 
 /** The audit log is read by the admin and the CEO only. */
 function auditReader() {

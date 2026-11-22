@@ -129,6 +129,13 @@ export const FIELD_WORDS: Record<string, { ar: string; en: string }> = {
   due_soon_days: { ar: "تذكير «قريب الموعد» (أيام)", en: "\"Due soon\" reminder (days)" },
   lock_after: { ar: "محاولات خاطئة قبل القفل", en: "Wrong passwords before lock" },
   lock_minutes: { ar: "مدة القفل (دقائق)", en: "Lock length (minutes)" },
+  session: { ar: "الجلسة", en: "Session" },
+  sessions: { ar: "الجلسات المنتهية", en: "Sessions ended" },
+  device: { ar: "الجهاز", en: "Device" },
+  ip: { ar: "عنوان IP", en: "IP address" },
+  source: { ar: "المصدر", en: "Source" },
+  created: { ar: "أُنشئت", en: "Created" },
+  skipped: { ar: "تُركت", en: "Skipped" },
 };
 
 export const fieldName = (field: string, tr: Tr) => {
@@ -144,6 +151,7 @@ export function valueWords(field: string, value: string | undefined, tr: Tr) {
     return tr(w.ar, w.en);
   }
   if (field === "moved_to" && value === "backlog") return tr("قائمة الانتظار", "Backlog");
+  if (field === "source" && value === "import") return tr("استيراد ملف CSV", "CSV import");
   return value;
 }
 

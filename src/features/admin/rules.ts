@@ -14,6 +14,12 @@ export const canAdminister = (user: Pick<User, "role">) => isCeo(user) || user.r
 /** The audit log: the admin and the CEO. Read only; nobody can change or remove a line (the brief). */
 export const canSeeAudit = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
 
+/**
+ * Sign-in sessions (who is signed in, from where, on what device) and ending them: the admin and the CEO. Sessions are
+ * personal data like the audit log's addresses (docs/backend.md section 14).
+ */
+export const canManageSessions = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
+
 /** How many related lines `GET /audit/:id` sends (the same person that day; the same subject). */
 export const RELATED_LIMIT = 20;
 

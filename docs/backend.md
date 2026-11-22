@@ -21,7 +21,7 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 92 calls** are there. Still to build on the server (each is in its section below; the demo backend in
+the front end's 98 calls** are there. Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
@@ -32,8 +32,10 @@ the front end's 92 calls** are there. Still to build on the server (each is in i
 | Audit details | `GET /audit/:id`; `GET /audit` with `q`, `kind`, `ip`; `ip`, `user_agent`, `session_id`, `request_id` on every line | 14 |
 | Quick search | `GET /search?q=` | 18 |
 | Profile pictures | `PUT /me/avatar`, `DELETE /me/avatar`, `DELETE /users/:id/avatar` | 19 |
+| The admin's console: sessions, security, import | `GET /admin/sessions`, `DELETE /admin/sessions/:id`, `DELETE /admin/users/:id/sessions`, `POST /admin/users/:id/unlock`, `GET /admin/security/summary`, `POST /admin/users/import` | 14.1, 14.2 |
 
-Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); error codes `FEATURE_OFF` (403) and
+Also on existing calls: `User` gets `avatar_url` (19) and `custom_role` (17.1); `GET /admin/users` gets `created_at` and
+`GET /admin/health` gets `storage`, `storage_quota_bytes`, `backup` and `server_version` (14.3); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
 with the CEO as the other person is 403 for every job, not only employees (16); requests (`kind: "request"`) come from
 every job except the CEO (16). The front end now calls `POST /auth/logout` when someone signs out (the server already
@@ -148,7 +150,13 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | 14 | `PATCH` | `/admin/teams/:id` | admin, ceo | Change a team |
 | 14 | `GET` | `/admin/settings` | admin, ceo | Platform settings |
 | 14 | `PUT` | `/admin/settings` | admin, ceo | Save them |
-| 14 | `GET` | `/admin/health` | admin, ceo | Data checks |
+| 14 | `GET` | `/admin/health` | admin, ceo | Data checks, storage by kind and quota, the last backup (14.3) |
+| 14.1 | `GET` | `/admin/sessions` | admin, ceo | Every active sign-in session: person, IP, device, signed in, last seen, `current` |
+| 14.1 | `DELETE` | `/admin/sessions/:id` | admin, ceo | Sign this session out (409 for your own current one) |
+| 14.1 | `DELETE` | `/admin/users/:id/sessions` | admin, ceo | Sign a person out everywhere (but the session making the request) → `{ ended }` |
+| 14.1 | `POST` | `/admin/users/:id/unlock` | admin, ceo | End a sign-in lock now (409 when not locked) |
+| 14.1 | `GET` | `/admin/security/summary` | admin, ceo | Failed sign-ins of the last 7 days by account and by IP, locked accounts, never signed in |
+| 14.2 | `POST` | `/admin/users/import` | admin, ceo | `{ rows, dry_run }`: check every row; with `dry_run: false` create the valid ones |
 | 14 | `GET` | `/audit` | admin, ceo | The audit log (filters: action, person, kind, IP, search, days), each line with IP and device |
 | 14 | `GET` | `/audit/:id` | admin, ceo | One line with the same person's other lines that day and the subject's history (404 when none) |
 | 15 | `GET` | `/projects/:projectId/github` | its pm, ceo | GitHub settings |
@@ -180,7 +188,7 @@ document and the code disagree, the code is what the pages expect (and tell us, 
 | Dashboard, reports, performance | ✓ | ✓ | ✓ | ✓ | their own page | |
 | Review criteria | ✓ | | | | | |
 | Post announcements | ✓ | | ✓ | | | ✓ |
-| Accounts, teams, settings, audit log | ✓ | | | | | ✓ |
+| Accounts, teams, settings, sessions, import, health, audit log | ✓ | | | | | ✓ |
 | Set or remove my own picture | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Remove someone else's picture | ✓ | | | | | ✓ |
 | Monitoring notes | ✓ | | ✓ | | | |
@@ -786,7 +794,102 @@ Written for:
 `user_created`, `user_changed` (with every changed field), `user_stopped`, `user_restarted`, `user_unlocked`,
 `team_created`, `team_changed`, `settings_changed`, `login_failed`, `login_locked`, `project_created`,
 `project_pm_changed`, `sprint_closed`, `template_deleted`, `announcement_deleted`, `criteria_changed`,
-`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+`criteria_approved`, `review_finalized`, `picture_removed` (someone else's picture, section 19), `session_ended`,
+`sessions_ended`, `users_imported` (14.1, 14.2). (Task, project and bug histories stay where they are, sections 4, 6, 10.)
+
+**The admin's console** (the client: "more pages that help the administrator"): `/admin` has a side menu of its parts:
+overview and users, teams, structure (14.4), import (14.2), sessions and security (14.1), the audit log, system health
+(14.3) and the settings. Every call below is for the `admin` and the `ceo` only: **403 `FORBIDDEN`** for every other
+job, even when the page is opened by its address. Sessions, addresses and devices are personal data (see Privacy above).
+
+### 14.1 Sessions and security
+
+A **session** is one sign-in: the token `POST /auth/login` gives (Sanctum: one `personal_access_tokens` row). The server
+keeps, per session: `id` (the token's id or a random id, never the token itself), `user_id`, `ip` and `user_agent` of the
+sign-in (as for the audit log: `CF-Connecting-IP` only from Cloudflare's addresses; the User-Agent cut to 300),
+`started_at`, `last_seen_at` (updated on each request, at most once a minute), and when it ends `ended_at`, `ended_by`,
+`end_reason` (`signed_out`, `admin`, `everywhere`, `stopped`). A session unused for **30 days** has ended by itself (the
+token expires: 401). The demo keeps the same records (`sessions` in `src/mock/seed.ts`; `src/features/admin/security.ts`).
+
+- **`GET /admin/sessions`** → `AdminSession[]` (`src/features/admin/types.ts`): `{id, user_id, ip?, user_agent?,
+  started_at, last_seen_at, current?}`, only active sessions, the last used first. `current: true` on the session making
+  this request.
+- **`DELETE /admin/sessions/:id`** → `204`/`{ success: true }`: the token is revoked at once, its next request answers
+  **401** (the site then signs out). **409 `BAD_STATE`** for the caller's own current session (signing out is
+  `POST /auth/logout`); **404** for a session that does not exist or has ended. Log `session_ended` on the person
+  (`target: {type: "user", id: user_id, label: name}`) with `changes`: `session` (its short id), `device` (browser on
+  system, e.g. "Chrome 131 on Windows") and `ip`.
+- **`DELETE /admin/users/:id/sessions`** ("sign out everywhere") → `{ ended: number }`: every active session of the person
+  except the one making the request (so an admin can do it to themselves and stay in). **404** for no such user. Log
+  `sessions_ended` with `changes: [{field: "sessions", to: "<count>"}]` when `ended > 0`; nothing when 0.
+- **Stopping an account** (`PATCH /admin/users/:id {active: false}`) also ends all its sessions (reason `stopped`; the
+  `user_stopped` line is enough, no extra line).
+- **`POST /admin/users/:id/unlock`** → the `AdminUser`: `failed_logins` back to 0 and `locked_until` cleared; log
+  `user_unlocked` (as the `unlock: true` patch does, which stays). **409** when the account is not locked now; 404 for no
+  such user.
+- **`GET /admin/security/summary`** → `SecuritySummary`: counted from the `login_failed` lines of the **last 7 days**
+  (`days: 7`, `failed_total`); `by_account`: per account (`user_id` when the email is an account's) or, for an unknown
+  email, per typed text (`label`, cut to 120), with `count`, `last_at` and the distinct `ips`, the most first;
+  `by_ip`: per address with `count`, `last_at` and `accounts` (how many different accounts were tried), the most first;
+  `locked`: `{user_id, locked_until, failed}` locked now, the soonest to open first; `never_signed_in`: active accounts
+  with no `last_login_at`, `{user_id, created_at?}`, the oldest first; and `lock_after`, `lock_minutes` from the
+  settings. The page shows the top 10 of each list. Reference: `securitySummary` in `src/features/admin/security.ts`.
+- `GET /admin/users` adds **`created_at`** to each account (the "never signed in, older than 7 days" check counts from
+  it).
+
+### 14.2 Importing accounts (CSV)
+
+The page reads the CSV in the browser (`src/features/admin/csv-import.ts`: quotes, commas and new lines inside quotes,
+`;` or tab files, the BOM, column names in Arabic or English in any order) and sends the rows as JSON; the server never
+gets the file. Columns: `name` (required), `name_en`, `email` (required), `phone`, `job` (the role: a key or its Arabic
+or English name; empty = `employee`), `title`, `team` (a team's Arabic or English name; empty = none).
+
+**`POST /admin/users/import`** `{ rows: ImportRow[], dry_run: boolean }` → `ImportResult`
+`{ dry_run, rows: [{ line, problems: [{field, problem, other_line?}], user_id? }], created, skipped }`. `line` is the row's
+place in `rows` (1 = the first). Every row is checked, and **every** problem of a row is listed:
+
+| `problem` | When |
+|---|---|
+| `name_missing`, `name_too_long` | no name, or longer than 120 |
+| `email_missing`, `email_bad` | no email, or not an email |
+| `email_twice` | the same email (any case) on an earlier line of the same import: `other_line` is that line |
+| `email_taken` | an account already has it (any case) |
+| `role_unknown` | the job is not one of the six (by key, Arabic or English name) |
+| `role_not_allowed` | `ceo` or `admin`: never in bulk (made one by one with `POST /admin/users`) |
+| `title_too_long` | longer than 80 |
+| `team_unknown` | no team by that name |
+
+- `dry_run: true` writes nothing (the preview). `dry_run: false` checks again (the data may have changed since the
+  preview), creates **only the rows without problems**, in one transaction, and answers with `user_id` on each created
+  row; `created` + `skipped` = the rows sent. A created account is like one from `POST /admin/users`: email stored lower
+  case, active, `team_joined` sent when it has a team.
+- **422 `VALIDATION`** on `rows` when there are none or more than **500** (one request, no partial import).
+- **Log:** one `user_created` per account (`changes`: `role`, `team` when set, and `{field: "source", to: "import"}`),
+  then one `users_imported` line (`target: {type: "import", label: "<created> / <sent>"}`, `changes`: `created`,
+  `skipped`). Nothing is logged for a dry run.
+
+### 14.3 System health (more in `GET /admin/health`)
+
+`GET /admin/health` keeps its fields and adds (all optional: the page says "not sent yet" without them):
+`storage: {attachments_bytes, attachments, pictures_bytes, pictures, voice_bytes, voice, audit_bytes}` (files by kind:
+attachments of tasks, projects, bugs and messages; profile pictures; chat voice messages; and the audit log's table
+size), `storage_quota_bytes` (what the server may store), `backup: {at?, status: "ok"|"failed"|"running"|"unknown",
+size_bytes?, note?}` (the last backup as DevOps's job reports it; `note` shown as written) and `server_version`.
+
+The page also shows the front end's version (from `package.json` at build time) and the API address it talks to, and
+a **"needs attention"** list, each line linking to its fix (`needsAttention` in `src/features/admin/health.ts`): locked
+accounts, storage over **80%** of the quota, a failed backup or one older than **48 hours**, accounts that never signed
+in and are older than **7 days**, teams with no active leader, team leaders and employees in no team. The `/admin`
+overview shows the same list. The demo invents the quota (5 GB) and a nightly backup, and says so on the page.
+
+### 14.4 Teams and structure
+
+No new call: `/admin/structure` reads `GET /admin/users` and `GET /teams` and fixes with `PATCH /admin/users/:id
+{team_id}` (a person in no team) and `PATCH /admin/teams/:id {name, name_en, lead_id}` (a team with no leader, or a
+team leader who leads none), with their rules and log lines above. What it lists (`structureOf` in
+`src/features/admin/structure.ts`): active team leaders and employees in no team (the CEO, PMs, monitoring and the admin
+work across teams), teams whose leader is missing or stopped, a leader with no members, and team leaders who lead no
+team.
 
 ## 15. GitHub
 

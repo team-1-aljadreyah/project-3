@@ -10,7 +10,7 @@ import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, matches } from "@/shared/lib/utils";
-import { Avatar, Button, Dialog, Empty, ErrorBox, errorText, Field, Input, LoadingBlock, Pill, Select, Skeleton, Stat, useToast } from "@/shared/ui";
+import { Avatar, Button, ButtonLink, Dialog, Empty, ErrorBox, errorText, Field, Input, LoadingBlock, Pill, Select, Skeleton, Stat, useToast } from "@/shared/ui";
 import { adminApi } from "../api";
 import { AdminOverview } from "../components/admin-overview";
 import { UserDialog } from "../components/user-dialog";
@@ -276,6 +276,9 @@ function SettingsTab() {
         <Button onClick={save} disabled={!draft} className="self-start">
           {tr("احفظ الإعدادات", "Save settings")}
         </Button>
+        <ButtonLink href="/admin/security" variant="ghost" size="sm" className="self-start">
+          {tr("الجلسات والحسابات المقفلة", "Sessions and locked accounts")}
+        </ButtonLink>
       </section>
       <section aria-labelledby="health-title" className="flex flex-col gap-3">
         <h2 id="health-title" className="font-semibold">
@@ -288,6 +291,9 @@ function SettingsTab() {
           <Stat href="/audit" label={tr("سجل العمليات", "Audit log")} value={num(health.audit_entries)} note={tr("سطر محفوظ", "lines kept")} />
         </div>
         <p className="text-xs text-faint">{tr("النسخ الاحتياطي يديره فريق DevOps على الخادم (سؤال مفتوح للعميل).", "Backups are run by DevOps on the server (an open question for the client).")}</p>
+        <ButtonLink href="/admin/health" variant="secondary" size="sm" className="self-start">
+          {tr("صحة النظام كاملة", "Full system health")}
+        </ButtonLink>
       </section>
     </div>
   );

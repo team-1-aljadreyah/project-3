@@ -70,7 +70,7 @@ src/
 │                     feature's page), layout.tsx (the HTML page, the start-up script), providers.tsx, the
 │                     (signed-in) group with its layout, not-found, error, loading, styles.css
 ├── features/
-│   ├── admin/        users and roles, teams, settings, data health, and the audit log
+│   ├── admin/        users and roles, teams, structure, import, sessions and security, system health, settings, the audit log
 │   ├── advanced/     the CEO's advanced settings: working time, rights, notifications, features, banner, history
 │   ├── announcements/ company announcements, who has and hasn't seen them
 │   ├── attachments/  file attachments (tasks, projects) and the project files page
