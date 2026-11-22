@@ -3,7 +3,7 @@
 //
 // Assumptions (the brief: "the management sets the review criteria"; "the direct manager's notes"): the CEO sets and
 // approves the criteria. A review is written by the person's direct manager: a team leader for the employees of their
-// team, a project manager for the people in their projects, or the CEO for anyone; nobody reviews themselves. M&E sees
+// team, a department manager for the people in their projects, or the CEO for anyone; nobody reviews themselves. M&E sees
 // everything (read only); an employee sees their own numbers and their own FINAL reviews.
 import type { Project } from "@/features/projects";
 import type { User } from "@/shared/api/types";
@@ -12,7 +12,7 @@ import type { Review } from "./types";
 
 type U = Pick<User, "id" | "role" | "team_id">;
 
-/** The people list and the team numbers: management, project managers, M&E, team leaders. */
+/** The people list and the team numbers: management, department managers, M&E, team leaders. */
 export const canSeePeoplePerf = (user: Pick<User, "role">) => isCeo(user) || ["pm", "monitor", "lead"].includes(user.role);
 
 /** The review criteria and formula: set and approved by the CEO (the management). */

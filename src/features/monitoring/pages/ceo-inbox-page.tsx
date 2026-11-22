@@ -7,7 +7,7 @@ import { useQueryParam } from "@/shared/lib/query-param";
 import { useUser } from "@/shared/lib/session";
 import { useLoad } from "@/shared/lib/use-load";
 import { cn, matches } from "@/shared/lib/utils";
-import { Button, Empty, ErrorBox, Field, Input, LoadingBlock, Select, Skeleton, Textarea, errorText, useToast } from "@/shared/ui";
+import { Button, Empty, ErrorBox, Field, Input, LoadingBlock, PrintButton, Select, Skeleton, Textarea, errorText, useToast } from "@/shared/ui";
 import { monitoringApi } from "../api";
 import { NoteCard } from "../components/note-card";
 import { KIND } from "../components/note-dialog";
@@ -105,14 +105,17 @@ export function CeoInboxPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold">
-          <Inbox size={22} aria-hidden="true" className="text-accent-ink" />
-          {tr("الوارد", "Inbox")}
-        </h1>
-        <p className="text-sm text-muted">
-          {waiting ? tr(`لم يُفتح بعد: ${num(waiting)}`, `Not opened yet: ${waiting}`) : tr("فُتح كل ما وصل.", "Everything has been opened.")}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold">
+            <Inbox size={22} aria-hidden="true" className="text-accent-ink" />
+            {tr("الوارد", "Inbox")}
+          </h1>
+          <p className="text-sm text-muted">
+            {waiting ? tr(`لم يُفتح بعد: ${num(waiting)}`, `Not opened yet: ${waiting}`) : tr("فُتح كل ما وصل.", "Everything has been opened.")}
+          </p>
+        </div>
+        <PrintButton target={() => null} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

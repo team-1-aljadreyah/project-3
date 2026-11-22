@@ -49,7 +49,7 @@ function checkFields(f: Partial<ProjectInput>, current?: Project) {
   if (start && end && end < start) invalid("end", "تاريخ الإنجاز قبل تاريخ البدء.", "The end date is before the start date.");
   if (f.pm_id !== undefined) {
     const pm = db.users.find((u) => u.id === f.pm_id && u.active);
-    if (!pm || pm.role !== "pm") invalid("pm_id", "اختر مدير مشروع.", "Choose a project manager.");
+    if (!pm || pm.role !== "pm") invalid("pm_id", "اختر مدير قسم.", "Choose a department manager.");
   }
   if (f.member_ids !== undefined) {
     const bad = f.member_ids.some((id) => {
@@ -90,7 +90,7 @@ export const projectsMock: ProjectsApi = {
     const user = currentUser();
     if (!canCreateProject(user)) return fail(403, "FORBIDDEN", "لا يحق لك إنشاء المشاريع.", "You can't create projects.");
     requireAction(user, "create_project");
-    // A project manager creates projects they manage; the CEO and the monitoring officer pick the manager.
+    // A department manager creates projects they manage; the CEO and the monitoring officer pick the manager.
     const fields = { ...input, pm_id: user.role === "pm" ? user.id : input.pm_id };
     if (!fields.start) invalid("start", "اختر تاريخ البدء.", "Choose the start date.");
     if (!fields.end) invalid("end", "اختر التاريخ المتوقع للإنجاز.", "Choose the expected end date.");
@@ -142,7 +142,7 @@ export const projectsMock: ProjectsApi = {
     const project = manageable(user, id);
     const p: ProjectPatch = { ...patch };
     if (p.pm_id !== undefined && p.pm_id !== project.pm_id && !canChangePm(user)) {
-      return fail(403, "FORBIDDEN", "تغيير مدير المشروع من صلاحية المدير التنفيذي.", "Only the CEO can change the project manager.");
+      return fail(403, "FORBIDDEN", "تغيير مدير القسم من صلاحية المدير التنفيذي.", "Only the CEO can change the department manager.");
     }
     if (p.state !== undefined && !["planned", "active", "paused", "done"].includes(p.state)) invalid("state", "حالة غير معروفة.", "Unknown state.");
     checkFields(p, project);

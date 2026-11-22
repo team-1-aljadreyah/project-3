@@ -72,7 +72,7 @@ served from (the custom domain and `*.pages.dev`).
 
 **Notifications:** the open app (also in the background) plays a short sound and shows a system notification for new
 notifications and chat messages (`src/features/notifications`). While the app is closed only the backend can send them
-(Web Push): set `NEXT_PUBLIC_PUSH_PUBLIC_KEY` once the backend sends push (docs/backend.md, section 20).
+(Web Push): set `NEXT_PUBLIC_PUSH_PUBLIC_KEY` once the backend sends push (docs/backend.md, section 22).
 
 **Installing it:**
 

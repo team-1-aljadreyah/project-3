@@ -6,22 +6,27 @@ import { cn } from "@/shared/lib/utils";
 import { Avatar, PersonName } from "@/shared/ui";
 import { splitMentions } from "../rules";
 import type { Message } from "../types";
+import { messageSummary } from "../voice";
+import { VoiceNote } from "./voice-note";
 
 /**
  * One message: who wrote it and when, the message it answers (a click jumps to it), the text with @mentions in colour,
- * and its images and files. "رد" starts an answer to it.
+ * its voice recording (a player), and its images and files. "رد" starts an answer to it.
  */
 export function MessageItem({
   m,
   replied,
   people,
   mine,
+  me,
   onReply,
 }: {
   m: Message;
   replied?: Message;
   people: Map<number, User>;
   mine: boolean;
+  /** The person reading, for the "not listened yet" mark of voice messages from others. */
+  me: number;
   onReply: (m: Message) => void;
 }) {
   const { tr, lang, dateTime } = useFmt();
@@ -32,6 +37,8 @@ export function MessageItem({
   const author = people.get(m.author_id);
   // Mentions are written with the Arabic name (as they were typed), so both names are looked for.
   const mentionNames = m.mentions.flatMap((id) => [people.get(id)?.name ?? "", people.get(id)?.name_en ?? ""]);
+  const voices = m.files.filter((f) => f.voice);
+  const files = m.files.filter((f) => !f.voice);
 
   return (
     <li id={`msg-${m.id}`} className="group flex gap-2.5 rounded-lg px-2 py-1.5 target:bg-accent-soft hover:bg-card-2">
@@ -47,7 +54,7 @@ export function MessageItem({
           <a href={`#msg-${replied.id}`} className="flex max-w-full items-center gap-1.5 truncate rounded-md border-s-2 border-accent bg-chip px-2 py-1 text-xs text-muted hover:text-text">
             <Reply size={12} aria-hidden="true" className="shrink-0 rtl:-scale-x-100" />
             <span className="truncate">
-              <b className="font-medium">{nameOf(replied.author_id)}:</b> <bdi>{replied.body || tr("ملف", "A file")}</bdi>
+              <b className="font-medium">{nameOf(replied.author_id)}:</b> <bdi>{messageSummary(replied, tr)}</bdi>
             </span>
           </a>
         )}
@@ -64,9 +71,21 @@ export function MessageItem({
             )}
           </p>
         )}
-        {m.files.length > 0 && (
+        {voices.map((f) => (
+          <VoiceNote
+            key={f.id}
+            id={f.id}
+            src={f.url}
+            duration={f.voice!.duration_s}
+            peaks={f.voice!.peaks}
+            tone={mine ? "mine" : "theirs"}
+            heardBy={mine ? undefined : me}
+            download={{ name: f.name, size: f.size }}
+          />
+        ))}
+        {files.length > 0 && (
           <ul className="flex flex-wrap gap-2">
-            {m.files.map((f) => (
+            {files.map((f) => (
               <li key={f.id}>
                 <a href={f.url} download={f.name} className="flex items-center gap-2 rounded-lg border border-line bg-card p-1.5 pe-3 text-xs hover:border-accent">
                   {isImage(f.mime) ? (

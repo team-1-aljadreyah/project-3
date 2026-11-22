@@ -19,6 +19,14 @@ export const RELATED_LIMIT = 20;
 
 export const ADMIN_LIMITS ={ name: 120, title: 80, teamName: 80 };
 
+/** What the admin reads when a birth date is refused (the check itself: birthDateProblem in shared/lib/birthday.ts). */
+export const BIRTH_DATE_ERRORS = {
+  date: { ar: "اكتب تاريخ ميلاد صحيحاً.", en: "Enter a real birth date." },
+  future: { ar: "تاريخ الميلاد لا يكون في المستقبل.", en: "A birth date can't be in the future." },
+  young: { ar: "العمر أقل من 16 سنة: راجع السنة.", en: "That makes them younger than 16: check the year." },
+  old: { ar: "العمر أكثر من 80 سنة: راجع السنة.", en: "That makes them older than 80: check the year." },
+} as const;
+
 export const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 /** The limits of each setting. */

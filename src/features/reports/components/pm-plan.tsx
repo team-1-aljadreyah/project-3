@@ -20,7 +20,7 @@ const COLUMN: Record<PlanColumn, { ar: string; en: string; tone: StatusTone }> =
 };
 
 /**
- * The project manager's plan, over every project they run: a calendar strip (the tasks due around today, each a pill on
+ * The department manager's plan, over every project they run: a calendar strip (the tasks due around today, each a pill on
  * its day; today is the dark line, the weekend is hatched) and a board of four columns with every task as a card (its
  * project, priority, due day, how far along it is, and who has it). Every pill and card opens its task.
  */

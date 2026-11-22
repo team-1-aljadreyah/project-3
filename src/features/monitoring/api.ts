@@ -13,6 +13,16 @@ export interface MonitoringApi {
   inbox(): Promise<MonitorNote[]>;
   /** The CEO answers a note: a reply and/or "seen" / "done". */
   answer(id: number, answer: NoteAnswer): Promise<MonitorNote>;
+  /** The monitoring officer sends a waiting request on to the CEO, with an optional note for the CEO. */
+  forwardRequest(id: number, note?: string): Promise<MonitorNote>;
+  /** The monitoring officer answers a waiting request herself; it does not go to the CEO. */
+  answerRequest(id: number, reply: string): Promise<MonitorNote>;
+  /** Send a note also to more people (its writer, or the CEO). */
+  share(id: number, userIds: number[]): Promise<MonitorNote>;
+  /** The notes the monitoring officer sent to me (newest first). */
+  received(): Promise<MonitorNote[]>;
+  /** I opened a note sent to me (its writer sees it). */
+  markSeen(id: number): Promise<MonitorNote>;
   /** The report builder: the counted numbers about a team, a person or a project over a period. */
   reportFacts(about: { type: Exclude<NoteAbout["type"], "general">; id: number }, period: ReportPeriod): Promise<ReportFacts>;
 }
@@ -25,6 +35,11 @@ export const monitoringHttp: MonitoringApi = {
   send: (id) => data(http.post<MonitorNote>(`/monitoring/notes/${id}/send`, {})),
   inbox: () => data(http.get<MonitorNote[]>("/ceo/inbox")),
   answer: (id, answer) => data(http.post<MonitorNote>(`/ceo/inbox/${id}/answer`, answer)),
+  forwardRequest: (id, note) => data(http.post<MonitorNote>(`/monitoring/requests/${id}/forward`, { note })),
+  answerRequest: (id, reply) => data(http.post<MonitorNote>(`/monitoring/requests/${id}/answer`, { reply })),
+  share: (id, userIds) => data(http.post<MonitorNote>(`/monitoring/notes/${id}/share`, { user_ids: userIds })),
+  received: () => data(http.get<MonitorNote[]>("/monitoring/received")),
+  markSeen: (id) => data(http.post<MonitorNote>(`/monitoring/notes/${id}/seen`, {})),
   reportFacts: (about, period) => data(http.get<ReportFacts>("/monitoring/report-facts", { params: { type: about.type, id: about.id, ...period } })),
 };
 

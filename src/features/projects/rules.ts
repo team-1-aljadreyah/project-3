@@ -2,16 +2,16 @@
 // only what a person may do, the demo backend uses the SAME functions to refuse the rest (docs/backend.md).
 //
 // Not decided by the client yet (written as assumptions in docs/backend.md, easy to change here):
-// - the CEO and project managers create projects; a PM who creates one manages it;
+// - the CEO and department managers create projects; a PM who creates one manages it;
 // - a project's setup is changed by its PM or the CEO; only the CEO hands a project to another PM.
 import type { User } from "@/shared/api/types";
 import { canManageProjectSetup, isCeo } from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
 
 /**
- * Create a project: the CEO, project managers, and the monitoring officer (the client, 21 November 2026: "make the
- * monitor also can create a project"). A project manager runs what they create; the CEO and the monitoring officer pick
- * the project manager who will run it.
+ * Create a project: the CEO, department managers, and the monitoring officer (the client, 21 November 2026: "make the
+ * monitor also can create a project"). A department manager runs what they create; the CEO and the monitoring officer pick
+ * the department manager who will run it.
  */
 export function canCreateProject(user: Pick<User, "role">) {
   return isCeo(user) || user.role === "pm" || user.role === "monitor";
@@ -20,7 +20,7 @@ export function canCreateProject(user: Pick<User, "role">) {
 /** Change a project's details, members, statuses, phases, sprints and GitHub (the rule lives in shared/lib/access.ts). */
 export const canManageProject = canManageProjectSetup;
 
-/** Give the project to another project manager. */
+/** Give the project to another department manager. */
 export function canChangePm(user: Pick<User, "role">) {
   return isCeo(user);
 }

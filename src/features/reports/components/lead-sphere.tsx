@@ -54,7 +54,7 @@ export function LeadSphere({ shares, team, date, href }: { shares: TeamShares; t
         <div className="flex flex-col justify-between gap-8">
           <div>
             <h1 id="dashboard-title" className="hero-in text-xs font-medium text-[#e6d3da]">
-              {tr("لوحة القيادة", "Dashboard")} · {date}
+              {tr("لوحة التحكم", "Dashboard")} · {date}
             </h1>
             <p className="hero-in mt-3 text-4xl leading-tight font-light sm:text-[2.6rem] sm:leading-tight">
               {tr("أين يقف", "Where the team")}

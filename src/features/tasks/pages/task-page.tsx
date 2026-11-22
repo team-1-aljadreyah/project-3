@@ -185,7 +185,7 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
               htmlFor="task-status"
               hint={
                 !mayApprove && project.statuses.some((s) => s.tone === "done")
-                  ? tr("اختيار حالة الإكمال يرسل طلب اعتماد إلى مدير المشروع.", "Choosing a done status sends it for approval.")
+                  ? tr("اختيار حالة الإكمال يرسل طلب اعتماد إلى مدير القسم.", "Choosing a done status sends it for approval.")
                   : undefined
               }
             >

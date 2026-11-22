@@ -136,8 +136,8 @@ export function PermissionsPart(c: Ctx) {
       {r.roles.length > 0 && (
         <p className="text-xs text-muted">
           {tr(
-            "أعمدة الأدوار التي أنشأتها: «إنشاء مشروع» و«إسناد مهمة» و«تغيير الموعد» و«نشر إعلان» و«إنشاء مجموعة» و«كتابة التقييمات» و«تسجيل مشكلة» يرفضها الخادم الآن حين تزيل علامتها، والباقي يُطبَّق لاحقاً. الخانة الرمادية: وظيفته الأساسية لا تقوم بهذا.",
-            "Columns of the roles you made: «create a project», «give a task», «change a due date», «post an announcement», «create a group», «write reviews» and «report a bug» are refused by the server now when unticked; the rest applies later. A grey box: its base job doesn't do this.",
+            "أعمدة الأدوار التي أنشأتها: «إنشاء مشروع» و«إسناد مهمة» و«تغيير الموعد» و«نشر إعلان» و«إنشاء مجموعة» و«كتابة التقييمات» و«التقييمات السريعة» و«تسجيل مشكلة» يرفضها الخادم الآن حين تزيل علامتها، والباقي يُطبَّق لاحقاً. الخانة الرمادية: وظيفته الأساسية لا تقوم بهذا.",
+            "Columns of the roles you made: «create a project», «give a task», «change a due date», «post an announcement», «create a group», «write reviews», «quick ratings» and «report a bug» are refused by the server now when unticked; the rest applies later. A grey box: its base job doesn't do this.",
           )}
         </p>
       )}

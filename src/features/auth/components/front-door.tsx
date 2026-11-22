@@ -178,7 +178,7 @@ export function FlowPlate() {
   const steps = [
     { n: "١", n_en: "1", ar: "خطّط", en: "Plan", body_ar: "مشروع بمراحله ودوراته وحالاته الخاصة، أو من قالب جاهز.", body_en: "A project with its phases, sprints and own statuses, or from a template." },
     { n: "٢", n_en: "2", ar: "نفّذ", en: "Do", body_ar: "لوحة كانبان أو سكرم، ومهام تنتظر بعضها، ومحادثة لكل مشروع وفريق.", body_en: "Kanban or Scrum boards, tasks that wait for each other, a chat per project and team." },
-    { n: "٣", n_en: "3", ar: "تابع", en: "Follow", body_ar: "لوحة قيادة وتقارير وتقييم أداء عادل، وكل تغيير مسجّل.", body_en: "A dashboard, reports and fair reviews, with every change on record." },
+    { n: "٣", n_en: "3", ar: "تابع", en: "Follow", body_ar: "لوحة تحكم وتقارير وتقييم أداء عادل، وكل تغيير مسجّل.", body_en: "A dashboard, reports and fair reviews, with every change on record." },
   ];
   return (
     // A soft section: the threads of light behind it show as a blurred glow (the Frost), like frosted glass.

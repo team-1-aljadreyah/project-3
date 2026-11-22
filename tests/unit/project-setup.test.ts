@@ -36,10 +36,10 @@ beforeEach(() => {
 
 describe("who may set up projects (assumptions, docs/backend.md)", () => {
   const user = (id: number) => getDb().users.find((u) => u.id === id)!;
-  it("the CEO, project managers and the monitoring officer create projects; nobody else", () => {
+  it("the CEO, department managers and the monitoring officer create projects; nobody else", () => {
     expect([1, 2, 3, 4, 5, 8].map((id) => canCreateProject(user(id)))).toEqual([true, true, true, false, false, false]);
   });
-  it("the monitoring officer creates a project for a project manager she picks; she must pick one", async () => {
+  it("the monitoring officer creates a project for a department manager she picks; she must pick one", async () => {
     as(3);
     const base = { name: "متابعة الجودة", name_en: "Quality follow-up", description: "", start: "2026-12-01", end: "2027-01-31", member_ids: [] as number[], priority: "medium" as const, uses_sprints: false };
     const p = await api.createProject({ ...base, pm_id: 2 });
@@ -72,7 +72,7 @@ describe("creating a project", () => {
     expect((await fails(api.createProject(newProject)))?.status).toBe(403);
   });
 
-  it("checks the fields: a name, an end after the start, a real project manager", async () => {
+  it("checks the fields: a name, an end after the start, a real department manager", async () => {
     as(1);
     expect((await fails(api.createProject({ ...newProject, name: " " })))?.errors).toHaveProperty("name");
     expect((await fails(api.createProject({ ...newProject, end: "2026-11-01" })))?.errors).toHaveProperty("end");

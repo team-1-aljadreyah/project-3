@@ -18,8 +18,9 @@ export const KIND: Record<NoteKind, { ar: string; en: string; hint_ar: string; h
 const NOTE_KINDS: NoteKind[] = ["report", "feedback", "problem"];
 
 /**
- * Write a report (about a team, a person, a project or in general), feedback on anyone, or a problem. It can go to
- * the CEO at once ("Send to the CEO now"), or be kept and sent later from the list.
+ * Write a report (about a team, a person, a project or in general), feedback on anyone, or a problem. She chooses who
+ * receives it (the client, 22 November 2026: "they can choose who to send it to, not only the CEO"): the CEO and/or
+ * any other people; or nobody yet, to send it later from the list.
  */
 export function NoteDialog({
   open,
@@ -50,6 +51,7 @@ export function NoteDialog({
   const [subject, setSubject] = useState("");
   const [involved, setInvolved] = useState<number[]>([]);
   const [send, setSend] = useState(true);
+  const [shareIds, setShareIds] = useState<number[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -67,6 +69,7 @@ export function NoteDialog({
       setSubject("");
       setInvolved([]);
       setSend(true);
+      setShareIds([]);
       setErrors({});
       setFormError(undefined);
     }
@@ -88,6 +91,7 @@ export function NoteDialog({
       body,
       about: { type: type as NoteInput["about"]["type"], id: id ? Number(id) : undefined },
       send,
+      ...(shareIds.length ? { share_ids: shareIds } : {}),
       ...(kind === "feedback" ? { tone } : {}),
       // A problem can be about anything (in her words) and involve anyone.
       ...(kind === "problem" ? { subject, people_ids: involved } : {}),
@@ -97,7 +101,8 @@ export function NoteDialog({
     setFormError(undefined);
     try {
       const note = await monitoringApi.create(input);
-      toast(send ? tr("حُفظت وأُرسلت إلى المدير التنفيذي.", "Saved and sent to the CEO.") : tr("حُفظت. أرسلها متى شئت.", "Saved. Send it whenever you like."));
+      const to = [send ? tr("المدير التنفيذي", "the CEO") : "", shareIds.length ? tr(`${shareIds.length} أشخاص آخرين`, `${shareIds.length} other people`) : ""].filter(Boolean);
+      toast(to.length ? tr(`حُفظت وأُرسلت إلى ${to.join(" و")}.`, `Saved and sent to ${to.join(" and ")}.`) : tr("حُفظت. أرسلها متى شئت.", "Saved. Send it whenever you like."));
       onSaved(note);
       onClose();
     } catch (e) {
@@ -119,7 +124,7 @@ export function NoteDialog({
             {tr("إلغاء", "Cancel")}
           </Button>
           <Button onClick={save} disabled={busy}>
-            {busy ? tr("جارٍ الحفظ…", "Saving…") : send ? tr("احفظ وأرسل", "Save and send") : tr("احفظ", "Save")}
+            {busy ? tr("جارٍ الحفظ…", "Saving…") : send || shareIds.length ? tr("احفظ وأرسل", "Save and send") : tr("احفظ", "Save")}
           </Button>
         </>
       }
@@ -221,10 +226,22 @@ export function NoteDialog({
         <Field label={tr("النص", "Text")} htmlFor="note-body" error={errors.body}>
           <Textarea id="note-body" dir="auto" maxLength={L.body} rows={6} value={body} invalid={!!errors.body} onChange={(e) => setBody(e.target.value)} />
         </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={send} onChange={(e) => setSend(e.target.checked)} className="size-4 accent-[var(--accent)]" />
-          {tr("أرسلها إلى المدير التنفيذي الآن", "Send it to the CEO now")}
-        </label>
+        {/* Who receives it: the CEO, and/or anyone else (they find it under "Received" on their requests page). */}
+        <fieldset className="flex flex-col gap-2 rounded-xl border border-line p-3">
+          <legend className="px-1 text-sm font-medium">{tr("أرسلها إلى", "Send it to")}</legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={send} onChange={(e) => setSend(e.target.checked)} className="size-4 accent-[var(--accent)]" />
+            {tr("المدير التنفيذي", "The CEO")}
+          </label>
+          <PeoplePicker
+            people={others.filter((p) => p.role !== "ceo")}
+            value={shareIds}
+            onChange={setShareIds}
+            error={errors.share_ids}
+            legend={{ ar: "وأشخاص آخرون (اختياري)", en: "And other people (optional)" }}
+          />
+          <p className="text-xs text-muted">{tr("بلا اختيار: تُحفظ عندك وترسلها متى شئت.", "Nobody chosen: it is kept here, to send whenever you like.")}</p>
+        </fieldset>
         {formError && (
           <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
             {formError}

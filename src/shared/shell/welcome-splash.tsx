@@ -1,4 +1,6 @@
+import { Cake } from "lucide-react";
 import { useEffect, useState } from "react";
+import { isBirthday } from "@/shared/lib/birthday";
 import { roleName } from "@/shared/lib/site";
 import { BrandMark } from "@/shared/ui";
 import { useFmt } from "@/shared/lib/i18n";
@@ -39,7 +41,8 @@ export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 /**
  * The welcome splash: every time the app opens (a new tab or a new browser start) and after every sign-in (not on a
  * reload of the same tab), a
- * short greeting with the person's first name, their job and the day, which then lifts away into their page.
+ * short greeting with the person's first name, their job and the day (and «عيد ميلاد سعيد» on their birthday), which
+ * then lifts away into their page.
  * It never blocks anything: clicks pass through it, it is hidden from screen readers (the page itself is announced), it
  * is gone after about two seconds, and with "reduce motion" it is not shown at all. Styles in app/styles.css (.welcome).
  */
@@ -63,6 +66,8 @@ export function WelcomeSplash() {
   if (!show) return null;
   const hello = greeting(new Date().getHours());
   const name = lang === "en" && user.name_en ? user.name_en : user.name;
+  // On the person's own birthday, one quiet line more (their own birth date: they always have it).
+  const birthday = isBirthday(user, today());
   return (
     <div className="welcome" aria-hidden="true">
       <div className="welcome-card flex flex-col items-center gap-4 px-6 text-center">
@@ -75,6 +80,12 @@ export function WelcomeSplash() {
         <p className="welcome-line text-sm text-[#e6d3da]" style={{ animationDelay: "0.35s" }}>
           {roleName(user, lang)} · {day(today())}
         </p>
+        {birthday && (
+          <p className="welcome-line inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1 text-sm font-medium text-[#f2dace]" style={{ animationDelay: "0.55s" }}>
+            <Cake size={15} className="text-[#d49a9a]" />
+            {tr("عيد ميلاد سعيد", "Happy birthday")}
+          </p>
+        )}
         <span className="welcome-bar mt-2 h-1 w-24 overflow-hidden rounded-full bg-white/15">
           <span className="block h-full rounded-full bg-[#d49a9a]" />
         </span>

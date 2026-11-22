@@ -38,31 +38,85 @@ describe("the rules", () => {
   });
 
   it("a note is seen and sent by its writer and the CEO; only the CEO has the inbox", () => {
-    expect(rules.canSeeNote({ id: 3, role: "monitor" }, { author_id: 3 })).toBe(true);
-    expect(rules.canSeeNote({ id: 2, role: "pm" }, { author_id: 3 })).toBe(false);
+    expect(rules.canSeeNote({ id: 3, role: "monitor" }, { author_id: 3, kind: "report" })).toBe(true);
+    expect(rules.canSeeNote({ id: 2, role: "pm" }, { author_id: 3, kind: "report" })).toBe(false);
     expect(rules.canSendToCeo({ id: 3, role: "monitor" }, { author_id: 3 })).toBe(true);
     expect(rules.canUseCeoInbox({ role: "monitor" })).toBe(false);
   });
 });
 
-describe("requests to the CEO", () => {
-  it("an employee sends a request about anything; it goes to the CEO at once, and her answer comes back", async () => {
+describe("requests to the CEO go through the monitoring officer", () => {
+  const ask = (title = "إجازة يومين") => api.create({ kind: "request", subject: "إجازة", title, body: "أحتاج إجازة يومي الأحد والإثنين.", about: { type: "general" } });
+
+  it("an employee's request reaches the monitoring officer first, not the CEO's inbox", async () => {
     as(5);
-    const r = await api.create({ kind: "request", subject: "إجازة", title: "إجازة يومين", body: "أحتاج إجازة يومي الأحد والإثنين.", about: { type: "general" } });
-    expect(r).toMatchObject({ kind: "request", subject: "إجازة", ceo_state: "new" });
-    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 1, kind: "note_sent", actor_id: 5 });
+    const r = await ask();
+    expect(r).toMatchObject({ kind: "request", subject: "إجازة", triage: "pending" });
+    expect(r.sent_at).toBeUndefined();
+    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 3, kind: "note_sent", actor_id: 5, data: { queue: "monitor" } });
+    as(1);
+    expect((await api.inbox()).some((n) => n.id === r.id)).toBe(false);
+    as(3);
+    expect((await api.notes()).some((n) => n.id === r.id)).toBe(true);
+  });
+
+  it("she sends it on to the CEO with a note; the CEO's answer goes straight back to the employee", async () => {
+    as(5);
+    const r = await ask();
+    as(3);
+    const fwd = await api.forwardRequest(r.id, "أنصح بالموافقة.");
+    expect(fwd).toMatchObject({ triage: "forwarded", forward_note: "أنصح بالموافقة.", ceo_state: "new", triaged_by: 3 });
+    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 1, kind: "note_sent" });
+    expect((await fails(api.forwardRequest(r.id)))?.status).toBe(409);
     as(1);
     expect((await api.inbox()).some((n) => n.id === r.id)).toBe(true);
     await api.answer(r.id, { state: "done", reply: "موافقة." });
-    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 5, kind: "note_answered", data: { note_kind: "request" } });
+    // To the employee, not back to the monitoring officer.
+    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 5, kind: "note_answered", actor_id: 1, data: { note_kind: "request" } });
+    expect(getDb().notifications.filter((n) => n.user_id === 3 && n.kind === "note_answered")).toHaveLength(0);
+  });
+
+  it("or she answers it herself: the employee is told and it never reaches the CEO", async () => {
+    as(5);
+    const r = await ask();
+    as(3);
+    expect((await fails(api.answerRequest(r.id, " ")))?.status).toBe(422);
+    const done = await api.answerRequest(r.id, "الإجازات تطلب من مدير القسم.");
+    expect(done).toMatchObject({ triage: "answered", monitor_reply: "الإجازات تطلب من مدير القسم." });
+    expect(done.sent_at).toBeUndefined();
+    expect(getDb().notifications.at(-1)).toMatchObject({ user_id: 5, kind: "note_answered", actor_id: 3, data: { note_kind: "request" } });
+    expect((await fails(api.forwardRequest(r.id)))?.status).toBe(409);
+  });
+
+  it("only the monitoring officer (and the CEO) handles requests; other jobs can't see them", async () => {
+    as(5);
+    const r = await ask();
+    for (const id of [2, 4, 8]) {
+      as(id);
+      expect((await fails(api.forwardRequest(r.id)))?.status).toBe(403);
+      expect((await api.notes()).some((n) => n.id === r.id)).toBe(false);
+    }
+    expect(rules.canTriageRequests({ role: "monitor" })).toBe(true);
+    expect(rules.canTriageRequests({ role: "ceo" })).toBe(true);
+    for (const role of ["pm", "lead", "employee", "admin"] as const) expect(rules.canTriageRequests({ role })).toBe(false);
+  });
+
+  it("the monitoring officer's own requests, and all requests when there is none, go straight to the CEO", async () => {
+    as(3);
+    expect((await ask("من المتابعة")).ceo_state).toBe("new");
+    for (const u of getDb().users) if (u.role === "monitor") u.active = false;
+    as(5);
+    const r = await ask();
+    expect(r.triage).toBeUndefined();
+    expect(r.ceo_state).toBe("new");
   });
 
   it("a request needs a subject; every job sends requests except the CEO, who receives them", async () => {
     as(5);
     expect((await fails(api.create({ kind: "request", title: "x", body: "y", about: { type: "general" } })))?.status).toBe(422);
-    for (const id of [2, 3, 4, 8]) {
+    for (const id of [2, 4, 8]) {
       as(id);
-      expect((await api.create({ kind: "request", subject: "s", title: `from ${id}`, body: "y", about: { type: "general" } })).ceo_state).toBe("new");
+      expect((await api.create({ kind: "request", subject: "s", title: `from ${id}`, body: "y", about: { type: "general" } })).triage).toBe("pending");
     }
     as(1);
     expect((await fails(api.create({ kind: "request", subject: "s", title: "x", body: "y", about: { type: "general" } })))?.status).toBe(403);
@@ -71,11 +125,44 @@ describe("requests to the CEO", () => {
 
   it("a done note stays done when opened again, and goes back to \"to handle\" only when reopened", async () => {
     as(5);
-    const r = await api.create({ kind: "request", subject: "s", title: "t", body: "b", about: { type: "general" } });
+    const r = await ask();
+    as(3);
+    await api.forwardRequest(r.id);
     as(1);
     expect((await api.answer(r.id, { state: "done" })).ceo_state).toBe("done");
     expect((await api.answer(r.id, { state: "seen" })).ceo_state).toBe("done");
     expect((await api.answer(r.id, { state: "seen", reopen: true })).ceo_state).toBe("seen");
+  });
+});
+
+describe("sending a report to other people", () => {
+  it("she picks who gets a report; each is told, finds it under Received, and opening it tells her", async () => {
+    as(3);
+    const report = await api.create({ kind: "report", title: "تقرير الفريق", body: "نص", about: { type: "team", id: 1 }, share_ids: [2, 4, 1, 3] });
+    // Not the CEO (who has the inbox) and not herself.
+    expect(report.shared_with?.map((x) => x.id)).toEqual([2, 4]);
+    expect(report.sent_at).toBeUndefined();
+    expect(getDb().notifications.filter((n) => n.kind === "note_sent" && n.data?.queue === "received").map((n) => n.user_id).sort()).toEqual([2, 4]);
+    as(2);
+    expect((await api.received()).map((n) => n.id)).toEqual([report.id]);
+    const seen = await api.markSeen(report.id);
+    expect(seen.shared_with?.find((x) => x.id === 2)?.seen_at).toBeTruthy();
+    as(5);
+    expect(await api.received()).toEqual([]);
+    expect((await fails(api.markSeen(report.id)))?.status).toBe(404);
+  });
+
+  it("she sends it to more people later; only its writer (or the CEO) may, and never a request", async () => {
+    as(3);
+    const report = await api.create({ kind: "report", title: "ت", body: "ن", about: { type: "general" } });
+    const shared = await api.share(report.id, [5]);
+    expect(shared.shared_with?.map((x) => x.id)).toEqual([5]);
+    expect((await fails(api.share(report.id, [])))?.status).toBe(422);
+    expect((await fails(api.share(report.id, [999])))?.status).toBe(422);
+    as(5);
+    expect((await fails(api.share(report.id, [6])))?.status).toBe(403);
+    expect(rules.canShareNote({ id: 3, role: "monitor" }, { author_id: 3, kind: "request" })).toBe(false);
+    expect(rules.canShareNote({ id: 1, role: "ceo" }, { author_id: 3, kind: "report" })).toBe(true);
   });
 });
 

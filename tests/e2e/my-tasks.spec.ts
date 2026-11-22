@@ -59,11 +59,11 @@ test("a completion that waits for approval counts as in review, and the task sta
   await page.getByRole("link", { name: /TSK-109/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "صفحة إعلانات الشركة" })).toBeVisible();
   await page.getByLabel("الحالة").selectOption({ label: "مكتملة" });
-  await expect(page.getByText("أُرسل طلب اعتماد الإكمال إلى مدير المشروع.")).toBeVisible();
+  await expect(page.getByText("أُرسل طلب اعتماد الإكمال إلى مدير القسم.")).toBeVisible();
 
   await page.goto("/my-tasks");
   await expect(review).toHaveText(/^1\s*بانتظار المراجعة\s*بانتظار الاعتماد: 1$/);
-  // Until the project manager approves, nothing is done yet.
+  // Until the department manager approves, nothing is done yet.
   await expect(tiles(page).filter({ hasText: "مهام مفتوحة" })).toHaveText(/^2\s*مهام مفتوحة/);
   await expect(page.getByRole("img", { name: "المنجز: 0 من 2 (0%)" })).toBeVisible();
 });

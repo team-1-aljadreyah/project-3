@@ -2,6 +2,7 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
+import { useUser } from "@/shared/lib/session";
 import { cn } from "@/shared/lib/utils";
 import { Avatar } from "@/shared/ui";
 import type { Notification } from "../types";
@@ -14,12 +15,14 @@ import { notificationDetail, notificationLink, notificationText } from "../words
 export function NotificationItem({ n, people, onOpen }: { n: Notification; people: Map<number, User>; onOpen: (n: Notification) => void }) {
   const fmt = useFmt();
   const { tr } = fmt;
-  const actor = n.actor_id ? people.get(n.actor_id) : undefined;
+  const viewer = useUser();
+  // The person who did it; a birthday reminder shows whose birthday it is.
+  const actor = n.actor_id ? people.get(n.actor_id) : n.data.person_id ? people.get(n.data.person_id) : undefined;
   const detail = notificationDetail(n);
 
   return (
     <Link
-      href={notificationLink(n)}
+      href={notificationLink(n, viewer, people)}
       onClick={() => onOpen(n)}
       className={cn("flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-chip", !n.read && "bg-accent-soft/50")}
     >

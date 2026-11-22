@@ -41,7 +41,7 @@ export function SprintBoard({
     return (
       <Empty
         title={tr("لا توجد دورات بعد", "No sprints yet")}
-        body={tr("يضيف مدير المشروع الدورات من إعدادات المشروع، ثم تُنقل إليها المهام من قائمة الانتظار.", "The project manager adds sprints in the project settings, then moves tasks into them from the backlog.")}
+        body={tr("يضيف مدير القسم الدورات من إعدادات المشروع، ثم تُنقل إليها المهام من قائمة الانتظار.", "The department manager adds sprints in the project settings, then moves tasks into them from the backlog.")}
       />
     );
   }
