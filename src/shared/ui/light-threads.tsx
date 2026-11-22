@@ -424,6 +424,8 @@ export function LightThreads({ start = true, className }: { start?: boolean; cla
       const pictures: Record<string, { img: HTMLCanvasElement; scale: number } | undefined> = {};
       frosts = [];
       for (const el of host!.querySelectorAll<HTMLElement>(".frost")) {
+        // Hidden on phones and tablets (styles.css): nothing to paint there.
+        if (getComputedStyle(el).display === "none") continue;
         const kind = el.dataset.frost === "soft" ? "soft" : "glass";
         const scale = kind === "soft" ? 8 : 4;
         const pic = (pictures[kind] ??= { img: blurred(body!, scale * dpr, (kind === "soft" ? 46 : 15) * dpr, bg, kind === "soft" ? 1.7 : 1.1), scale });
