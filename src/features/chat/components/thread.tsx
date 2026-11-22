@@ -12,10 +12,12 @@ import { canWriteInDirect } from "../rules";
 import { Composer } from "./composer";
 import { MessageItem } from "./message-item";
 
-/** How many messages a chat opens with, and how many more each time you scroll to the top. */
+/** How many messages a chat opens with. */
 export const PAGE = 30;
+/** How many older ones come in each time you scroll to the top (the client, 22 November 2026: "10 by 10"). */
+export const OLDER = 10;
 const POLL_MS = 3000;
-/** Pages to load at most when a reply points to an older message (30 × 20 = the last 600 messages). */
+/** Pages to load at most when a reply points to an older message (30 × 20 = the 600 messages before the shown ones). */
 const MAX_JUMP_PAGES = 20;
 
 /** Older pages and the newest one together, each message once, oldest first. */
@@ -117,8 +119,8 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
     if (!first || loadingOlder) return [];
     setLoadingOlder(true);
     try {
-      const page = await chatApi.messages(chatKey, { before: first.id, limit: PAGE });
-      if (page.length < PAGE) setNoOlder(true);
+      const page = await chatApi.messages(chatKey, { before: first.id, limit: OLDER });
+      if (page.length < OLDER) setNoOlder(true);
       if (page.length) {
         const el = box.current;
         if (el) keepPlace.current = { height: el.scrollHeight, top: el.scrollTop };
@@ -175,7 +177,7 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
           const el = e.currentTarget;
           atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
           if (atBottom.current && unseen) setUnseen(0);
-          // Near the top: the older messages come in.
+          // Near the top: the next 10 older messages come in.
           if (el.scrollTop < 160 && hasOlder && !loadingOlder) void loadOlder();
         }}
         className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"
