@@ -21,7 +21,7 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 117 calls** are there (the 5 request and sharing calls, the 9 rating calls, the 2 push calls and the 6 admin console calls of 22 November, and the 3 celebration calls of 24 November are new). Still to build on the server (each is in its section below; the demo backend in
+the front end's 126 calls** are there (the 5 request and sharing calls, the 9 rating calls, the 2 push calls and the 6 admin console calls of 22 November, and the 3 celebration calls and 9 trial team calls of 24 November are new). Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
@@ -39,6 +39,7 @@ the front end's 117 calls** are there (the 5 request and sharing calls, the 9 ra
 | Quick ratings of teams and people, the team pages | `GET /teams/ratings/summary`, `GET /teams/:id`, `GET`/`POST /teams/:id/ratings`, `GET /people/ratings/summary`, `GET`/`POST /people/:id/ratings`, `PATCH`/`DELETE /ratings/:id` | 21 |
 | Push notifications (the installed app, when it is closed) | `POST`/`DELETE /me/push-subscriptions`, sending Web Push with VAPID keys | 22 |
 | Celebrations | `POST /celebrations`, `GET /me/celebrations`, `POST /celebrations/:id/seen`; the monitor's `GET`/`POST /admin/users` (14) | 23 |
+| Trial teams (the monitor's only) | `GET`/`POST /trials`, `GET`/`PATCH /trials/:id`, `POST /trials/:id/members`, `PATCH`/`DELETE /trials/members/:id`, `POST /trials/members/:id/entries`, `DELETE /trials/entries/:id` | 24 |
 
 Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); `Notification` gets `team_id` and the kinds `team_rated`, `person_rated` (7, 21); the audit log gets `rating_changed`, `rating_deleted` (14); the custom roles' actions get `give_ratings` (17.1); `GET /admin/users` gets `created_at` and `GET /admin/health` gets `storage`, `storage_quota_bytes`, `backup` and `server_version` (14.3); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
@@ -891,7 +892,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 24):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 25):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -1524,7 +1525,42 @@ Shapes: `src/features/celebrations/types.ts`; rules: `src/features/celebrations/
 `birthday_soon` notifications (section 20), unread ones only, so each person's and the CEO's choices about them apply.
 Each is shown once per browser, and each person can turn all celebrations off on their device (the account menu).
 
-## 24. Still open with the client
+## 24. Trial teams (24 November 2026)
+
+The client: "a page for the monitor with new teams under test: she can create a team and create the new members; in
+it she rates them and adds notes; she can make a PDF or send it to the CEO; usually it's just for the monitor, no one
+else can see it". Shapes: `src/features/trials/types.ts`; rules: `src/features/trials/rules.ts`; the demo backend:
+`src/features/trials/mock.ts`; tests: `tests/unit/trials.test.ts`, `tests/e2e/trials.spec.ts`.
+
+**Who.** Only the role `monitor` (anyone else: **403**, the CEO too: the one agreed exception to the CEO rule, written
+in `tests/unit/ceo-rule.test.ts`). Each trial team belongs to the monitor who made it (`created_by`): another
+monitor's answers **404** (nobody learns which exist). The CEO sees only what the monitor sends her (below).
+
+**The people on trial are not accounts.** No sign-in, no email is sent to them; a name and what they do are enough.
+
+Three tables: `trial_teams` (`id`, `name` ≤ 80, `goal` ≤ 500 or null, `started_on`, `status` `running`|`ended`,
+`ended_on`, `created_by`, `created_at`), `trial_members` (`id`, `team_id`, `name` ≤ 120, `specialty` ≤ 80,
+`phone` ≤ 30, `email`, `joined_on`, `decision` `pending`|`accepted`|`rejected`, `created_at`; at most 50 per team),
+`trial_entries` (`id`, `member_id`, `score` 1–5 or null, `text` ≤ 1000 or null, `by_id`, `at`).
+
+| Call | What |
+|---|---|
+| `GET /trials` | Her trial teams, running first then newest: each `TrialTeam` with `members`, `average` (all scores, 1 decimal), `entries`, `accepted` |
+| `POST /trials` `{ name, goal?, started_on }` | 422 on `name` (empty/too long), `started_on` (not a real day, or in the future) |
+| `GET /trials/:id` | `{ team, members, entries }`: each member with `average`, `scores`, `notes`, `last_at`; every entry, newest first |
+| `PATCH /trials/:id` `{ name?, goal?, started_on?, status? }` | `status: "ended"` sets `ended_on` = today (Asia/Baghdad); back to `"running"` clears it |
+| `POST /trials/:id/members` `{ name, specialty, phone?, email?, joined_on? }` | `joined_on` defaults to today; `email` valid, kept lower case; 422 by field |
+| `PATCH /trials/members/:id` | the same fields, and `decision` |
+| `DELETE /trials/members/:id` | removes the person **with their entries** (added by mistake) |
+| `POST /trials/members/:id/entries` `{ score?, text? }` | a score 1–5 and/or words; neither: 422 on `text`; a score out of range: 422 on `score` |
+| `DELETE /trials/entries/:id` | removes one line |
+
+**PDF** is the browser's print window ("Save as PDF"): nothing from the server. **Send to the CEO** uses the monitoring
+notes that exist (section 16): `POST /monitoring/notes` with `kind: "report"`, `about: { type: "general" }`, the
+title "تقرير الفريق التجريبي: …", the report as text (`src/features/trials/report.ts`) and `send: true`. The CEO reads
+and answers it in her inbox; the trial team itself stays private.
+
+## 25. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),
