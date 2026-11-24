@@ -21,6 +21,7 @@ The whole site runs in the browser (no server code), so Cloudflare Pages can hos
 | `NEXT_PUBLIC_USE_MOCK` | `false` | `true` |
 | `NEXT_PUBLIC_API_URL` | the backend's address, e.g. `https://api.example.com` (no `/api/v1`) | not needed |
 | `NEXT_PUBLIC_PUSH_PUBLIC_KEY` | the backend's Web Push public key (below) | not needed (the demo has no push) |
+| `NEXT_PUBLIC_WS_URL` | the Go service's WebSocket, e.g. `wss://followapi.ama8.uk/api/v1/ws` (`wss://` on an `https://` site), once it runs (docs/backend.md, section 25). Empty: the screens ask again on timers | not needed |
 
 The Web Push public key of the live backend (followapi.ama8.uk), sent by the backend on 24 November 2026. It is public
 by design (the browser needs it to ask for a push address); the private key stays on the server:
