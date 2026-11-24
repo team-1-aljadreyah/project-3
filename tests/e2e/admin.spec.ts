@@ -122,7 +122,9 @@ test("a new account can't be saved without a password; the admin makes one, and 
 test("the monitor adds a new account from Users: any job but the CEO and the system admin, and can't change accounts", async ({ page }) => {
   test.setTimeout(60_000);
   await signInAs(page, /هدى ناصر/);
-  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "المستخدمون" }).click();
+  // From her account menu (the top bar is full).
+  await page.getByRole("button", { name: /حسابي/ }).click();
+  await page.getByRole("menuitem", { name: "المستخدمون" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "المستخدمون" })).toBeVisible();
 
   // The accounts are listed, but a row is not a button: changing an account stays the admin's.

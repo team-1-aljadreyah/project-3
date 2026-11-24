@@ -23,7 +23,7 @@ async function freshTab(context: BrowserContext, name: RegExp) {
 test("the monitor celebrates the development team; a member sees it once, with her words", async ({ page, context }) => {
   test.setTimeout(60_000);
   await signInAs(page, /هدى ناصر/);
-  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الفرق" }).click();
+  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "الفرق", exact: true }).click();
   await page.getByRole("button", { name: "احتفل بفريق" }).click();
   const dialog = page.getByRole("dialog", { name: "احتفل بفريق" });
   await dialog.getByRole("button", { name: "احتفل" }).click();

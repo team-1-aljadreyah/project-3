@@ -1,4 +1,4 @@
-import { Camera, ChevronRight, Languages, LogOut, Moon, RotateCcw, SlidersHorizontal, Sun, TrendingUp, UserRound } from "lucide-react";
+import { Camera, ChevronRight, Languages, LogOut, Moon, RotateCcw, SlidersHorizontal, Sun, TrendingUp, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -279,7 +279,7 @@ export function AccountMenu({ user, profile, switches }: { user: User; profile?:
               {settings.map((n) => (
                 <Link key={n.key} href={n.href} role="menuitem" tabIndex={-1} className={rowClass} onClick={() => setOpen(false)}>
                   <span className={cn(iconBox, "bg-chip text-text")}>
-                    <SlidersHorizontal size={16} aria-hidden="true" />
+                    {n.key === "users" ? <UsersRound size={16} aria-hidden="true" /> : <SlidersHorizontal size={16} aria-hidden="true" />}
                   </span>
                   <span className="flex-1">{tr(n.ar, n.en)}</span>
                   <ChevronRight size={16} aria-hidden="true" className="text-faint rtl:-scale-x-100" />

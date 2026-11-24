@@ -21,6 +21,7 @@ import * as projects from "@/features/projects/rules";
 import * as ratings from "@/features/ratings/rules";
 import * as reports from "@/features/reports/rules";
 import * as tasks from "@/features/tasks/rules";
+import * as trials from "@/features/trials/rules";
 import type { User } from "@/shared/api/types";
 import * as access from "@/shared/lib/access";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
@@ -100,6 +101,9 @@ const CHECKS: Record<string, () => boolean> = {
 /** Rules the CEO is meant to fail, each with the client's reason. Nothing else may be added here. */
 const EXCEPTIONS: Record<string, () => boolean> = {
   canSendRequests: () => monitoring.canSendRequests(ceo),
+  // The client (24 November 2026): trial teams are "just for the monitor, no one else can see it". The CEO gets what
+  // she sends (a report in the inbox, or a PDF).
+  canUseTrials: () => trials.canUseTrials(ceo),
 };
 
 /** The names of every exported `can…` rule in the features' rules.ts and in shared/lib/access.ts. */
@@ -142,8 +146,8 @@ describe("the CEO rule: the CEO may do everything any job can", () => {
     it(`${name} is the agreed exception: it says no to the CEO`, () => expect(check()).toBe(false));
   }
 
-  it("the menu shows the CEO every item, also the ones added later (except \"My tasks\", \"My requests\", and the monitor's \"Users\": the CEO has the whole administration)", () => {
+  it("the menu shows the CEO every item, also the ones added later (except \"My tasks\", \"My requests\", the monitor's own \"Trial teams\", and her \"Users\": the CEO has the whole administration)", () => {
     expect(access.navFor("ceo")).toEqual(access.NAV.filter((n) => !n.notForCeo));
-    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["my-tasks", "users", "requests"]);
+    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["my-tasks", "trials", "users", "requests"]);
   });
 });

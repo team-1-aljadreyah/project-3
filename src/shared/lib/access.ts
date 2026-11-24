@@ -111,8 +111,11 @@ export const NAV: NavItem[] = [
   { key: "teams", ar: "الفرق", en: "Teams", href: "/teams", roles: ["ceo", "pm", "monitor"], ready: true },
   { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
   { key: "monitoring", ar: "المتابعة", en: "Monitoring", href: "/monitoring", roles: ["monitor"], ready: true },
-  // The monitor adds accounts here; the CEO and the admin have the whole administration page instead.
-  { key: "users", ar: "المستخدمون", en: "Users", href: "/users", roles: ["monitor"], ready: true, notForCeo: true },
+  // The monitor adds accounts here (from her account menu: the top bar is full); the CEO and the admin have the whole
+  // administration page instead.
+  // The monitoring officer's own trial teams: nobody else sees them, not even the CEO (the client).
+  { key: "trials", ar: "الفرق التجريبية", en: "Trial teams", href: "/trials", roles: ["monitor"], ready: true, notForCeo: true },
+  { key: "users", ar: "المستخدمون", en: "Users", href: "/users", roles: ["monitor"], ready: true, notForCeo: true, inAccountMenu: true },
   { key: "inbox", ar: "الوارد", en: "Inbox", href: "/inbox", roles: ["ceo"], ready: true },
   { key: "requests", ar: "طلباتي", en: "My requests", href: "/requests", roles: ["pm", "monitor", "lead", "employee", "admin"], ready: true, notForCeo: true },
   { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },

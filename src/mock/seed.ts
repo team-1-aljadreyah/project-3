@@ -14,6 +14,7 @@ import type { Notification, NotificationPrefs } from "@/features/notifications";
 import type { Project, ProjectEvent, ProjectTemplate, Sprint } from "@/features/projects";
 import type { Rating } from "@/features/ratings";
 import type { Task, TaskComment, TaskEvent } from "@/features/tasks";
+import type { TrialStore } from "@/features/trials";
 import type { Priority, TaskStatus, Team, User } from "@/shared/api/types";
 import { DEFAULT_STATUSES } from "@/shared/lib/statuses";
 import { daysBetween, today } from "@/shared/lib/utils";
@@ -147,6 +148,8 @@ export interface MockDb {
   ratings: Rating[];
   /** Teams celebrated by the monitoring officer: who each went to and who has seen it (none in the seed). */
   celebrations?: StoredCelebration[];
+  /** The monitoring officer's trial teams, their people on trial, and her ratings and notes (none in the seed). */
+  trials?: TrialStore;
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
   /** The CEO's advanced settings: only what differs from the defaults (the security numbers live in `settings`). */
