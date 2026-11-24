@@ -10,5 +10,7 @@ declare namespace NodeJS {
     readonly NEXT_PUBLIC_APP_BUILD?: string;
     /** The backend's Web Push public key (VAPID). Empty: no push while the app is closed (docs/backend.md). */
     readonly NEXT_PUBLIC_PUSH_PUBLIC_KEY?: string;
+    /** The server's WebSocket for live updates (wss://…/api/v1/ws). Empty: the screens ask again on timers. */
+    readonly NEXT_PUBLIC_WS_URL?: string;
   }
 }

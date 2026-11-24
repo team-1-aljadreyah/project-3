@@ -1,6 +1,6 @@
 // "The data changed": one signal every open screen listens to (through useLoad), so lists and boards show the
-// new state by themselves. Sources today: a change saved in this tab, and changes from other tabs of this browser
-// (BroadcastChannel). The server's live updates (WebSocket) plug in here later, the same way as in Project 2.
+// new state by themselves. Sources: a change saved in this tab, changes from other tabs of this browser
+// (BroadcastChannel), and the server's live updates (its WebSocket, socket.ts) when the build has one.
 //
 // Many changes close together become one refresh (a short wait), so a screen never loads ten times in a row.
 
@@ -32,6 +32,13 @@ export function dataChanged() {
   try {
     channel?.postMessage("changed");
   } catch {}
+}
+
+/** The server said something changed (its WebSocket, socket.ts): refresh this tab's screens. Not told to the other
+ * tabs, since each tab has its own socket and hears the same news. */
+export function serverChanged() {
+  start();
+  fire();
 }
 
 /** Call `listener` when data changes anywhere. Returns a function that stops listening. */

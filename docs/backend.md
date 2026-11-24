@@ -40,6 +40,7 @@ the front end's 126 calls** are there (the 5 request and sharing calls, the 9 ra
 | Push notifications (the installed app, when it is closed) | `POST`/`DELETE /me/push-subscriptions`, sending Web Push with VAPID keys | 22 |
 | Celebrations | `POST /celebrations`, `GET /me/celebrations`, `POST /celebrations/:id/seen`; the monitor's `GET`/`POST /admin/users` (14) | 23 |
 | Trial teams (the monitor's only) | `GET`/`POST /trials`, `GET`/`PATCH /trials/:id`, `POST /trials/:id/members`, `PATCH`/`DELETE /trials/members/:id`, `POST /trials/members/:id/entries`, `DELETE /trials/entries/:id` | 24 |
+| Live updates (the Go service) | the WebSocket `/api/v1/ws`: `auth` first, close `4401`, six events | 25 |
 
 Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); `Notification` gets `team_id` and the kinds `team_rated`, `person_rated` (7, 21); the audit log gets `rating_changed`, `rating_deleted` (14); the custom roles' actions get `give_ratings` (17.1); `GET /admin/users` gets `created_at` and `GET /admin/health` gets `storage`, `storage_quota_bytes`, `backup` and `server_version` (14.3); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
@@ -542,8 +543,8 @@ employees receive a notification for each new announcement), `bug_assigned`.
 
 Live updates: the bell should update without a reload. Today the site refreshes when this browser saves something, and the
 open app asks `GET /notifications` and `GET /chats` again **every 30 seconds** (to ring and show a system notification for
-what is new: section 22); with the real server, a WebSocket message `notification` (planned, as in Project 2) will tell the
-site to load the list again. The bell also lists the chats with unread messages (from `unread` in `GET /chats`, nothing
+what is new: section 22); with the server's WebSocket (section 25), the message `notification` tells the site to load
+the list again at once. The bell also lists the chats with unread messages (from `unread` in `GET /chats`, nothing
 stored), so `unread` must be right: messages from others after the person's last `POST /chats/:key/read`.
 
 ## 8. File attachments
@@ -756,9 +757,8 @@ The server checks (each → **422** on the field in brackets, unless said):
 **Live (22 November 2026: "people see the message without refreshing"):** the site reloads the open chat when data
 changes in this browser, and, for other people's messages, **asks again while the chat is shown**: `GET /chats/:key/messages`
 every **3 seconds** and `GET /chats` every **10 seconds**, only while the tab is visible (and at once when it is shown again).
-Please keep both calls light (an index on `messages(chat, id)`; `ETag`/`304` is welcome). A WebSocket message
-`chat_message {chat}` (planned, like `notification`) will later replace the asking: the site then loads that chat and
-the list only when told. The demo keeps one signed-in person per tab, so two tabs can be two people.
+Please keep both calls light (an index on `messages(chat, id)`; `ETag`/`304` is welcome). With the server's WebSocket
+(section 25), `chat_message {chat}` tells the site to load at once, and the asking drops to once a minute. The demo keeps one signed-in person per tab, so two tabs can be two people.
 
 **Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats,
 written versions of voice messages.
@@ -892,7 +892,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 25):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 26):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -1563,7 +1563,49 @@ notes that exist (section 16): `POST /monitoring/notes` with `kind: "report"`, `
 title "تقرير الفريق التجريبي: …", the report as text (`src/features/trials/report.ts`) and `send: true`. The CEO reads
 and answers it in her inbox; the trial team itself stays private.
 
-## 25. Still open with the client
+## 25. Live updates: the WebSocket (24 November 2026)
+
+The real-time part (notifications, push, chat, celebrations) moves to a **Go** service with a WebSocket. The site's
+side is ready: `src/shared/lib/socket.ts` (tests: `tests/unit/socket.test.ts`). It switches on when the build has
+`NEXT_PUBLIC_WS_URL`; without it the screens ask again on timers, as before. Every call above stays as it is: the
+socket only says **when** to load, and the site loads with the normal calls, so every "who may see what" rule stays
+in one place and a lost message never loses data.
+
+**Connecting.**
+- One address, for example `wss://followapi.ama8.uk/api/v1/ws`. Each open tab opens **one** socket; one person may have
+  several tabs and phones open.
+- The site's **first message**: `{"type":"auth","token":"<the API's Bearer token>"}` (never in the address: addresses
+  end up in logs). No auth within about 5 seconds → close.
+- A bad, expired or cancelled token (logout, a stopped account) → **close with code `4401`**: the site signs the person
+  out, like a `401` from the API, and doesn't try again.
+- The site sends nothing else. Send WebSocket **ping frames about every 30 s** (the browser answers by itself) and drop
+  connections that don't answer.
+- Any other close (a server restart, the network): the site tries again after 1 s, 2 s, 4 s … at most 30 s (give or
+  take a fifth, so tabs don't all come back at once), and at once when the network or the tab comes back. Once back it
+  loads every open screen again.
+
+**Events (server → site).** One small JSON message per event, **with no content**:
+
+| `type` | Fields | When | Send to |
+|---|---|---|---|
+| `notification` | `id` | a notification is saved (only kinds the person gets: section 7 and the CEO's table, section 17) | its receiver |
+| `chat_message` | `chat`, `id` | a message is saved (section 11) | every member of the chat, **the writer too** (their other tabs) |
+| `chat_read` | `chat` | `POST /chats/:key/read` | that person (their other devices update the unread count) |
+| `chat_changed` | `chat` | a group is made, renamed, its members change, or someone leaves | the old and the new members |
+| `celebration` | `id` | `POST /celebrations` (section 23) | the people it went to |
+| `site_live` | | the CEO changes a switch, the banner or read-only mode (section 17), or a person's job changes | everyone connected |
+
+Unknown types are ignored, so more can be added later. Today any event reloads the open screens (`useLoad` through
+`src/shared/lib/live.ts`): the bell, the chat list, the open chat, the celebrations and `GET /site/live`.
+
+**The timers.** While the socket is open, the screens still ask about once a minute as a safety net; when it is down
+they go back to the times of sections 7 and 11 (the open chat every 3 s, the chat list every 10 s).
+
+**The server side.** Behind Cloudflare or nginx: allow the WebSocket upgrade and a long idle time (at least 100 s).
+One Go process is enough for this company; with more than one, pass the events between them (for example Redis
+pub/sub). Web Push for closed apps (section 22) does not change: the socket is only for open tabs.
+
+## 26. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),

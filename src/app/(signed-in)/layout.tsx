@@ -7,7 +7,8 @@
 // Pages may read their tab or filter from the address (useQueryParam, useSearchParams), which Next.js wants inside
 // <Suspense> for the plain-files build. LiveAlerts rings and shows a system notification when something new arrives;
 // LiveCelebrations shows, once, a team celebrated by the monitoring officer and the birthday moments;
-// above the page, once, the invitations to turn alerts on and (on a phone) to install the app.
+// above the page, once, the invitations to turn alerts on and (on a phone) to install the app. LiveSocket keeps the
+// server's live updates open when the build has a WebSocket address (docs/backend.md section 25).
 import { Suspense } from "react";
 import { SiteRules } from "@/features/advanced";
 import { RequireAuth } from "@/features/auth";
@@ -15,12 +16,14 @@ import { CelebrationsSwitch, LiveCelebrations } from "@/features/celebrations";
 import { AlertsInvite, AlertsSwitch, LiveAlerts, NotificationBell } from "@/features/notifications";
 import { ProfileDialog } from "@/features/profile";
 import { QuickSearch } from "@/features/search";
+import { LiveSocket } from "@/shared/lib/socket";
 import { InstallHint } from "@/shared/pwa";
 import { AppFrame } from "@/shared/shell";
 
 export default function SignedInLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
+      <LiveSocket />
       <SiteRules />
       <LiveAlerts />
       <LiveCelebrations />
