@@ -1444,7 +1444,8 @@ it switches on when the build has `NEXT_PUBLIC_PUSH_PUBLIC_KEY` (the VAPID publi
 **1. Keys (once).** Make a VAPID key pair (any Web Push library: `web-push generate-vapid-keys`, or
 `minishlink/web-push` for Laravel/PHP: `VAPID::createVapidKeys()`). The **public** key goes to the front end's build
 as `NEXT_PUBLIC_PUSH_PUBLIC_KEY` (it is public by design); the **private** key stays on the server only, with a
-contact (`mailto:` the team's address) as the VAPID subject.
+contact (`mailto:` the team's address) as the VAPID subject. **Done 24 November 2026:** the backend sent the public
+key; it is in `docs/deploy-cloudflare.md` (environment variables).
 
 **2. Keeping each device's address.** When a person allows notifications (and again on each start of the app), the
 site sends:
