@@ -34,19 +34,40 @@ function deviceName() {
   return `${os} · ${browser}`;
 }
 
-/** This device's subscription (made now if there is none). Null when push isn't possible or allowed. */
-export async function subscribePush(): Promise<PushSubscriptionInput | null> {
-  if (!pushAvailable() || Notification.permission !== "granted") return null;
+/** Why this device has no push address: the browser can't, the person didn't allow it, the app's worker isn't there
+ * yet, or the browser's push service said no (the browser's own words in `detail`). */
+export type PushProblem = "unsupported" | "not-allowed" | "no-worker" | "refused";
+
+/** True when both are the same key (an old subscription keeps the key it was made with). */
+export function sameKey(a: ArrayBuffer | null | undefined, b: Uint8Array) {
+  if (!a || a.byteLength !== b.length) return false;
+  const x = new Uint8Array(a);
+  return x.every((v, i) => v === b[i]);
+}
+
+const wait = (ms: number) => new Promise<undefined>((done) => setTimeout(() => done(undefined), ms));
+
+/** This device's subscription (made now if there is none), or why there is none. A subscription made with another key
+ * (the backend made a new key pair) is dropped and made again: the push service refuses pushes signed with the new key. */
+export async function subscribePush(): Promise<PushSubscriptionInput | { problem: PushProblem; detail?: string }> {
+  if (!pushAvailable()) return { problem: "unsupported" };
+  if (Notification.permission !== "granted") return { problem: "not-allowed" };
+  const key = keyBytes(PUSH_PUBLIC_KEY);
   try {
-    const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg) return null;
-    const sub =
-      (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUSH_PUBLIC_KEY) }));
+    // Just after the first load the worker may still be installing: wait for it a little.
+    const reg = (await navigator.serviceWorker.getRegistration()) ?? (await Promise.race([navigator.serviceWorker.ready, wait(8000)]));
+    if (!reg) return { problem: "no-worker" };
+    let sub = await reg.pushManager.getSubscription();
+    if (sub && !sameKey(sub.options.applicationServerKey, key)) {
+      await sub.unsubscribe();
+      sub = null;
+    }
+    sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
     const json = sub.toJSON();
-    if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) return null;
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) return { problem: "refused", detail: "no keys" };
     return { endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth }, device: deviceName() };
-  } catch {
-    return null;
+  } catch (e) {
+    return { problem: "refused", detail: e instanceof Error ? e.message : String(e) };
   }
 }
 

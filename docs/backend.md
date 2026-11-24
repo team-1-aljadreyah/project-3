@@ -1457,7 +1457,9 @@ site sends:
 → `{ "success": true, "data": null }`. Keep it **per person and per device** (a table `push_subscriptions`: `user_id`,
 `endpoint` unique, `p256dh`, `auth`, `device`, the token or session it came with, `created_at`, `last_used_at`). The same
 `endpoint` again → update that row (it may now belong to another person who signed in on that phone: move it). 422 on
-a missing field; the `endpoint` must be `https://`.
+a missing field; the `endpoint` must be `https://`. The notifications page (the line under «إشعارات النظام») shows
+the person whether this worked on their device, or the status and the first field message when it did not, so a
+refusal here is seen at once.
 
 `DELETE /me/push-subscriptions` with `{ "endpoint": "…" }` (the person turned system notifications off on that
 device) → delete that row if it is theirs; unknown → still `success` (nothing to do). **On `POST /auth/logout`**, delete

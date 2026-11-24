@@ -1,4 +1,5 @@
-import { Bell, BellRing, MessageCircle, Play, Volume2 } from "lucide-react";
+import { Bell, BellRing, CircleCheck, MessageCircle, Play, TriangleAlert, Volume2 } from "lucide-react";
+import { useEffect } from "react";
 import { USE_MOCK } from "@/shared/lib/config";
 import { useFmt } from "@/shared/lib/i18n";
 import { useUser } from "@/shared/lib/session";
@@ -6,7 +7,7 @@ import { cn } from "@/shared/lib/utils";
 import { askNotificationPermission, playChime, pushAvailable, useNotificationPermission, type ChimeKind } from "@/shared/pwa";
 import type { DevicePrefs } from "../alerts";
 import { saveDevicePrefs, useDevicePrefs } from "../device-prefs";
-import { syncPush } from "../push-sync";
+import { syncPush, usePushState } from "../push-sync";
 
 /** A row that is one switch: the whole row is its label (click anywhere). */
 function SwitchRow({
@@ -150,13 +151,75 @@ export function DeviceAlerts() {
           extra={listen("notification", tr("استمع إلى نغمة الإشعارات", "Play the notification chime"))}
         />
       </ul>
-      <p className="text-[13px] text-muted">
-        {pushAvailable()
-          ? tr("تصلك الإشعارات حتى والمنصة مغلقة، ما دامت إشعارات النظام مسموحة.", "Notifications reach you even when the platform is closed, while system notifications are allowed.")
-          : USE_MOCK
+      {pushAvailable() ? (
+        <PushLine me={me} systemOn={prefs.system && permission === "granted"} />
+      ) : (
+        <p className="text-[13px] text-muted">
+          {USE_MOCK
             ? tr("في هذه النسخة التجريبية لا يوجد خادم إشعارات: تصلك التنبيهات ما دامت المنصة مفتوحة، ولو في الخلفية.", "This demo has no push server: alerts reach you while the platform is open, even in the background.")
             : tr("تصلك التنبيهات ما دامت المنصة مفتوحة، ولو في الخلفية.", "Alerts reach you while the platform is open, even in the background.")}
-      </p>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Whether THIS device really gets notifications while the platform is closed: signed up with the server, or what
+ * stopped it (the browser, the app, or the server with its code), with «حاول مرة أخرى». Only when the build has push.
+ */
+function PushLine({ me, systemOn }: { me: number; systemOn: boolean }) {
+  const { tr } = useFmt();
+  const push = usePushState();
+  // Opening this page signs the device up if nothing did yet on this page load, so the line always has an answer.
+  useEffect(() => {
+    if (systemOn && push.step === "off") void syncPush(me, true);
+  }, [systemOn, push.step, me]);
+
+  let tone: "muted" | "good" | "bad" = "muted";
+  let text: string;
+  if (!systemOn || (push.step === "problem" && push.problem === "not-allowed")) {
+    text = tr("شغّل «إشعارات النظام» أعلاه لتصلك الإشعارات حتى والمنصة مغلقة.", "Turn on “System notifications” above to get notifications even when the platform is closed.");
+  } else if (push.step === "on") {
+    tone = "good";
+    text = tr("هذا الجهاز مسجَّل: تصله الإشعارات حتى والمنصة مغلقة.", "This device is signed up: notifications reach it even when the platform is closed.");
+  } else if (push.step === "problem") {
+    tone = "bad";
+    const detail = push.detail ? ` (${push.detail})` : "";
+    text =
+      push.problem === "unsupported"
+        ? tr("هذا المتصفح لا يستقبل الإشعارات والمنصة مغلقة. على iPhone وiPad: افتح المنصة من أيقونتها على الشاشة الرئيسية.", "This browser can't get notifications while the platform is closed. On iPhone and iPad: open the platform from its icon on the home screen.")
+        : push.problem === "no-worker"
+          ? tr("لم يكتمل تجهيز التطبيق على هذا الجهاز بعد. أعد تحميل الصفحة ثم حاول مرة أخرى.", "The app isn't fully set up on this device yet. Reload the page, then try again.")
+          : push.problem === "refused"
+            ? tr(`لم يعطِ المتصفح عنواناً للإشعارات${detail}.`, `The browser gave no address for notifications${detail}.`)
+            : tr(`لم يقبل الخادم تسجيل هذا الجهاز${detail}. أرسل هذه الرسالة إلى مسؤول النظام.`, `The server didn't accept this device${detail}. Send this message to the system admin.`);
+  } else {
+    text = tr("يُسجَّل هذا الجهاز لتصله الإشعارات والمنصة مغلقة…", "Signing this device up for notifications while the platform is closed…");
+  }
+
+  const Icon = tone === "good" ? CircleCheck : tone === "bad" ? TriangleAlert : null;
+  return (
+    <div
+      role="status"
+      className={cn(
+        "flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px]",
+        tone === "muted" ? "text-muted" : cn("rounded-xl px-3 py-2.5", tone === "good" ? "bg-success-soft text-success" : "bg-danger-soft text-danger"),
+      )}
+    >
+      <span className="flex min-w-0 flex-1 items-start gap-2">
+        {Icon && <Icon size={16} aria-hidden="true" className="mt-px shrink-0" />}
+        <span className="min-w-0 break-words">{text}</span>
+      </span>
+      {tone === "bad" && push.step === "problem" && push.problem !== "unsupported" && (
+        <button
+          type="button"
+          onClick={() => void syncPush(me, true)}
+          className="shrink-0 rounded-lg border border-current/30 px-2.5 py-1 text-[13px] font-medium transition-colors hover:bg-card"
+        >
+          {tr("حاول مرة أخرى", "Try again")}
+        </button>
+      )}
     </div>
   );
 }
