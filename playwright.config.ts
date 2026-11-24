@@ -19,6 +19,9 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    // Celebrations (a team celebrated, birthdays) open over the page by themselves; the demo always has a birthday
+    // today and one in a week, so every test starts with them off (the account menu switch). Their own tests turn them on.
+    storageState: { cookies: [], origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: "p3.celebrations", value: "off" }] }] },
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], channel: process.env.CI ? undefined : "chrome" } },

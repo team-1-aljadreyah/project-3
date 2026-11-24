@@ -21,7 +21,7 @@ Cloudflare Pages preview address.
 **The real server today** (compared with its OpenAPI, https://followapi.ama8.uk/docs, on 21 November 2026): the base
 `https://followapi.ama8.uk/api/v1`, Sanctum Bearer tokens, `Accept-Language`, the `{ success, data }` answer and the
 error shape (`{ success: false, message, code, errors: { field: "message" } }`) all match the front end, and **73 of
-the front end's 114 calls** are there (the 5 request and sharing calls, the 9 rating calls, the 2 push calls and the 6 admin console calls of 22 November are new). Still to build on the server (each is in its section below; the demo backend in
+the front end's 117 calls** are there (the 5 request and sharing calls, the 9 rating calls, the 2 push calls and the 6 admin console calls of 22 November, and the 3 celebration calls of 24 November are new). Still to build on the server (each is in its section below; the demo backend in
 `src/features/<feature>/mock.ts` is the reference):
 
 | Feature | Calls | Section |
@@ -38,6 +38,7 @@ the front end's 114 calls** are there (the 5 request and sharing calls, the 9 ra
 | Birthdays | `birth_date` on the users calls (who sees the year), a daily job for `birthday_soon` and `birthday_today` | 20 |
 | Quick ratings of teams and people, the team pages | `GET /teams/ratings/summary`, `GET /teams/:id`, `GET`/`POST /teams/:id/ratings`, `GET /people/ratings/summary`, `GET`/`POST /people/:id/ratings`, `PATCH`/`DELETE /ratings/:id` | 21 |
 | Push notifications (the installed app, when it is closed) | `POST`/`DELETE /me/push-subscriptions`, sending Web Push with VAPID keys | 22 |
+| Celebrations | `POST /celebrations`, `GET /me/celebrations`, `POST /celebrations/:id/seen`; the monitor's `GET`/`POST /admin/users` (14) | 23 |
 
 Also on existing calls: `User` gets `avatar_url` (19), `custom_role` (17.1), and `birth_date` and `birthday` (20); `Notification` gets `team_id` and the kinds `team_rated`, `person_rated` (7, 21); the audit log gets `rating_changed`, `rating_deleted` (14); the custom roles' actions get `give_ratings` (17.1); `GET /admin/users` gets `created_at` and `GET /admin/health` gets `storage`, `storage_quota_bytes`, `backup` and `server_version` (14.3); error codes `FEATURE_OFF` (403) and
 `READ_ONLY` (423) (17); `POST /projects` is allowed to the `monitor` too, who sends `pm_id` (2); `POST /chats/direct`
@@ -890,7 +891,7 @@ on it, never `UPDATE` or `DELETE`, and the new columns are written once with the
   takes the context from this call (`AuditDrawer`, `src/features/admin/components/audit-drawer.tsx`).
 - **Privacy:** IP addresses, devices and sessions are personal data. Only the `admin` and the `ceo` see them (the
   audit calls above); no other call returns them, and they never go into notifications or exports for other jobs.
-  **Open question (client, section 23):** how long to keep them. If they must go after a while (for example 12
+  **Open question (client, section 24):** how long to keep them. If they must go after a while (for example 12
   months) while the line stays, keep `ip`, `user_agent` and `session_id` in a side table by line id that a scheduled
   job empties, so the line itself is never changed.
 
@@ -1488,7 +1489,42 @@ delete subscriptions unused for a few months.
 The service worker (`public/sw.js`) shows each push (`push` event) and opens `url` on a tap (`notificationclick`),
 bringing an open window of the app forward instead of opening a second one.
 
-## 23. Still open with the client
+## 23. Celebrations (24 November 2026)
+
+The client: "the monitor can choose a team and press a button, and it will show them a little animation of doing
+something good or big", and birthdays "with an animation that suits the birthday", on the day and a week before.
+Shapes: `src/features/celebrations/types.ts`; rules: `src/features/celebrations/rules.ts`; the demo backend:
+`src/features/celebrations/mock.ts`; tests: `tests/unit/celebrations.test.ts`, `tests/e2e/celebrations.spec.ts`.
+
+**A team celebration.** `POST /celebrations` `{ team_id, kind: "good" | "big", message? }`, for the `monitor` and the
+`ceo` only (403):
+
+- `team_id` an existing team (422 on `team_id`); `kind` one of the two (422 on `kind`); `message` optional, trimmed,
+  at most 200 characters (422 on `message`).
+- It goes to the team's **active members, not the sender**. A team with nobody in it: 422 on `team_id`.
+- Keep `celebrations` (`id`, `team_id`, `kind`, `message`, `by_id`, `created_at`) and `celebration_recipients`
+  (`celebration_id`, `user_id`, `seen_at` null). The members are taken **when it is sent** (someone who joins later
+  doesn't get it).
+- Answer: the celebration (below) with `sent_to` = how many people it went to.
+
+`GET /me/celebrations` → the signed-in person's celebrations **not seen yet**, from the **last 7 days**, oldest first:
+
+```json
+{ "id": 3, "team_id": 1, "team_name": "فريق التطوير", "team_name_en": "Development", "kind": "big",
+  "message": "أطلقتم النسخة الأولى قبل موعدها!", "by_id": 3, "by_name": "هدى ناصر", "by_name_en": "Huda Nasser",
+  "by_role": "monitor", "by_custom_role": null, "created_at": "2026-11-24T09:12:00Z" }
+```
+
+`POST /celebrations/:id/seen` → `{ success: true, data: null }`: sets `seen_at`; not one of mine → 404. The site asks
+`/me/celebrations` when it opens and every minute while it is shown, and shows each one once, over the page.
+*(Suggested, not needed: an audit line `team_celebrated`.)*
+
+**Birthdays need nothing new from the server.** On the person's own birthday the site shows a cake from their own
+`birth_date` (`/me`). The monitor's and the CEO's "today" and "in a week" moments come from the `birthday_today` and
+`birthday_soon` notifications (section 20), unread ones only, so each person's and the CEO's choices about them apply.
+Each is shown once per browser, and each person can turn all celebrations off on their device (the account menu).
+
+## 24. Still open with the client
 
 Each assumption is written in its section above. The main ones to confirm: who approves completion (section 4), the
 required notifications (7), file sizes and types (8), what a team is (11, 12, 14), "late project" and velocity (12),

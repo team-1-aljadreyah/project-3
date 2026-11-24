@@ -4,6 +4,7 @@ import type { AdvancedRules, SettingsChange } from "@/features/advanced";
 import type { Announcement } from "@/features/announcements";
 import type { Attachment } from "@/features/attachments";
 import type { Bug, BugEvent } from "@/features/bugs";
+import type { StoredCelebration } from "@/features/celebrations";
 import type { Message } from "@/features/chat";
 import type { Criteria, Review } from "@/features/performance";
 import type { AuditEntry, SessionRecord, Settings } from "@/features/admin";
@@ -144,6 +145,8 @@ export interface MockDb {
   monitor_notes: MonitorNote[];
   /** Quick ratings of teams and people (a score with a reason, any time; not the periodic reviews). */
   ratings: Rating[];
+  /** Teams celebrated by the monitoring officer: who each went to and who has seen it (none in the seed). */
+  celebrations?: StoredCelebration[];
   /** Each person's notification choices, by user id. */
   notification_prefs: Record<number, NotificationPrefs>;
   /** The CEO's advanced settings: only what differs from the defaults (the security numbers live in `settings`). */

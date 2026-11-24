@@ -12,6 +12,7 @@ import * as admin from "@/features/admin/rules";
 import * as advanced from "@/features/advanced/rules";
 import * as announcements from "@/features/announcements/rules";
 import * as bugs from "@/features/bugs/rules";
+import * as celebrations from "@/features/celebrations/rules";
 import * as chat from "@/features/chat/rules";
 import * as monitoring from "@/features/monitoring/rules";
 import * as performance from "@/features/performance/rules";
@@ -49,6 +50,8 @@ const CHECKS: Record<string, () => boolean> = {
   // bugs
   canReportBug: () => bugs.canReportBug(ceo, project),
   canManageBugs: () => bugs.canManageBugs(ceo, project),
+  // celebrations
+  canCelebrateTeams: () => celebrations.canCelebrateTeams(ceo),
   // chat
   canCreateGroupChat: () => chat.canCreateGroupChat(ceo),
   canStartDirect: () => chat.canStartDirect(ceo, someone),
