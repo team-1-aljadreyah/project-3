@@ -30,6 +30,17 @@ test("every page links the manifest; it is valid and its icons load", async ({ p
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", /viewport-fit=cover/);
 });
 
+test("the browser tab shows the logo: the page links it, and it loads", async ({ page, request }) => {
+  await page.goto("/login");
+  const links = page.locator('link[rel="icon"]');
+  await expect(links).toHaveCount(2);
+  for (const [i, type] of [[0, "image/svg+xml"], [1, "image/png"]] as const) {
+    const icon = await request.get((await links.nth(i).getAttribute("href"))!);
+    expect(icon.ok()).toBe(true);
+    expect(icon.headers()["content-type"]).toContain(type);
+  }
+});
+
 test("the service worker and the offline page are served", async ({ request }) => {
   const sw = await request.get("/sw.js?v=test");
   expect(sw.ok()).toBe(true);

@@ -15,7 +15,15 @@ export const metadata: Metadata = {
   description: "منصة الشركة لإدارة المشاريع والمهام والفرق ومتابعة الإنجاز",
   applicationName: BRAND.ar,
   appleWebApp: { capable: true, title: BRAND.ar, statusBarStyle: "default" },
-  icons: { apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }] },
+  // `icons` here replaces the icon Next.js would link from app/icon.svg, so the browser tab icon is listed too (else the
+  // tab shows the browser's plain globe): the logo as SVG, and a PNG for browsers that don't take SVG icons.
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   other: { "apple-mobile-web-app-capable": "yes" },
 };
 
