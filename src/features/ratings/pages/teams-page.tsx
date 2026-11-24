@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, Users } from "lucide-react";
 import Link from "next/link";
 import { authApi } from "@/features/auth";
+import { CelebrateButton } from "@/features/celebrations";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useQueryParam } from "@/shared/lib/query-param";
@@ -52,7 +53,11 @@ export function TeamsPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{tr("الفرق", "Teams")}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">{tr("الفرق", "Teams")}</h1>
+          {/* The monitoring officer (and the CEO) choose a team and celebrate it. */}
+          <CelebrateButton teams={rows.map((r) => r.team)} />
+        </div>
         <p className="text-sm text-muted">
           {me.role === "pm"
             ? tr("تقيّم الفرق العاملة في مشاريعك تقييماً سريعاً: درجة وسبب بكلماتك.", "You give quick ratings to the teams in your projects: a score and a reason in your words.")

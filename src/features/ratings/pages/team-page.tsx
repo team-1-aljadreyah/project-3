@@ -1,5 +1,6 @@
 import { BarChart3, Users } from "lucide-react";
 import Link from "next/link";
+import { CelebrateButton } from "@/features/celebrations";
 import { useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { useRouteParam } from "@/shared/lib/route-param";
@@ -66,12 +67,16 @@ export function TeamPage() {
             </p>
           </div>
         </div>
-        {tasks && (
-          <ButtonLink href={report} variant="secondary" pill>
-            <BarChart3 size={16} aria-hidden="true" />
-            {tr("تقرير الفريق", "Team report")}
-          </ButtonLink>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* The monitoring officer (and the CEO) celebrate the team: its people see it the next time they open the platform. */}
+          <CelebrateButton teams={[team]} teamId={team.id} />
+          {tasks && (
+            <ButtonLink href={report} variant="secondary" pill>
+              <BarChart3 size={16} aria-hidden="true" />
+              {tr("تقرير الفريق", "Team report")}
+            </ButtonLink>
+          )}
+        </div>
       </div>
 
       {tasks && (

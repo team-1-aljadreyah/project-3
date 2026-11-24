@@ -6,10 +6,12 @@
 // banner, read-only mode) are loaded by the advanced feature; app/ is the one place that may put features together.
 // Pages may read their tab or filter from the address (useQueryParam, useSearchParams), which Next.js wants inside
 // <Suspense> for the plain-files build. LiveAlerts rings and shows a system notification when something new arrives;
+// LiveCelebrations shows, once, a team celebrated by the monitoring officer and the birthday moments;
 // above the page, once, the invitations to turn alerts on and (on a phone) to install the app.
 import { Suspense } from "react";
 import { SiteRules } from "@/features/advanced";
 import { RequireAuth } from "@/features/auth";
+import { CelebrationsSwitch, LiveCelebrations } from "@/features/celebrations";
 import { AlertsInvite, AlertsSwitch, LiveAlerts, NotificationBell } from "@/features/notifications";
 import { ProfileDialog } from "@/features/profile";
 import { QuickSearch } from "@/features/search";
@@ -21,6 +23,7 @@ export default function SignedInLayout({ children }: { children: React.ReactNode
     <RequireAuth>
       <SiteRules />
       <LiveAlerts />
+      <LiveCelebrations />
       <AppFrame
         actions={
           <>
@@ -29,7 +32,12 @@ export default function SignedInLayout({ children }: { children: React.ReactNode
           </>
         }
         profile={(o) => <ProfileDialog {...o} />}
-        switches={<AlertsSwitch />}
+        switches={
+          <>
+            <AlertsSwitch />
+            <CelebrationsSwitch />
+          </>
+        }
       >
         <InstallHint />
         <AlertsInvite />
