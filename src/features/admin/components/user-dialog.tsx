@@ -12,7 +12,7 @@ import { Avatar, Button, Dialog, errorText, Field, Input, PasswordInput, Select,
 import { adminApi } from "../api";
 import { ROLES as ROLE_WORDS } from "@/shared/lib/access";
 import { useSiteLive } from "@/shared/lib/site";
-import { isLocked, ROLE_KEYS } from "../rules";
+import { isLocked, rolesToGive } from "../rules";
 import type { AdminUser, UserInput } from "../types";
 
 /**
@@ -44,7 +44,9 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
   const actor = useUser();
   const [confirmPicture, setConfirmPicture] = useState(false);
   // The jobs the CEO made (advanced settings): choosing one keeps its base job as the role.
-  const roles = useSiteLive().roles ?? [];
+  // The monitor adds every job but the CEO and the system admin (rolesToGive), so only those show.
+  const allowed = rolesToGive(actor);
+  const roles = (useSiteLive().roles ?? []).filter((r) => allowed.includes(r.base));
   const pick = (value: string) => {
     const custom = roles.find((r) => `custom:${r.key}` === value);
     setV((o) => (custom ? { ...o, role: custom.base, custom_role: custom.key } : { ...o, role: value as Role, custom_role: null }));
@@ -131,7 +133,7 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
         <Field label={tr("الدور", "Role")} htmlFor="u-role" error={errors.role}>
           <Select id="u-role" value={v.custom_role ? `custom:${v.custom_role}` : v.role} disabled={self} onChange={(e) => pick(e.target.value)}>
             <optgroup label={tr("الوظائف", "Jobs")}>
-              {ROLE_KEYS.map((r) => (
+              {allowed.map((r) => (
                 <option key={r} value={r}>
                   {tr(ROLE_WORDS[r].ar, ROLE_WORDS[r].en)}
                 </option>

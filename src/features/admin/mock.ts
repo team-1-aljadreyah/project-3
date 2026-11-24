@@ -12,7 +12,7 @@ import type { AdminApi } from "./api";
 import { deviceWords, ipMatches, parseUserAgent, searchText, shortSession } from "./audit-detail";
 import { ACTION_KIND, ACTION_WORDS } from "./audit-words";
 import { checkImportRows, IMPORT_LIMIT, roleFromText, teamFromText } from "./csv-import";
-import { ADMIN_LIMITS as L, BIRTH_DATE_ERRORS, canAdminister, canManageSessions, canSeeAudit, isEmail, isLocked, RELATED_LIMIT, ROLE_KEYS, settingsProblem } from "./rules";
+import { ADMIN_LIMITS as L, BIRTH_DATE_ERRORS, canAddUsers, canAdminister, canManageSessions, canSeeAudit, isEmail, isLocked, RELATED_LIMIT, ROLE_KEYS, rolesToGive, settingsProblem } from "./rules";
 import { activeSessions, endSessionProblem, securitySummary, sessionsToEnd, type SessionRecord } from "./security";
 import { dayOf } from "./summary";
 import type { AdminUser, AuditEntry, ImportCheck, TeamInput, UserInput, UserPatch } from "./types";
@@ -20,6 +20,13 @@ import type { AdminUser, AuditEntry, ImportCheck, TeamInput, UserInput, UserPatc
 function admin() {
   const user = currentUser();
   if (!canAdminister(user)) return fail(403, "FORBIDDEN", "هذه الصفحة لمسؤول النظام والمدير التنفيذي.", "This page is for the system admin and the CEO.");
+  return user;
+}
+
+/** The list of accounts and adding one: the admin, the CEO and the monitor. */
+function adder() {
+  const user = currentUser();
+  if (!canAddUsers(user)) return fail(403, "FORBIDDEN", "إضافة الحسابات لمسؤول النظام والمدير التنفيذي والمتابِعة.", "Adding accounts is for the system admin, the CEO and the monitor.");
   return user;
 }
 
@@ -85,14 +92,18 @@ function joinLead(team: Team, leadId: number | null | undefined, actorId: number
 
 export const adminMock: AdminApi = {
   async users() {
-    const viewer = admin();
+    const viewer = adder();
     return wait(adminUsers().map((u) => ({ ...u, ...birthdayView(viewer, u) })));
   },
 
   async createUser(input) {
-    const actor = admin();
+    const actor = adder();
     const base = customRole(input);
     if (base) input = { ...input, role: base };
+    // The monitor adds every job but the CEO and the system admin (a custom role counts as the job it starts like).
+    if (ROLE_KEYS.includes(input.role) && !rolesToGive(actor).includes(input.role)) {
+      invalid("role", "لا تستطيع إضافة حساب بهذا الدور: يضيفه مسؤول النظام.", "You can't add an account with this role: the system admin does.");
+    }
     checkUser({ ...input, name: input.name ?? "", email: input.email ?? "", role: input.role ?? ("" as never) });
     // No account without a password (the client, 22 November 2026).
     const problem = passwordProblem(input.password ?? "", passwordMin());

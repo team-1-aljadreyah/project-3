@@ -96,3 +96,21 @@ describe("changing my own password", () => {
     expect((await authMock.login("employee@demo.test", "Sara-Mine-2026")).user.id).toBe(5);
   });
 });
+
+describe("the monitor adds accounts (the client, 24 November 2026)", () => {
+  it("adds any job but the CEO and the system admin, sees the list, and changes no account", async () => {
+    as(3);
+    expect((await adminMock.users()).length).toBeGreaterThan(0);
+    expect((await fails(adminMock.createUser({ ...laila, role: "admin", password: "Laila-Start-2026" })))?.errors).toHaveProperty("role");
+    expect((await fails(adminMock.createUser({ ...laila, role: "ceo", password: "Laila-Start-2026" })))?.errors).toHaveProperty("role");
+    const made = await adminMock.createUser({ ...laila, role: "lead", password: "Laila-Start-2026" });
+    expect(getDb().audit.at(-1)).toMatchObject({ action: "user_created", actor_id: 3, target: { id: made.id } });
+    expect((await fails(adminMock.updateUser(5, { title: "x" })))?.status).toBe(403);
+  });
+
+  it("other jobs can't add accounts or see the list", async () => {
+    as(5);
+    expect((await fails(adminMock.users()))?.status).toBe(403);
+    expect((await fails(adminMock.createUser({ ...laila, password: "Laila-Start-2026" })))?.status).toBe(403);
+  });
+});

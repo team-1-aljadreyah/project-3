@@ -118,3 +118,28 @@ test("a new account can't be saved without a password; the admin makes one, and 
   await page.getByRole("button", { name: "دخول", exact: true }).click();
   await expect(page.getByRole("button", { name: /حسابي: رنا علي/ })).toBeVisible();
 });
+
+test("the monitor adds a new account from Users: any job but the CEO and the system admin, and can't change accounts", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signInAs(page, /هدى ناصر/);
+  await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "المستخدمون" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "المستخدمون" })).toBeVisible();
+
+  // The accounts are listed, but a row is not a button: changing an account stays the admin's.
+  const list = page.getByRole("list", { name: "المستخدمون" });
+  await expect(list.getByText("سارة علي")).toBeVisible();
+  await expect(list.getByRole("button")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "مستخدم جديد" }).click();
+  const dialog = page.getByRole("dialog", { name: "مستخدم جديد" });
+  const roles = dialog.getByLabel("الدور");
+  await expect(roles.locator("option", { hasText: "المدير التنفيذي" })).toHaveCount(0);
+  await expect(roles.locator("option", { hasText: "مسؤول النظام" })).toHaveCount(0);
+  await dialog.getByLabel("الاسم", { exact: true }).fill("زينب كريم");
+  await dialog.getByLabel("البريد الإلكتروني").fill("zainab@demo.test");
+  await roles.selectOption({ label: "قائد الفريق" });
+  await dialog.getByRole("button", { name: "أنشئ واحدة" }).click();
+  await dialog.getByRole("button", { name: "احفظ" }).click();
+  await expect(page.getByText("أُضيف المستخدم.")).toBeVisible();
+  await expect(list.getByText("زينب كريم")).toBeVisible();
+});
