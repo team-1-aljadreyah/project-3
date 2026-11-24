@@ -8,5 +8,5 @@ export { useInstallWay, installApp, type InstallWay } from "./install";
 export { isStandalone } from "./detect";
 export { playChime, type ChimeKind } from "./sound";
 export { askNotificationPermission, notificationPermission, showSystemNotification, useNotificationPermission, type Permission, type SystemNotice } from "./system-notify";
-export { pushAvailable, subscribePush, unsubscribePush, type PushSubscriptionInput } from "./push";
+export { pushAvailable, subscribePush, unsubscribePush, type PushProblem, type PushSubscriptionInput } from "./push";
 export { claimAlerts } from "./claim";
