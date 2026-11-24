@@ -758,7 +758,8 @@ The server checks (each → **422** on the field in brackets, unless said):
 changes in this browser, and, for other people's messages, **asks again while the chat is shown**: `GET /chats/:key/messages`
 every **3 seconds** and `GET /chats` every **10 seconds**, only while the tab is visible (and at once when it is shown again).
 Please keep both calls light (an index on `messages(chat, id)`; `ETag`/`304` is welcome). With the server's WebSocket
-(section 25), `chat_message {chat}` tells the site to load at once, and the asking drops to once a minute. The demo keeps one signed-in person per tab, so two tabs can be two people.
+(section 25), `chat_message {chat}` tells the site to load at once, and the asking drops to once a minute. The demo
+keeps one signed-in person per tab, so two tabs can be two people.
 
 **Not built yet** (*the brief doesn't ask*): editing and deleting messages, reactions, typing dots, search in chats,
 written versions of voice messages.
@@ -1571,6 +1572,39 @@ side is ready: `src/shared/lib/socket.ts` (tests: `tests/unit/socket.test.ts`). 
 socket only says **when** to load, and the site loads with the normal calls, so every "who may see what" rule stays
 in one place and a lost message never loses data.
 
+**What moves to Go** (where the line goes is the backend's choice; the site doesn't change if the paths stay):
+
+| Area | Calls | Section |
+|---|---|---|
+| Notifications and preferences | `GET /notifications`, `POST /notifications/:id/read`, `POST /notifications/read-all`, `GET`/`PUT /notifications/preferences` | 7 |
+| Push (closed apps) | `POST`/`DELETE /me/push-subscriptions`, and sending Web Push | 22 |
+| Chat | `GET /chats`, `GET`/`POST /chats/:key/messages`, `POST /chats/:key/read`, `POST /chats/direct`, `POST /chats/groups`, `PATCH /chats/:key`, `POST /chats/:key/leave` | 11 |
+| Celebrations | `POST /celebrations`, `GET /me/celebrations`, `POST /celebrations/:id/seen` | 23 |
+| Daily jobs | due soon, overdue, bug late, birthdays, at 07:00 Asia/Baghdad | 7, 10, 20 |
+| Live updates | the WebSocket below | 25 |
+
+On the border: `POST /messages/:id/attachments` (chat files and voice, sections 8 and 11) may stay in Laravel, which
+must then check chat membership (404) and "only the writer" (403); and the CEO's switches (section 17), which Go must
+read: chat answers `403 FEATURE_OFF` when `features.chat` is off and `423 READ_ONLY` in read-only mode, and a kind is
+sent only to the jobs in `notify.<kind>`.
+
+**What Go must keep exactly** (or the site breaks):
+- **The address:** best is the same domain, with the proxy sending these paths under `/api/v1` to Go. A separate
+  domain needs a second setting in the site's build: tell the front end first.
+- **The token:** the same `Authorization: Bearer <token>` from Laravel's `POST /auth/login`. With Sanctum the token is
+  `<id>|<secret>` and `personal_access_tokens.token` keeps the sha256 of `<secret>`. Refuse stopped accounts and
+  expired or cancelled tokens; a `401` signs the person out.
+- **The answers:** `{success, data}`, the error shape and codes, and `message`/`errors` in the request's
+  `Accept-Language` (section 1); the same shapes (`Notification`, `Conversation`, `Message`, `Celebration`) and rules
+  as the sections above. CORS for the site's domains, with `DELETE` bodies allowed (push unsubscribe).
+- **The VAPID key pair** (section 22): keep the same one. A new pair means a new site build and every phone signs up again.
+
+**Notifications made by Laravel's actions** (a task assigned, a comment, a bug…) must reach Go, which saves them and
+sends the push and the socket event. Either a shared database (Laravel inserts into `notifications`; Go notices new
+rows) or events on a queue (Redis or NATS: `{kind, user_ids, actor_id, data}`). The site doesn't depend on which. The
+rules of section 7 stay: never the actor, one per person per event, kinds turned off are not sent, required kinds
+always go, `data` is a copy taken then.
+
 **Connecting.**
 - One address, for example `wss://followapi.ama8.uk/api/v1/ws`. Each open tab opens **one** socket; one person may have
   several tabs and phones open.
@@ -1604,6 +1638,12 @@ they go back to the times of sections 7 and 11 (the open chat every 3 s, the cha
 **The server side.** Behind Cloudflare or nginx: allow the WebSocket upgrade and a long idle time (at least 100 s).
 One Go process is enough for this company; with more than one, pass the events between them (for example Redis
 pub/sub). Web Push for closed apps (section 22) does not change: the socket is only for open tabs.
+
+**Moving without breaking anything.** Run Go on staging with a copy of the database (never real people's data in
+tests), point a staging build of the site at it (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`) and test chats, groups,
+mentions, unread counts, the bell, preferences, push on a phone and celebrations with two people at once. Then move the
+paths at the proxy one area at a time (chat first, then notifications and push), each easy to move back, and keep
+Laravel's routes for a week after.
 
 ## 26. Still open with the client
 
