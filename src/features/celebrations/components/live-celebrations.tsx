@@ -61,7 +61,7 @@ export function LiveCelebrations() {
         key: `c-${c.id}`,
         celebrationId: c.id,
         effect: c.kind,
-        eyebrow: tr(`احتفال بفريق ${team}`, `Celebrating the ${team} team`),
+        eyebrow: tr(`احتفال مع ${team}`, `Celebrating with ${team}`),
         title: tr(words.title_ar, words.title_en),
         quote: c.message,
         body: c.message ? undefined : tr("شكراً على عملكم. يستحق هذا أن نحتفل به معاً.", "Thank you for your work. This deserves a celebration together."),

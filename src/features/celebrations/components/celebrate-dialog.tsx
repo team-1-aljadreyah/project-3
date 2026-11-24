@@ -39,7 +39,7 @@ export function CelebrateDialog({ teams, teamId, onClose }: { teams: TeamChoice[
   const moment = (): Moment => ({
     key: "preview",
     effect: kind,
-    eyebrow: tr(`احتفال بفريق ${nameOf(chosen) || "…"}`, `Celebrating the ${nameOf(chosen) || "…"} team`),
+    eyebrow: tr(`احتفال مع ${nameOf(chosen) || "…"}`, `Celebrating with ${nameOf(chosen) || "…"}`),
     title: tr(KIND_WORDS[kind].title_ar, KIND_WORDS[kind].title_en),
     quote: message.trim() || undefined,
     body: message.trim() ? undefined : tr("شكراً على عملكم. يستحق هذا أن نحتفل به معاً.", "Thank you for your work. This deserves a celebration together."),
@@ -53,7 +53,7 @@ export function CelebrateDialog({ teams, teamId, onClose }: { teams: TeamChoice[
     setErrors({});
     try {
       const sent = await celebrationsApi.celebrate({ team_id: Number(team), kind, message: message.trim() || undefined });
-      toast(tr(`أُرسل الاحتفال إلى فريق ${nameOf(chosen)} (${num(sent.sent_to)} أشخاص). يرونه عند فتح المنصة.`, `Sent to the ${nameOf(chosen)} team (${sent.sent_to} people). They see it when they open the platform.`));
+      toast(tr(`أُرسل الاحتفال إلى «${nameOf(chosen)}» (${num(sent.sent_to)} أشخاص). يرونه عند فتح المنصة.`, `Sent to ${nameOf(chosen)} (${sent.sent_to} people). They see it when they open the platform.`));
       onClose();
     } catch (e) {
       setErrors(e instanceof ApiError && e.errors ? e.errors : { form: errorText(e, tr) });
@@ -67,7 +67,7 @@ export function CelebrateDialog({ teams, teamId, onClose }: { teams: TeamChoice[
       <Dialog
         open={!preview}
         onClose={onClose}
-        title={teamId ? tr(`احتفل بفريق ${nameOf(chosen)}`, `Celebrate the ${nameOf(chosen)} team`) : tr("احتفل بفريق", "Celebrate a team")}
+        title={teamId ? tr(`احتفل مع ${nameOf(chosen)}`, `Celebrate with ${nameOf(chosen)}`) : tr("احتفل بفريق", "Celebrate a team")}
         className="max-w-lg"
         footer={
           <>
