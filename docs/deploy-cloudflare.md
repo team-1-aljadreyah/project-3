@@ -20,6 +20,17 @@ The whole site runs in the browser (no server code), so Cloudflare Pages can hos
 | `NODE_VERSION` | `24` | `24` |
 | `NEXT_PUBLIC_USE_MOCK` | `false` | `true` |
 | `NEXT_PUBLIC_API_URL` | the backend's address, e.g. `https://api.example.com` (no `/api/v1`) | not needed |
+| `NEXT_PUBLIC_PUSH_PUBLIC_KEY` | the backend's Web Push public key (below) | not needed (the demo has no push) |
+
+The Web Push public key of the live backend (followapi.ama8.uk), sent by the backend on 24 November 2026. It is public
+by design (the browser needs it to ask for a push address); the private key stays on the server:
+
+```
+BIhYU3fhhQsv271l_EfocHxl-Y2zTXSp4DccgKBEfkExJlA4N9MRAqzbhaIXeBTewEztKAqlGpKBCOFmkz_T4hw
+```
+
+If the backend ever makes a new key pair, put the new public key here and in Cloudflare, and deploy again: phones then
+ask for a new push address on their next start.
 
 `NEXT_PUBLIC_*` values are built into the files: after changing one, deploy again. Never put a secret in them.
 
@@ -72,7 +83,9 @@ served from (the custom domain and `*.pages.dev`).
 
 **Notifications:** the open app (also in the background) plays a short sound and shows a system notification for new
 notifications and chat messages (`src/features/notifications`). While the app is closed only the backend can send them
-(Web Push): set `NEXT_PUBLIC_PUSH_PUBLIC_KEY` once the backend sends push (docs/backend.md, section 22).
+(Web Push): the build needs `NEXT_PUBLIC_PUSH_PUBLIC_KEY` (the table above; docs/backend.md, section 22). Without it
+nothing reaches a closed app. Each person then turns on «التنبيهات» (the account menu) once on each device, and on an iPhone only the
+app added to the home screen can get them.
 
 **Installing it:**
 

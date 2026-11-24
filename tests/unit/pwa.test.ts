@@ -1,3 +1,4 @@
+import { createPublicKey } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
@@ -115,6 +116,18 @@ describe("one tab alerts", () => {
 describe("push", () => {
   it("turns the backend's public key (base64url) into bytes", () => {
     expect([...keyBytes("AQID_w")]).toEqual([1, 2, 3, 255]);
+  });
+
+  it("the live backend's key in the deploy guide is a real P-256 public key (a typo there would stop every phone)", () => {
+    const doc = readFileSync("docs/deploy-cloudflare.md", "utf8");
+    const key = doc.match(/```\n(B[A-Za-z0-9_-]{86})\n```/)?.[1];
+    expect(key).toBeDefined();
+    const bytes = keyBytes(key!);
+    expect(bytes).toHaveLength(65);
+    expect(bytes[0]).toBe(4);
+    const point = (from: number) => Buffer.from(bytes.subarray(from, from + 32)).toString("base64url");
+    const made = createPublicKey({ key: { kty: "EC", crv: "P-256", x: point(1), y: point(33) }, format: "jwk" });
+    expect(made.asymmetricKeyDetails?.namedCurve).toBe("prime256v1");
   });
 });
 
