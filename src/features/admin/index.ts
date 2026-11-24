@@ -8,6 +8,7 @@ export { HealthPage } from "./pages/health-page";
 export { ImportPage } from "./pages/import-page";
 export { SecurityPage } from "./pages/security-page";
 export { StructurePage } from "./pages/structure-page";
+export { UsersPage } from "./pages/users-page";
 export { DEFAULT_SETTINGS, SETTING_RANGE } from "./rules";
 export type { SessionRecord } from "./security";
 export type * from "./types";

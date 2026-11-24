@@ -38,6 +38,7 @@ const CHECKS: Record<string, () => boolean> = {
   canSeeBirthDate: () => access.canSeeBirthDate(ceo, someone),
   // admin
   canAdminister: () => admin.canAdminister(ceo),
+  canAddUsers: () => admin.canAddUsers(ceo),
   canSeeAudit: () => admin.canSeeAudit(ceo),
   canManageSessions: () => admin.canManageSessions(ceo),
   // advanced settings (the CEO only)
@@ -138,8 +139,8 @@ describe("the CEO rule: the CEO may do everything any job can", () => {
     it(`${name} is the agreed exception: it says no to the CEO`, () => expect(check()).toBe(false));
   }
 
-  it("the menu shows the CEO every item, also the ones added later (except \"My requests\")", () => {
+  it("the menu shows the CEO every item, also the ones added later (except \"My tasks\", \"My requests\", and the monitor's \"Users\": the CEO has the whole administration)", () => {
     expect(access.navFor("ceo")).toEqual(access.NAV.filter((n) => !n.notForCeo));
-    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["my-tasks", "requests"]);
+    expect(access.NAV.filter((n) => n.notForCeo).map((n) => n.key)).toEqual(["my-tasks", "users", "requests"]);
   });
 });

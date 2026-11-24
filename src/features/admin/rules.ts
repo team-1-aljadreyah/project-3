@@ -11,6 +11,15 @@ export const ROLE_KEYS: Role[] = ["ceo", "pm", "monitor", "lead", "employee", "a
 /** Users, teams, settings, data health: the system admin (the brief). */
 export const canAdminister = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
 
+/**
+ * Adding accounts and seeing the list of them: the admin, the CEO, and the monitor (the client, 24 November 2026: "add
+ * the user panel to the monitor so she can add new users"). Changing, stopping or unlocking an account stays the admin's.
+ */
+export const canAddUsers = (user: Pick<User, "role">) => canAdminister(user) || user.role === "monitor";
+
+/** The jobs a person may give a new account: all of them for the admin and the CEO; the monitor every job but those two. */
+export const rolesToGive = (user: Pick<User, "role">): Role[] => (canAdminister(user) ? ROLE_KEYS : ROLE_KEYS.filter((r) => r !== "ceo" && r !== "admin"));
+
 /** The audit log: the admin and the CEO. Read only; nobody can change or remove a line (the brief). */
 export const canSeeAudit = (user: Pick<User, "role">) => isCeo(user) || user.role === "admin";
 

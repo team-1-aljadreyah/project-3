@@ -111,6 +111,8 @@ export const NAV: NavItem[] = [
   { key: "teams", ar: "الفرق", en: "Teams", href: "/teams", roles: ["ceo", "pm", "monitor"], ready: true },
   { key: "reports", ar: "التقارير", en: "Reports", href: "/reports", roles: ["ceo", "pm", "monitor", "lead"], ready: true },
   { key: "monitoring", ar: "المتابعة", en: "Monitoring", href: "/monitoring", roles: ["monitor"], ready: true },
+  // The monitor adds accounts here; the CEO and the admin have the whole administration page instead.
+  { key: "users", ar: "المستخدمون", en: "Users", href: "/users", roles: ["monitor"], ready: true, notForCeo: true },
   { key: "inbox", ar: "الوارد", en: "Inbox", href: "/inbox", roles: ["ceo"], ready: true },
   { key: "requests", ar: "طلباتي", en: "My requests", href: "/requests", roles: ["pm", "monitor", "lead", "employee", "admin"], ready: true, notForCeo: true },
   { key: "admin", ar: "إدارة النظام", en: "Administration", href: "/admin", roles: ["admin"], ready: true },

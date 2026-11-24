@@ -830,7 +830,12 @@ Shapes: `src/features/admin/types.ts`; rules: `src/features/admin/rules.ts`; the
 the sign-in lock in `src/features/auth/mock.ts`, the audit helper in `src/mock/audit.ts`.
 
 **Users** (`GET /admin/users` → `AdminUser[]` with `failed_logins`, `locked_until?`, `last_login_at?`;
-`POST /admin/users`; `PATCH /admin/users/:id`): the `admin` only (403).
+`POST /admin/users`; `PATCH /admin/users/:id`): the `admin` (and the CEO) only (403), **except** that the
+`monitor` may also `GET /admin/users` and `POST /admin/users` (the client, 24 November 2026: her "Users" page, /users).
+She can't give the roles `ceo` or `admin` (422 on `role`, also through a custom role based on them), and
+`PATCH /admin/users/:id` stays 403 for her (changing, stopping, unlocking or a new password are the admin's). Her new
+account is logged `user_created` with her as the actor. Rule: `canAddUsers` and `rolesToGive` in
+`src/features/admin/rules.ts`.
 
 - `name` required ≤ 120; `email` valid, stored lower case, **unique** (422 on `email`); `role` one of the six; `title` ≤ 80;
   `team_id` an existing team or null (422); `birth_date` optional, a real past day, age 16–80 (422; section 20).
