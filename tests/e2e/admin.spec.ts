@@ -135,11 +135,11 @@ test("the monitor adds a new account from Users: any job but the CEO and the sys
   const roles = dialog.getByLabel("الدور");
   await expect(roles.locator("option", { hasText: "المدير التنفيذي" })).toHaveCount(0);
   await expect(roles.locator("option", { hasText: "مسؤول النظام" })).toHaveCount(0);
-  await dialog.getByLabel("الاسم", { exact: true }).fill("زينب كريم");
-  await dialog.getByLabel("البريد الإلكتروني").fill("zainab@demo.test");
+  await dialog.getByLabel("الاسم", { exact: true }).fill("نادية سالم");
+  await dialog.getByLabel("البريد الإلكتروني").fill("nadia@demo.test");
   await roles.selectOption({ label: "قائد الفريق" });
   await dialog.getByRole("button", { name: "أنشئ واحدة" }).click();
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(page.getByText("أُضيف المستخدم.")).toBeVisible();
-  await expect(list.getByText("زينب كريم")).toBeVisible();
+  await expect(list.getByText("نادية سالم")).toBeVisible();
 });
