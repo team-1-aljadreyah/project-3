@@ -36,3 +36,38 @@ test("the threads of light drop in behind the page, and are simply there with re
   await expect(page.locator("canvas[data-drawn]")).toHaveCount(1);
   await expect(page.locator(".threads-curtain")).toBeHidden();
 });
+
+// 25 November 2026 (Lighthouse on phones: 53): the sign-in page is in the first HTML, so it shows before the scripts
+// have loaded, and the intro ring starts with the first paint (CSS). The visits it would be wrong for are held back.
+test("the sign-in page and its intro ring are in the first HTML", async ({ request }) => {
+  const html = await (await request.get("/login")).text();
+  expect(html).toContain("كل مشروع وكل مهمة");
+  expect(html).toContain('id="identifier"');
+  expect(html).toContain('class="intro"');
+
+});
+
+test("an English visitor gets the page in English, with no Arabic first and no warnings", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error" || m.type() === "warning") problems.push(m.text());
+  });
+  await page.addInitScript(() => localStorage.setItem("p3.locale", "en"));
+  // Until the app has drawn it in English, the Arabic first HTML is held back (never shown).
+  await page.goto("/login", { waitUntil: "commit" });
+  await page.waitForSelector("h1", { state: "attached" });
+  const shownInArabic = await page.evaluate(() => !document.documentElement.hasAttribute("data-hold") && /كل مشروع/.test(document.querySelector("h1")?.textContent ?? ""));
+  expect(shownInArabic).toBe(false);
+  await expect(page.getByRole("heading", { level: 1, name: /Every project and task/ })).toBeVisible();
+  await expect(page.locator("html")).not.toHaveAttribute("data-hold", /.*/);
+  expect(problems).toEqual([]);
+});
+
+test("someone already signed in goes straight on from the sign-in page, to where it was asked", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: /أحمد كريم/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "المشاريع" })).toBeVisible();
+  await page.goto("/login?next=%2Fmy-tasks");
+  await expect(page).toHaveURL(/\/my-tasks$/);
+  await expect(page.getByLabel("البريد الإلكتروني")).toHaveCount(0);
+});

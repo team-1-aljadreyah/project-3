@@ -6,6 +6,7 @@ import { roleName } from "@/shared/lib/site";
 import { setLang, useFmt } from "@/shared/lib/i18n";
 import { usePageTitle } from "@/shared/lib/page-title";
 import { setSession, useSession } from "@/shared/lib/session";
+import { useReleaseHold } from "@/shared/lib/started";
 import { Logo } from "@/shared/shell";
 import { BRAND } from "@/shared/lib/brand";
 import { cn } from "@/shared/lib/utils";
@@ -43,6 +44,8 @@ function nextPage() {
 export function LoginPage() {
   const { tr, lang } = useFmt();
   usePageTitle(tr("تسجيل الدخول", "Sign in"));
+  // Held back by the start-up script when the first HTML is wrong for this visit (English): shown once redrawn.
+  useReleaseHold();
   const router = useRouter();
   const session = useSession();
   const demo = useDemoAccounts();
