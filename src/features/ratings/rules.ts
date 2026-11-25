@@ -41,6 +41,11 @@ export const REASON_WORDS: Record<ReasonType, { ar: string; en: string; tone: St
   other: { ar: "سبب آخر", en: "Another reason", tone: "new" },
 };
 
+/** The words for a reason. A kind this site doesn't know (an older or newer server) reads as "another reason". */
+export function reasonWords(type: string) {
+  return REASON_WORDS[type as ReasonType] ?? REASON_WORDS.other;
+}
+
 // ---------- teams ----------
 
 /** The team's active members (the leader is one: a team's leader joins it). */

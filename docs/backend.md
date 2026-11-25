@@ -301,7 +301,7 @@ The server must filter, not only the pages:
 **Creating** (`POST /projects/:id/tasks`) and **editing** (`PATCH /tasks/:id`): managers only (403).
 
 - `title`: required, trimmed, ≤ 160 letters (422 on `title`). `description` ≤ 5000.
-- `assignee_id`: a member of the project (422 on `assignee_id`). On PATCH, `null` takes the task off the person.
+- `assignee_id`: any active person but the admin (422 on `assignee_id`); someone outside the project **joins it** (section 2). On PATCH, `null` takes the task off the person.
 - `due` not before `start` (422 on `due`). `sprint_id` of the same project (422 on `sprint_id`), and only when the project `uses_sprints`.
 - A new task starts in the project's first status, or a given one that is **not** blocked or done (422 on `status`).
 - `code` is made by the server (`TSK-…`), unique.
@@ -1184,7 +1184,7 @@ monitor, lead, employee · `bug_severity` pm, lead.
   menu hides the feature's page (`/site/live`); the data stays and comes back when switched on.
 - **Read-only mode:** every change by anyone but the `ceo` answers **423 `READ_ONLY`** with the CEO's message, and
   changes nothing. Still allowed: signing in, reading and marking notifications, notification preferences, marking a
-  chat or an announcement as read.
+  chat, an announcement or a received monitoring note as read (`POST /monitoring/notes/:id/seen`).
 - **Banner:** `/site/live` sends it only to the jobs in `roles` (none = everyone) and only until `until`.
 - **Notification table:** a kind is sent to a person only if their job is in `notify.<kind>` (then their own
   preference decides, section 7). Required kinds always go.

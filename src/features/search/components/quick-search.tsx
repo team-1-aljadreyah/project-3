@@ -83,7 +83,8 @@ export function QuickSearch() {
       searchApi
         .search(text)
         .then((r) => {
-          if (asked.current === r.q) setHits(r.hits);
+          // A server answer of another shape must never break the page: no list, no results.
+          if (asked.current === r.q) setHits(Array.isArray(r?.hits) ? r.hits : []);
         })
         .catch(() => setHits([]))
         .finally(() => {

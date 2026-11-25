@@ -11,7 +11,7 @@ import { cn } from "@/shared/lib/utils";
 import { AvatarStack, Empty, ErrorBox, LoadingBlock, PersonName, Skeleton, Stat } from "@/shared/ui";
 import { ratingsApi } from "../api";
 import { AverageMark, RateButton } from "../components/rate-button";
-import { REASON_WORDS, SCORE_WORDS, trendOf } from "../rules";
+import { reasonWords, SCORE_WORDS, trendOf } from "../rules";
 import type { TeamListRow } from "../types";
 
 /** A team "waits for a rating" when nobody rated it in the last 30 days. */
@@ -145,7 +145,7 @@ export function TeamsPage() {
                   {last ? (
                     <span className="flex flex-wrap items-center gap-x-1.5">
                       <b className="font-medium text-text">{tr(SCORE_WORDS[last.score].ar, SCORE_WORDS[last.score].en)}</b>
-                      <span>· {tr(REASON_WORDS[last.reason_type].ar, REASON_WORDS[last.reason_type].en)}</span>
+                      <span>· {tr(reasonWords(last.reason_type).ar, reasonWords(last.reason_type).en)}</span>
                       <span>· {ago(last.created_at, now)}</span>
                     </span>
                   ) : row.ratings ? (
