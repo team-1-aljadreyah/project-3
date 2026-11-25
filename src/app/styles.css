@@ -280,21 +280,54 @@ body {
   color: var(--text);
 }
 
-/* The ring that counts the page in, then folds into the logo (front-door/intro-ring.tsx). */
+/* The first HTML already holds the sign-in page. When it would be wrong for this visit (English is chosen, or the person
+   is already signed in), the start-up script holds it back until the app has drawn the right thing (shared/lib/boot.ts,
+   lifted in app/providers.tsx). */
+html[data-hold] body > * {
+  visibility: hidden !important;
+}
+
+/* The ring that counts the page in, then folds into the logo (features/auth front-door.tsx). It is in the first HTML
+   and runs here in CSS, so it starts with the first paint: the start-up script turns it on with `intro-play`. */
 .intro {
   position: fixed;
   inset: 0;
   z-index: 60;
-  display: grid;
+  display: none;
   place-items: center;
   pointer-events: none;
   background: var(--bg);
   animation: intro-out 0.45s 1.45s ease forwards;
 }
+.intro-play .intro {
+  display: grid;
+}
 @keyframes intro-out {
   to {
     opacity: 0;
     visibility: hidden;
+  }
+}
+/* The count from 0 to 100: a registered whole number, so CSS can run it (it eases out like the arc slows down). A
+   browser that cannot gets the number written by the script instead (`data-js`). */
+@property --intro-n {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+.intro-count {
+  counter-reset: intro-n var(--intro-n);
+  animation: intro-count 1.05s 0.1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+.intro-count::after {
+  content: counter(intro-n);
+}
+.intro-count[data-js]::after {
+  content: none;
+}
+@keyframes intro-count {
+  to {
+    --intro-n: 100;
   }
 }
 .intro-ring {

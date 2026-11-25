@@ -2,11 +2,11 @@
 // glass window with a live task, the plate that opens out of the logo, and the sections that settle into focus. Motion
 // is decoration only: everything works and reads the same with "reduce motion" (styles in app/styles.css).
 import { useEffect, useRef, useState } from "react";
+import { INTRO_KEY } from "@/shared/lib/boot";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import { BrandMark, Frost, Pill, Reveal } from "@/shared/ui";
 
-const INTRO_KEY = "p3.intro";
 const reducedMotion = () => {
   try {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -16,7 +16,7 @@ const reducedMotion = () => {
 };
 
 /** Will the ring count the page in on this visit? (Once per browser tab, never with "reduce motion" or in a background tab.) */
-export function introPlays() {
+function introPlays() {
   try {
     // Not in a background tab either: the browser slows its timers, and the ring would wait there.
     return !sessionStorage.getItem(INTRO_KEY) && !reducedMotion() && document.visibilityState === "visible";
@@ -26,41 +26,86 @@ export function introPlays() {
 }
 
 /**
+ * Where the intro ring is: "wait" until the page knows (the first HTML, before the scripts run), "playing", "landed"
+ * (it has folded into the logo: the threads of light may drop), or "none" (no intro on this visit).
+ */
+export type IntroState = "wait" | "playing" | "landed" | "none";
+
+/** The intro's own times (ms), the same as its animations in app/styles.css. */
+const LAND_AT = 1450;
+const GONE_AT = 2000;
+/** When this page load's intro began (ms on the page's clock), so a redraw of this part picks it up where it is. */
+let introBegan: number | null = null;
+
+/**
  * The ring that counts the page in (0 → 100), then folds away into the logo. Once per visit (this browser tab), never
  * with "reduce motion". It never blocks a click (pointer-events: none) and is gone after two seconds.
+ *
+ * It is in the first HTML and runs in CSS (the count too), so it starts with the first paint, before the scripts have
+ * loaded: the start-up script (shared/lib/boot.ts) turns it on with the class `intro-play` on <html>. When that
+ * script held the page back (English, say), it is turned on from here instead, once the page shows. This part only
+ * follows along: it tells the page when the ring lands, aims the fold at the logo, and takes the ring away.
  */
-export function IntroRing({ target, onLand }: { target: React.RefObject<HTMLElement | null>; onLand: () => void }) {
-  const [playing, setPlaying] = useState(introPlays);
-  const [count, setCount] = useState(0);
+export function IntroRing({ target, onState }: { target: React.RefObject<HTMLElement | null>; onState: (state: IntroState) => void }) {
+  const [gone, setGone] = useState(false);
   const ring = useRef<HTMLDivElement>(null);
+  const count = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (!playing) return;
-    try {
-      sessionStorage.setItem(INTRO_KEY, "1");
-    } catch {}
-    // Where the logo is, so the ring folds into it.
-    const box = target.current?.getBoundingClientRect();
-    if (box && ring.current) {
-      ring.current.style.setProperty("--to-x", `${box.left + box.width / 2 - window.innerWidth / 2}px`);
-      ring.current.style.setProperty("--to-y", `${box.top + box.height / 2 - window.innerHeight / 2}px`);
+    const root = document.documentElement;
+    let playing = root.classList.contains("intro-play");
+    if (!playing && introBegan === null && introPlays()) {
+      try {
+        sessionStorage.setItem(INTRO_KEY, "1");
+      } catch {}
+      root.classList.add("intro-play");
+      playing = true;
     }
-    const start = performance.now();
-    let frame = requestAnimationFrame(function tick(now) {
-      const p = Math.min(1, (now - start - 100) / 1050);
-      setCount(Math.max(0, Math.round((1 - (1 - p) ** 3) * 100)));
-      if (p < 1) frame = requestAnimationFrame(tick);
-    });
-    const land = setTimeout(onLand, 1450);
-    const done = setTimeout(() => setPlaying(false), 2000);
+    // How far it already is: it began with the first paint, maybe before this code arrived.
+    if (playing && introBegan === null) {
+      const running = ring.current?.parentElement?.getAnimations?.()[0];
+      introBegan = performance.now() - Number(running?.currentTime ?? 0);
+    }
+    const began = introBegan;
+    const since = playing && began !== null ? performance.now() - began : GONE_AT;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let frame = 0;
+
+    if (since >= GONE_AT || began === null) onState("none");
+    else {
+      onState(since >= LAND_AT ? "landed" : "playing");
+      if (since < LAND_AT) timers.push(setTimeout(() => onState("landed"), LAND_AT - since));
+      // Where the logo is, so the ring folds into it.
+      const box = target.current?.getBoundingClientRect();
+      if (box && ring.current) {
+        ring.current.style.setProperty("--to-x", `${box.left + box.width / 2 - window.innerWidth / 2}px`);
+        ring.current.style.setProperty("--to-y", `${box.top + box.height / 2 - window.innerHeight / 2}px`);
+      }
+      // The count runs in CSS (a registered number). A browser without that gets it written here instead.
+      const el = count.current;
+      if (el && !("registerProperty" in CSS)) {
+        el.dataset.js = "";
+        frame = requestAnimationFrame(function tick(now) {
+          const p = Math.min(1, Math.max(0, (now - began - 100) / 1050));
+          el.textContent = String(Math.round((1 - (1 - p) ** 3) * 100));
+          if (p < 1) frame = requestAnimationFrame(tick);
+        });
+      }
+    }
+    // Over (or there is none on this visit): take the ring out of the page.
+    timers.push(
+      setTimeout(() => {
+        root.classList.remove("intro-play");
+        setGone(true);
+      }, Math.max(0, GONE_AT - since)),
+    );
     return () => {
       cancelAnimationFrame(frame);
-      clearTimeout(land);
-      clearTimeout(done);
+      timers.forEach(clearTimeout);
     };
-  }, [playing, target, onLand]);
+  }, [target, onState]);
 
-  if (!playing) return null;
+  if (gone) return null;
   return (
     <div className="intro" aria-hidden="true">
       <div ref={ring} className="intro-ring relative grid size-28 place-items-center">
@@ -68,7 +113,7 @@ export function IntroRing({ target, onLand }: { target: React.RefObject<HTMLElem
           <circle cx="56" cy="56" r="48" fill="none" stroke="#33202a" strokeWidth="4" />
           <circle className="intro-arc" cx="56" cy="56" r="48" fill="none" stroke="#d49a9a" strokeWidth="4" strokeLinecap="round" />
         </svg>
-        <span className="num text-2xl font-semibold text-[#f2dace]">{count}</span>
+        <span ref={count} className="intro-count num text-2xl font-semibold text-[#f2dace]" />
       </div>
     </div>
   );
@@ -94,11 +139,16 @@ const LOG = [
  */
 export function FlowWindow() {
   const { tr, lang } = useFmt();
-  const [stage, setStage] = useState(() => (reducedMotion() ? 3 : 0));
+  // The first drawing is the same on the server and in the browser (the first stage): with "reduce motion" it then goes
+  // straight to the last stage and stays there.
+  const [stage, setStage] = useState(0);
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (reducedMotion()) return;
+    if (reducedMotion()) {
+      const jump = setTimeout(() => setStage(STAGES.length - 1));
+      return () => clearTimeout(jump);
+    }
     const timer = setInterval(() => setStage((s) => (s + 1) % STAGES.length), 1700);
     return () => clearInterval(timer);
   }, []);

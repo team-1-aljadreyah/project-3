@@ -1,14 +1,10 @@
 "use client";
 
 // app/ only routes: the page itself lives in its feature.
-// The login page reads "?next=" from the address (useSearchParams), which Next.js wants inside <Suspense>.
-import { Suspense } from "react";
+// The sign-in page is drawn into the first HTML (it reads nothing from the address while drawing: "?next=" is read
+// when the person signs in), so it shows before any script has loaded.
 import { LoginPage } from "@/features/auth";
 
 export default function LoginRoute() {
-  return (
-    <Suspense>
-      <LoginPage />
-    </Suspense>
-  );
+  return <LoginPage />;
 }
