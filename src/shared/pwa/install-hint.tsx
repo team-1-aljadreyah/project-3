@@ -24,8 +24,8 @@ function markSeen() {
 const noop = () => () => {};
 
 /**
- * Once, on a phone, after signing in: a small card above the page offering to install the platform on the home screen
- * (when this browser can). Not a pop-up: it sits in the page and blocks nothing. Closing it, or installing, is
+ * Once, on a phone, after signing in: a small card at the bottom of the screen offering to install the platform on the home screen
+ * (when this browser can). Not a pop-up: it covers nothing but its own corner and moves nothing. Closing it, or installing, is
  * remembered on this device, so it never comes back.
  */
 export function InstallHint() {
@@ -41,9 +41,11 @@ export function InstallHint() {
   };
 
   return (
+    // It floats at the bottom of the screen: the browser says it can install a moment after the page has drawn, and a
+    // card arriving above the page then would push everything down (a layout shift). Only the card takes clicks.
     <aside
       aria-label={tr("تثبيت المنصة", "Install the platform")}
-      className="mb-4 flex items-center gap-3 rounded-2xl border border-line bg-card p-3 shadow-card"
+      className="menu-pop fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-line bg-card p-3 shadow-[0_18px_44px_-14px_rgb(70_12_40/0.35)] dark:shadow-[0_18px_44px_-10px_rgb(0_0_0/0.7)] print:hidden"
     >
       <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-[13px] bg-[#7c0e44]">
         <BrandMark on="accent" className="size-8" />

@@ -193,7 +193,8 @@ export function NoteCard({
           ) : (
             <span className="text-muted">{tr("لم تُرسل بعد", "Not sent yet")}</span>
           )}
-          <span className="ms-auto flex gap-2">{actions}</span>
+          {/* The buttons wrap onto a second line on a narrow phone instead of running off the screen. */}
+          <span className="ms-auto flex flex-wrap justify-end gap-2">{actions}</span>
         </footer>
       )}
     </article>
