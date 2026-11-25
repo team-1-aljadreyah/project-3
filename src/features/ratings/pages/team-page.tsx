@@ -95,7 +95,7 @@ export function TeamPage() {
         {members.length === 0 ? (
           <p className="text-sm text-muted">{tr("لا أعضاء في الفريق بعد.", "Nobody is in the team yet.")}</p>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {members.map((m) => (
               // The whole card opens the person's performance, when this viewer may open it.
               <li key={m.id} className="relative flex items-center gap-3 rounded-xl border border-line bg-card px-3.5 py-3 transition-colors focus-within:border-accent hover:border-accent">

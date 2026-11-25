@@ -150,6 +150,17 @@ body {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+/* A long word that cannot fit (a name with no spaces, a code, a link) breaks where it must instead of pushing the page
+   sideways on a phone. "anywhere" (not "break-word") also lets grids and flex rows shrink below that word. Table cells
+   keep whole words: their tables scroll inside their own box. */
+body {
+  overflow-wrap: anywhere;
+}
+th,
+td {
+  overflow-wrap: normal;
+}
+
 /* Numbers line up in counts and dates. */
 .num {
   font-variant-numeric: tabular-nums;
@@ -157,6 +168,12 @@ body {
 }
 
 @layer base {
+  /* A grid with no column size of its own (on a phone, before its sm:/md:/lg: columns start) is one column exactly as
+     wide as its box: a long name or a cut-off line inside can never stretch it past the screen. Any grid-cols-* wins. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   /* Visible keyboard focus everywhere (in the base layer, so a field that draws its own focus can drop it). */
   :focus-visible {
     outline: 2px solid var(--accent);

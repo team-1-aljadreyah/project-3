@@ -116,7 +116,7 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
         <Stat label={tr("مغلقة", "Closed")} value={num(counts.closed)} note={tr("أُصلحت وتأكدنا منها", "Fixed and checked")} onClick={() => focusList(() => setShow("closed"))} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <section aria-labelledby="by-project" className="rounded-xl border border-line bg-card p-4">
           <h2 id="by-project" className="mb-2 font-semibold">
             {tr("حسب المشروع", "By project")}
@@ -135,7 +135,7 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
                 // The whole row shows that project's bugs in the list below.
                 <tr key={r.id} className="relative border-t border-line hover:bg-card-2">
                   <td className="py-2">
-                    <button type="button" onClick={() => focusList(() => setProjectId(String(r.id)))} className="text-start after:absolute after:inset-0 hover:underline">
+                    <button type="button" onClick={() => focusList(() => setProjectId(String(r.id)))} className="text-start [overflow-wrap:anywhere] after:absolute after:inset-0 hover:underline">
                       {r.name}
                     </button>
                   </td>
@@ -164,7 +164,7 @@ function Bugs({ bugs, projects, people }: { bugs: Bug[]; projects: ProjectSummar
                 // The whole row opens the developer's performance (when this viewer may open it).
                 <tr key={r.id} className="relative border-t border-line hover:bg-card-2">
                   <td className="py-2">
-                    <MaybeLink href={r.id ? personHref(user, personOf.get(r.id) ?? { id: r.id }, projects) : undefined} cover>
+                    <MaybeLink href={r.id ? personHref(user, personOf.get(r.id) ?? { id: r.id }, projects) : undefined} cover className="[overflow-wrap:anywhere]">
                       {r.name}
                     </MaybeLink>
                   </td>
