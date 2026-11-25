@@ -119,7 +119,8 @@ export function TeamsPage() {
                     <span className="flex items-center gap-1.5 text-xs text-muted">
                       {lead ? (
                         <>
-                          {tr("القائد:", "Leader:")} <PersonName person={lead} className="relative z-10" />
+                          {/* 24 px tall to touch (the padding, taken back by the margin, changes nothing on screen). */}
+                          {tr("القائد:", "Leader:")} <PersonName person={lead} className="relative z-10 -my-1 inline-block py-1" />
                         </>
                       ) : (
                         tr("بلا قائد", "No leader")

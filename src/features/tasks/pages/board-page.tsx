@@ -142,7 +142,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {project.uses_sprints ? (
-            <div role="tablist" aria-label={tr("طريقة العرض", "View")} className="flex gap-1 rounded-full bg-chip p-1">
+            <div role="tablist" aria-label={tr("طريقة العرض", "View")} className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-chip p-1 [scrollbar-width:none]">
               {views.map((v) => (
                 <button
                   key={v.key}
@@ -152,7 +152,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
                   aria-controls="board-panel"
                   aria-selected={tab === v.key}
                   onClick={() => setView(v.key)}
-                  className={cn("rounded-full px-3 py-1.5 text-[13px] whitespace-nowrap", tab === v.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
+                  className={cn("shrink-0 rounded-full px-3 py-1.5 text-[13px] whitespace-nowrap", tab === v.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
                 >
                   {tr(v.ar, v.en)}
                 </button>

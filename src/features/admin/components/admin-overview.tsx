@@ -43,7 +43,7 @@ export function AdminOverview({ me }: { me: number }) {
             <Skeleton key={i} className="h-37 rounded-2xl" />
           ))}
         </div>
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <div className="flex flex-col gap-5 lg:col-span-2">
             <Skeleton className="h-89 rounded-2xl sm:h-93" />
             <Skeleton className="h-110 rounded-2xl sm:h-85" />
@@ -171,7 +171,7 @@ export function AdminOverview({ me }: { me: number }) {
         </ul>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-5 lg:col-span-2">
           <section aria-labelledby="activity-title" className={card}>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">

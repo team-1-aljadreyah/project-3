@@ -119,7 +119,7 @@ export function CeoInboxPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label={tr("اعرض", "Show")} className="flex gap-1 rounded-full bg-chip p-1">
+        <div role="tablist" aria-label={tr("اعرض", "Show")} className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-chip p-1 [scrollbar-width:none]">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -127,7 +127,7 @@ export function CeoInboxPage() {
               role="tab"
               aria-selected={show === t.key}
               onClick={() => setShow(t.key)}
-              className={cn("flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm", show === t.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
+              className={cn("flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap", show === t.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
             >
               <t.icon size={14} aria-hidden="true" />
               {tr(t.ar, t.en)} <span className="num text-muted">({num(counts[t.key])})</span>

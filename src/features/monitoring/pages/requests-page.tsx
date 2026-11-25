@@ -114,7 +114,7 @@ export function RequestsPage() {
         </Button>
       </div>
 
-      <div role="tablist" aria-label={tr("اعرض", "Show")} className="flex gap-1 self-start rounded-full bg-chip p-1">
+      <div role="tablist" aria-label={tr("اعرض", "Show")} className="flex max-w-full gap-1 self-start overflow-x-auto rounded-full bg-chip p-1 [scrollbar-width:none]">
         {(
           [
             { key: "mine", ar: "طلباتي", en: "My requests", icon: HandHelping, n: mine.length },
@@ -127,7 +127,7 @@ export function RequestsPage() {
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={cn("flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm", tab === t.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
+            className={cn("flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap", tab === t.key ? "bg-card font-semibold shadow-card" : "text-muted hover:text-text")}
           >
             <t.icon size={14} aria-hidden="true" />
             {tr(t.ar, t.en)}

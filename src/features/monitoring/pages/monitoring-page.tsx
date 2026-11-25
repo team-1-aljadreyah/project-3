@@ -139,6 +139,7 @@ export function MonitoringPage() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
       <div role="tablist" aria-label={tr("اعرض", "Show")} className="flex flex-wrap gap-2">
         {tabs.map((t) => (
           <button
@@ -152,6 +153,8 @@ export function MonitoringPage() {
             {tr(t.ar, t.en)} <span className={cn("num", t.key === "requests" && pending > 0 && "rounded-full bg-accent px-1.5 text-on-accent")}>{num(count(t.key))}</span>
           </button>
         ))}
+      </div>
+        {/* Next to the tabs, not among them: a tab list holds only tabs. */}
         {shown.length > 0 && <PrintButton target={() => list.current} label={tr("اطبع القائمة أو احفظها PDF", "Print the list or save as PDF")} className="ms-auto" />}
       </div>
 

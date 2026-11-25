@@ -71,7 +71,8 @@ export function Select({ className, invalid, ...props }: React.SelectHTMLAttribu
     <select
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy(invalid, props.id)}
-      className={cn(control(invalid), "h-11 pe-8", className)}
+      // max-w-full: a long option (in English especially) never makes the list wider than the screen on a phone.
+      className={cn(control(invalid), "h-11 max-w-full min-w-0 pe-8", className)}
       {...props}
     />
   );
