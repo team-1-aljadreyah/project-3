@@ -8,6 +8,7 @@ import { Avatar, errorText, IconButton } from "@/shared/ui";
 import { chatApi } from "../api";
 import { CHAT_LIMITS as L, mentionQuery } from "../rules";
 import type { ChatKey, Message } from "../types";
+import type { Outbox } from "./thread";
 import { messageSummary, spokenDuration } from "../voice";
 import { featureOn, useSiteLive } from "@/shared/lib/site";
 import { useVoiceRecorder } from "./use-voice-recorder";
@@ -18,10 +19,14 @@ import { micProblemText, MicButton, PreviewBar, RecordingBar } from "./voice-rec
  * their name and makes them a mention (they get a notification). Files are sent with the message. While the box is
  * empty, the microphone records a voice message (hold to talk, or click to start and stop), heard before sending.
  */
+/** Temporary ids for messages shown before the server has them (negative, so never a real one). */
+let nextTemp = 0;
+
 export function Composer({
   chatKey,
   members,
   me,
+  outbox,
   replyTo,
   replyName,
   onCancelReply,
@@ -29,6 +34,8 @@ export function Composer({
   chatKey: ChatKey;
   members: User[];
   me: User;
+  /** Where a message shows at once, before the server answers. */
+  outbox?: Outbox;
   replyTo?: Message;
   replyName?: string;
   onCancelReply: () => void;
@@ -85,16 +92,48 @@ export function Composer({
     caret.current = null;
   }, [text]);
 
+  // Messages go to the server one after the other, in the order they were written.
+  const queue = useRef<Promise<void>>(Promise.resolve());
+
   const send = async () => {
     const body = text.trim();
     if ((!body && files.length === 0) || busy) return;
+    // A mention counts only if its name is still in the text (it may have been deleted while typing).
+    const mentions = mentioned.filter((u) => body.includes(`@${u.name}`)).map((u) => u.id);
+
+    // Text only: it shows in the chat at once, as sent, and the box is ready for the next one. The server's answer
+    // takes its place quietly; if it fails, the message goes away and its text comes back here with the reason.
+    if (files.length === 0 && outbox) {
+      const temp = --nextTemp;
+      const reply = replyTo;
+      const used = mentioned;
+      outbox.add({ id: temp, chat: chatKey, author_id: me.id, body, reply_to: reply?.id, mentions, created_at: new Date().toISOString(), files: [] });
+      setText("");
+      setMentioned([]);
+      setError(undefined);
+      onCancelReply();
+      box.current?.focus({ preventScroll: true });
+      queue.current = queue.current.then(async () => {
+        try {
+          outbox.done(temp, await chatApi.send(chatKey, { body, reply_to: reply?.id, mentions }));
+        } catch (e) {
+          outbox.drop(temp, reply);
+          setText((now) => (now.trim() ? now : body));
+          setMentioned((now) => (now.length ? now : used));
+          setError(errorText(e, tr));
+        }
+      });
+      return;
+    }
+
     setBusy(true);
     setError(undefined);
     try {
-      // A mention counts only if its name is still in the text (it may have been deleted while typing).
-      const mentions = mentioned.filter((u) => body.includes(`@${u.name}`)).map((u) => u.id);
       const message = await chatApi.send(chatKey, { body, reply_to: replyTo?.id, mentions });
-      for (const f of files) await attachmentsApi.upload({ type: "message", id: message.id }, f);
+      const sentFiles = [];
+      for (const f of files) sentFiles.push(await attachmentsApi.upload({ type: "message", id: message.id }, f));
+      // With its files: in the chat now, not at the next refresh.
+      outbox?.done(null, { ...message, files: sentFiles });
       setText("");
       setMentioned([]);
       setFiles([]);
@@ -120,7 +159,8 @@ export function Composer({
     setError(undefined);
     try {
       const message = await chatApi.send(chatKey, { body: "", reply_to: replyTo?.id });
-      await attachmentsApi.upload({ type: "message", id: message.id }, take.file, undefined, voice);
+      const file = await attachmentsApi.upload({ type: "message", id: message.id }, take.file, undefined, voice);
+      outbox?.done(null, { ...message, files: [file] });
       rec.discard();
       onCancelReply();
     } catch (e) {

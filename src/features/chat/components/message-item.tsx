@@ -35,7 +35,8 @@ export function MessageItem({
   onJump?: (id: number) => void;
   /** Lit for a moment after a jump to it. */
   flash?: boolean;
-  onReply: (m: Message) => void;
+  /** Missing while the message is still on its way: it can be answered once the server has it. */
+  onReply?: (m: Message) => void;
 }) {
   const { tr, lang, dateTime } = useFmt();
   const nameOf = (id: number) => {
@@ -154,9 +155,11 @@ export function MessageItem({
       </div>
       <button
         type="button"
-        onClick={() => onReply(m)}
+        onClick={() => onReply?.(m)}
+        // Kept in place while the message is on its way, so nothing moves when it arrives.
+        disabled={!onReply}
         aria-label={tr(`ردّ على رسالة ${nameOf(m.author_id)}`, `Reply to ${nameOf(m.author_id)}`)}
-        className="flex h-7 shrink-0 items-center gap-1 self-start rounded-md px-2 text-xs text-muted hover:bg-chip hover:text-text focus-visible:opacity-100"
+        className={cn("flex h-7 shrink-0 items-center gap-1 self-start rounded-md px-2 text-xs text-muted hover:bg-chip hover:text-text focus-visible:opacity-100", !onReply && "invisible")}
       >
         <Reply size={13} aria-hidden="true" className="rtl:-scale-x-100" />
         {tr("رد", "Reply")}

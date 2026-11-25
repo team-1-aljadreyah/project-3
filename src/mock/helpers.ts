@@ -9,8 +9,10 @@ import { getToken } from "@/shared/lib/session";
 import { getDb } from "./db";
 import { PASSWORD_MIN_DEFAULT } from "@/shared/lib/password";
 
-/** A short wait, so loading states show in the demo like on a real network. */
-export const wait = <T>(value: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(structuredClone(value)), ms));
+/** A short wait, so loading states show in the demo like on a real network. "p3.mock.latency" (ms) makes the demo
+ *  server slower, so a test can see what the page shows before an answer comes. */
+export const wait = <T>(value: T, ms = 150) =>
+  new Promise<T>((r) => setTimeout(() => r(structuredClone(value)), Number(globalThis.localStorage?.getItem("p3.mock.latency")) || ms));
 
 export const msg = (ar: string, en: string) => (currentLocale() === "ar" ? ar : en);
 

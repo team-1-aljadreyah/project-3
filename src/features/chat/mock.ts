@@ -5,6 +5,7 @@ import { commit, getDb } from "@/mock/db";
 import { currentUser, fail, invalid, nowIso, wait } from "@/mock/helpers";
 import { notify } from "@/mock/notify";
 import { requireAction, requireFeature } from "@/mock/site";
+import { ApiError, NETWORK_ERROR } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import type { ChatApi } from "./api";
 import { CHAT_LIMITS as L, canCreateGroupChat, canManageGroupChat, chatKey, mayJoinGroup, parseKey, canStartDirect, canWriteInDirect } from "./rules";
@@ -85,6 +86,11 @@ export const chatMock: ChatApi = {
   },
 
   async send(key, input) {
+    // "p3.mock.offline": the demo acts like a lost connection, so a test can see what a failed send looks like.
+    if (globalThis.localStorage?.getItem("p3.mock.offline")) {
+      await wait(null);
+      throw new ApiError(NETWORK_ERROR, "", undefined, "NETWORK");
+    }
     const user = currentUser();
     requireFeature(user, "chat");
     const members = membersFor(user, key);

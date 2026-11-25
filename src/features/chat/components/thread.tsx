@@ -20,6 +20,19 @@ const POLL_MS = 3000;
 /** Pages to load at most when a reply points to an older message (30 × 20 = the 600 messages before the shown ones). */
 const MAX_JUMP_PAGES = 20;
 
+/**
+ * What the box to write tells the list while a message is on its way, so it shows at once as sent (the client,
+ * 25 November 2026: "when I send, show it already sent, without waiting").
+ */
+export interface Outbox {
+  /** Show this message now (its id is a temporary negative number). */
+  add(m: Message): void;
+  /** The server has it: the real one takes the shown one's place, without moving (`temp` null: it wasn't shown early). */
+  done(temp: number | null, real: Message): void;
+  /** It wasn't sent: take it away (the box gets the text back, with the error); `reply` is what it answered. */
+  drop(temp: number, reply?: Message): void;
+}
+
 /** Older pages and the newest one together, each message once, oldest first. */
 function merge(older: Message[], latest: Message[]) {
   const byId = new Map<number, Message>();
@@ -48,8 +61,28 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [replyTo, setReplyTo] = useState<Message>();
   const [flash, setFlash] = useState<number | null>(null);
+  // Sent from here: shown at once (pending), then the server's copy until the next refresh brings it (sent).
+  const [pending, setPending] = useState<Message[]>([]);
+  const [sent, setSent] = useState<Message[]>([]);
+  // A sent message keeps the key it was shown with, so it isn't drawn again when the real one arrives.
+  const [shownAs, setShownAs] = useState<Record<number, number>>({});
+  const outbox: Outbox = {
+    add: (m) => setPending((list) => [...list, m]),
+    done: (temp, real) => {
+      if (temp !== null) setShownAs((keys) => ({ ...keys, [real.id]: temp }));
+      setSent((list) => [...list.filter((m) => m.id !== real.id), real]);
+      if (temp !== null) setPending((list) => list.filter((m) => m.id !== temp));
+    },
+    drop: (temp, reply) => {
+      setPending((list) => list.filter((m) => m.id !== temp));
+      if (reply) setReplyTo(reply);
+    },
+  };
   const latest = load.data;
-  const messages = latest ? merge(older, latest) : undefined;
+  // The server's newest page wins over our own copy of a sent message (it may have its files by then). Both lists keep
+  // each message's chat, so another chat opened meanwhile never shows them.
+  const here = (m: Message) => m.chat === chatKey;
+  const messages = latest ? [...merge(older, [...sent.filter(here), ...latest]), ...pending.filter(here)] : undefined;
   const loaded = messages !== undefined;
   const hasOlder = !!latest && !noOlder && (older.length > 0 || latest.length >= PAGE);
   const lastId = messages?.at(-1)?.id;
@@ -203,13 +236,13 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
           <ol ref={list} aria-label={tr("الرسائل", "Messages")} className="flex flex-col gap-0.5">
             {messages.map((m) => (
               <MessageItem
-                key={m.id}
+                key={shownAs[m.id] ?? m.id}
                 m={m}
                 replied={m.reply_to ? byId.get(m.reply_to) : undefined}
                 people={people}
                 mine={m.author_id === me.id}
                 me={me.id}
-                onReply={setReplyTo}
+                onReply={m.id > 0 ? setReplyTo : undefined}
                 onJump={jumpTo}
                 flash={flash === m.id}
               />
@@ -235,7 +268,7 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
           </Link>
         </p>
       ) : (
-        <Composer chatKey={chatKey} members={members} me={me} replyTo={replyTo} replyName={replyTo && nameOf(replyTo.author_id)} onCancelReply={() => setReplyTo(undefined)} />
+        <Composer chatKey={chatKey} members={members} me={me} outbox={outbox} replyTo={replyTo} replyName={replyTo && nameOf(replyTo.author_id)} onCancelReply={() => setReplyTo(undefined)} />
       )}
     </div>
   );

@@ -226,3 +226,47 @@ test("the chat's name and faces open its details: the way to the project and eve
   await expect(info.getByText("(أنت)")).toBeVisible();
   await expect(info.getByText("أحمد كريم")).toBeVisible();
 });
+
+// 25 November 2026 (the client: "when I send, show it already sent, without waiting"). The demo server is made slow
+// (3 s) so the test can see the page before the answer comes: the message is in the chat and the box is empty at once.
+test("a sent message shows at once, before the server answers, and stays when the answer comes", async ({ page }) => {
+  await signInAs(page, /أحمد كريم/);
+  await page.evaluate(() => localStorage.setItem("p3.mock.latency", "3000"));
+  await page.goto("/chat/p-1");
+  const box = page.getByLabel("اكتب رسالة");
+  await expect(page.getByRole("list", { name: "الرسائل" })).toBeVisible({ timeout: 15_000 });
+  await expect(box).toBeEnabled();
+  await box.fill("وصلت فوراً");
+  await box.press("Enter");
+
+  const sent = page.getByRole("list", { name: "الرسائل" }).getByRole("listitem").filter({ hasText: "وصلت فوراً" });
+  // Well before the server's 3 s: shown, box empty and ready for the next one.
+  await expect(sent).toBeVisible({ timeout: 1000 });
+  await expect(box).toHaveValue("");
+  await expect(box).toBeEnabled();
+  // After the answer and the next refresh: still there, once.
+  await page.waitForTimeout(4500);
+  await expect(sent).toHaveCount(1);
+  await expect(sent.getByRole("button", { name: /ردّ على رسالة أحمد كريم/ })).toBeVisible();
+});
+
+test("a message that couldn't be sent goes away, and its text comes back in the box with the reason", async ({ page }) => {
+  await signInAs(page, /أحمد كريم/);
+  await page.goto("/chat/p-1");
+  const box = page.getByLabel("اكتب رسالة");
+  await expect(box).toBeEnabled();
+  await page.evaluate(() => localStorage.setItem("p3.mock.offline", "1"));
+  await box.fill("لن تصل");
+  await box.press("Enter");
+
+  const messages = page.getByRole("list", { name: "الرسائل" });
+  await expect(page.getByText("لا يوجد اتصال بالخادم. تحقق من الإنترنت.")).toBeVisible();
+  await expect(messages.getByText("لن تصل")).toHaveCount(0);
+  await expect(box).toHaveValue("لن تصل");
+
+  // Back online: the same text goes, once.
+  await page.evaluate(() => localStorage.removeItem("p3.mock.offline"));
+  await box.press("Enter");
+  await expect(messages.getByRole("listitem").filter({ hasText: "لن تصل" })).toHaveCount(1);
+  await expect(box).toHaveValue("");
+});
