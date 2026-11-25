@@ -11,7 +11,7 @@ import { useLoad } from "@/shared/lib/use-load";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, Button, Dialog, errorText, ErrorBox, PersonName, Pill, Skeleton, useToast } from "@/shared/ui";
 import { ratingsApi } from "../api";
-import { canChangeRating, editTimeLeft, REASON_TYPES, REASON_WORDS, SCORE_WORDS, scoreStep, summarize, trendOf } from "../rules";
+import { canChangeRating, editTimeLeft, REASON_TYPES, REASON_WORDS, reasonWords, SCORE_WORDS, scoreStep, summarize, trendOf } from "../rules";
 import type { Rating, ReasonType, Subject } from "../types";
 import { RatingDialog, type RatingTarget } from "./rating-dialog";
 import { ScoreBars, ScoreMark } from "./score-scale";
@@ -155,7 +155,7 @@ export function RatingsPanel({ target, title, rateLabel }: { target: RatingTarge
 
       {type && (
         <p className="flex items-center gap-2 text-sm">
-          {tr(`تظهر تقييمات «${REASON_WORDS[type].ar}» فقط.`, `Showing "${REASON_WORDS[type].en}" only.`)}
+          {tr(`تظهر تقييمات «${reasonWords(type).ar}» فقط.`, `Showing "${reasonWords(type).en}" only.`)}
           <button type="button" onClick={() => setType("")} className="font-medium text-accent underline underline-offset-4">
             {tr("اعرض الكل", "Show all")}
           </button>
@@ -199,7 +199,7 @@ export function RatingsPanel({ target, title, rateLabel }: { target: RatingTarge
 /** One rating: the score, the kind, the reason, who and when, what it is about, and its own buttons. */
 function RatingLine({ rating: r, rater, editor, mine, now, onEdit, onRemove }: { rating: Rating; rater?: User; editor?: User; mine: boolean; now: Date; onEdit: () => void; onRemove: () => void }) {
   const { tr, lang, ago, dateTime, day } = useFmt();
-  const w = REASON_WORDS[r.reason_type];
+  const w = reasonWords(r.reason_type);
   const left = editTimeLeft(r, now);
   const until = new Date(now.getTime() + left).toISOString();
   const nameOf = (u?: User) => (u ? (lang === "en" && u.name_en ? u.name_en : u.name) : "-");

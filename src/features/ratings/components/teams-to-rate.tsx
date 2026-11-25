@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useFmt } from "@/shared/lib/i18n";
 import { useLoad } from "@/shared/lib/use-load";
 import { ratingsApi } from "../api";
-import { REASON_WORDS } from "../rules";
+import { reasonWords } from "../rules";
 import { AverageMark, RateButton } from "./rate-button";
 
 /**
@@ -44,7 +44,7 @@ export function TeamsToRate() {
               </Link>
               {row.ratings && <AverageMark summary={row.ratings} />}
               <span className="text-xs text-muted">
-                {last ? tr(`آخر تقييم ${ago(last.created_at)} · ${REASON_WORDS[last.reason_type].ar}`, `Last ${ago(last.created_at)} · ${REASON_WORDS[last.reason_type].en}`) : tr("لم يُقيَّم بعد", "Not rated yet")}
+                {last ? tr(`آخر تقييم ${ago(last.created_at)} · ${reasonWords(last.reason_type).ar}`, `Last ${ago(last.created_at)} · ${reasonWords(last.reason_type).en}`) : tr("لم يُقيَّم بعد", "Not rated yet")}
               </span>
               <RateButton target={{ subject: { type: "team", id: row.team.id }, name: nameOf(row.team) }} onSaved={load.reload} />
             </li>

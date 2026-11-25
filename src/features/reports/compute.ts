@@ -222,8 +222,8 @@ export interface TeamShares {
 }
 
 /** The tasks of one team's people, split four ways, and how many are late. Without a team: everyone in the numbers. */
-export function teamShares(o: Pick<Overview, "people">, teamId?: number): TeamShares {
-  const rows = o.people.filter((r) => teamId === undefined || r.team_id === teamId);
+export function teamShares(o: Pick<Overview, "people">, teamId?: number | null): TeamShares {
+  const rows = o.people.filter((r) => teamId == null || r.team_id === teamId);
   const sum = (pick: (r: PersonRow) => number) => rows.reduce((s, r) => s + pick(r), 0);
   const done = sum((r) => r.done);
   const open = sum((r) => r.open);

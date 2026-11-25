@@ -246,3 +246,10 @@ describe("the demo backend: people, changes and removals", () => {
     expect((await api.ratings(TEAM)).can_rate).toBe(false);
   });
 });
+
+describe("a reason this site doesn't know (another server's list)", () => {
+  it("reads as another reason instead of breaking the page", () => {
+    expect(rules.reasonWords("speed")).toEqual(rules.REASON_WORDS.other);
+    expect(rules.reasonWords("deadlines").en).toBe("Meeting deadlines");
+  });
+});

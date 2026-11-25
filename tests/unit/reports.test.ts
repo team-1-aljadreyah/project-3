@@ -175,3 +175,14 @@ describe("the demo backend", () => {
     expect((await fails(api.overview()))?.status).toBe(403);
   });
 });
+
+describe("a team leader's sphere when the server sends team_id: null", () => {
+  it("counts everyone, the same as when the key is missing", () => {
+    const people = [
+      { team_id: 1, done: 2, open: 1, in_review: 0, late: 0 },
+      { team_id: null, done: 1, open: 3, in_review: 1, late: 1 },
+    ] as never;
+    expect(teamShares({ people }, null)).toEqual(teamShares({ people }, undefined));
+    expect(teamShares({ people }, 1)).not.toEqual(teamShares({ people }, null));
+  });
+});
