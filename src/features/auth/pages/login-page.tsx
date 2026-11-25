@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
 import type { User } from "@/shared/api/types";
 import { roleName } from "@/shared/lib/site";
@@ -12,7 +12,7 @@ import { cn } from "@/shared/lib/utils";
 import { Avatar, Button, Field, Frost, Input, LightThreads, Reveal, errorText } from "@/shared/ui";
 import { InstallButton } from "@/shared/pwa";
 import { authApi } from "../api";
-import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview, introPlays } from "../components/front-door";
+import { FlowPlate, FlowWindow, HistoryPreview, IntroRing, SprintMeter, WeekPreview, type IntroState } from "../components/front-door";
 import { safeNext } from "../safe-next";
 
 interface Demo {
@@ -35,28 +35,39 @@ function useDemoAccounts() {
   return demo;
 }
 
+/** Where to go after signing in: the page in "?next=" when it is one of ours, else the home page. */
+function nextPage() {
+  return safeNext(new URLSearchParams(window.location.search).get("next"));
+}
+
 export function LoginPage() {
   const { tr, lang } = useFmt();
   usePageTitle(tr("تسجيل الدخول", "Sign in"));
   const router = useRouter();
-  const params = useSearchParams();
-  const next = safeNext(params.get("next"));
   const session = useSession();
   const demo = useDemoAccounts();
   const logoRef = useRef<HTMLSpanElement>(null);
-  const [landed, setLanded] = useState(false);
-  // Does the ring count the page in this time? Then the threads of light wait for it before they drop.
-  const [intro] = useState(introPlays);
-  const land = useCallback(() => setLanded(true), []);
+  // Where the intro ring is: the threads of light wait for it to land before they drop, and the logo answers it.
+  const [intro, setIntro] = useState<IntroState>("wait");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; fields?: Record<string, string> } | null>(null);
 
-  // Already signed in (another tab, or the back button): straight on.
+  // Signed in (just now, in another tab, or back with the back button): straight on, to where "?next=" says. The
+  // address is read here and not while drawing, so the page can be drawn into the first HTML.
   useEffect(() => {
-    if (session) router.replace(next);
-  }, [session, next, router]);
+    if (session) router.replace(nextPage());
+  }, [session, router]);
+
+  // The signed-in app's code is fetched when the person starts to sign in (the first key or tap in the form), not
+  // while this page is still loading: the page is ready sooner, and the app still opens at once after signing in.
+  const warmed = useRef(false);
+  const warm = () => {
+    if (warmed.current) return;
+    warmed.current = true;
+    router.prefetch(nextPage());
+  };
 
   const signIn = async (id: string, pw: string) => {
     if (!id.trim() || !pw) {
@@ -73,12 +84,15 @@ export function LoginPage() {
     setError(null);
     try {
       setSession(await authApi.login(id, pw));
-      // The effect above moves on once the session is saved.
+      // The effect above moves on once the session is saved (and `busy` stays on, so the page stays until then).
     } catch (e) {
       setBusy(false);
       setError({ message: errorText(e, tr), fields: e instanceof ApiError ? e.errors : undefined });
     }
   };
+
+  // Arrived here already signed in (not by this form, which keeps `busy` on): nothing to show on the way to the app.
+  if (session && !busy) return null;
 
   return (
     // The front door (19 November 2026): the ring counts the page in and folds into the logo, a bundle of fine threads of
@@ -86,12 +100,12 @@ export function LoginPage() {
     // scroll), a glass window shows a live task in the hero, a plate opens out of the logo mid-page, and the sections
     // settle into focus. Signing in is always right at the top. Motion is decoration only (see front-door.tsx).
     <main className="front-door relative min-h-dvh overflow-clip">
-      <IntroRing target={logoRef} onLand={land} />
-      <LightThreads start={!intro || landed} />
+      <IntroRing target={logoRef} onState={setIntro} />
+      <LightThreads start={intro === "none" || intro === "landed"} />
       <div className="relative z-10">
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-8">
-        <span ref={logoRef} className={cn("inline-block rounded-xl", landed && "logo-land")}>
+        <span ref={logoRef} className={cn("inline-block rounded-xl", intro === "landed" && "logo-land")}>
           <Logo />
         </span>
         <span className="flex items-center gap-1">
@@ -120,6 +134,8 @@ export function LoginPage() {
               <form
                 className="mt-6 flex flex-col gap-4"
                 noValidate
+                onFocus={warm}
+                onPointerDown={warm}
                 onSubmit={(e) => {
                   e.preventDefault();
                   signIn(identifier, password);

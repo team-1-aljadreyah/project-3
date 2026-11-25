@@ -7,7 +7,9 @@ import { BrandMark } from "@/shared/ui";
 export function Logo() {
   const { tr } = useFmt();
   return (
-    <Link href="/" className="flex items-center gap-2.5 rounded-lg ps-1">
+    // No prefetch: on the sign-in page it downloaded the whole signed-in app while the page was still loading (the page
+    // does it itself when the person starts to sign in), and inside the app the home page is already there.
+    <Link href="/" prefetch={false} className="flex items-center gap-2.5 rounded-lg ps-1">
       <BrandMark className="size-[34px]" />
       <span className="text-[15px] font-semibold whitespace-nowrap">{tr(BRAND.ar, BRAND.en)}</span>
     </Link>

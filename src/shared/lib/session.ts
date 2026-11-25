@@ -5,9 +5,9 @@
 // real server every tab is the same person, as before.
 import { useSyncExternalStore } from "react";
 import type { Session, User } from "../api/types";
+import { SESSION_KEY as KEY } from "./boot";
 import { USE_MOCK } from "./config";
 
-const KEY = "p3.session";
 const listeners = new Set<() => void>();
 
 let cachedRaw: string | null | undefined;
