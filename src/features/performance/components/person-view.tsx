@@ -163,9 +163,9 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
             </div>
             <ul className="flex flex-wrap gap-1.5">
               {r.criteria.map((c) => (
-                <li key={c.id}>
-                  <Pill tone="new">
-                    {lang === "en" ? c.name_en : c.name}: {r.scores[c.id] ?? 0}
+                <li key={c.id} className="min-w-0 max-w-full">
+                  <Pill tone="new" end={`: ${r.scores[c.id] ?? 0}`}>
+                    {lang === "en" ? c.name_en : c.name}
                   </Pill>
                 </li>
               ))}

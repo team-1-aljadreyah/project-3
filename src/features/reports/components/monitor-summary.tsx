@@ -39,7 +39,9 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
   return (
     <>
       <section aria-labelledby="dashboard-title">
-        <div className="wave-banner relative isolate h-36 overflow-hidden rounded-2xl px-5 pt-4 sm:h-40 lg:h-48">
+        {/* At least its own height, and taller when the greeting wraps on a narrow phone: the bottom 3.5rem stays free for
+            the card that rises into it, so the card never covers the name or the clock. */}
+        <div className="wave-banner relative isolate min-h-36 overflow-hidden rounded-2xl px-5 pt-4 pb-14 sm:min-h-40 lg:min-h-48">
           {/* Soft waves across the banner: a drawing, not a photo. */}
           <svg aria-hidden="true" viewBox="0 0 1200 160" preserveAspectRatio="none" className="absolute inset-0 -z-10 h-full w-full">
             <path d="M0 96C180 40 330 150 540 92S900 24 1200 84V160H0Z" fill="#fff" fillOpacity="0.07" />

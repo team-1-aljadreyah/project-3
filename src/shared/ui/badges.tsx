@@ -4,17 +4,21 @@ import { cn } from "@/shared/lib/utils";
 import { PRIORITY, TONE_CLASS } from "./tones";
 
 /** The tag's frame: a thin outline, slightly squared corners, the text in the page's own colour. */
-const TAG = "inline-flex items-center gap-1.5 rounded-[5px] border border-line bg-card px-1.5 py-px text-xs leading-5 font-medium whitespace-nowrap text-text";
+const TAG = "inline-flex max-w-full items-center gap-1.5 rounded-[5px] border border-line bg-card px-1.5 py-px text-xs leading-5 font-medium whitespace-nowrap text-text";
 
 /**
  * A label in a status family's colour: a small coloured dot before plain text (the colour carries the meaning, the
- * text stays easy to read). "Blocked" also colours its text, since it asks for attention.
+ * text stays easy to read). "Blocked" also colours its text, since it asks for attention. `end`: a short part (a number)
+ * that stays visible when a long label is cut with "…".
  */
-export function Pill({ tone, className, children }: { tone: StatusTone; className?: string; children: React.ReactNode }) {
+export function Pill({ tone, className, children, end }: { tone: StatusTone; className?: string; children: React.ReactNode; end?: React.ReactNode }) {
   return (
     <span className={cn(TAG, tone === "blocked" && TONE_CLASS.blocked.text, className)}>
       <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", TONE_CLASS[tone].bar)} />
-      {children}
+      {/* Never wider than its row: a long name ends in "…" instead of pushing the page sideways. */}
+      <span className="min-w-0 truncate">{children}</span>
+      {/* What must always show (a score after a name) is never cut. */}
+      {end != null && <span className="-ms-1 shrink-0">{end}</span>}
     </span>
   );
 }
