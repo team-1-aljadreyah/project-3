@@ -29,6 +29,31 @@ function arCount(n: number, one: string, two: string, few: string, many: string)
   return `${n} ${many}`;
 }
 
+/**
+ * The forms an Arabic noun takes after a number: `one` and `two` are whole phrases ("مهمة واحدة", "مهمتان"), `few`
+ * is the plural after 3–10 ("مهام"), `many` the singular after 11–99 ("مهمة", "عضواً").
+ */
+export interface ArWords {
+  one: string;
+  two: string;
+  few: string;
+  many: string;
+}
+
+/**
+ * Arabic number agreement: 1 and 2 have their own words, 3–10 take the plural, 11–99 the singular (accusative, "عضواً"),
+ * and 0, 100, 101, 102… the singular without its tanween ("100 عضو"). Only the last two digits decide, as in
+ * "103 أعضاء" and "111 عضواً".
+ */
+export function arCountWords(n: number, w: ArWords, num: (n: number) => string = String) {
+  if (n === 1) return w.one;
+  if (n === 2) return w.two;
+  const rest = n % 100;
+  if (rest >= 3 && rest <= 10) return `${num(n)} ${w.few}`;
+  if (rest >= 11) return `${num(n)} ${w.many}`;
+  return `${num(n)} ${w.many.replace(/اً$/, "")}`;
+}
+
 /** Arabic count words: 1 يوم، 2 يومان، 3–10 أيام، 11+ يوماً. */
 export function arDays(n: number) {
   if (n === 1) return "يوم واحد";

@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { ChevronLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -64,7 +65,7 @@ export function AdminPage() {
 }
 
 function TeamsTab() {
-  const { tr, lang, num } = useFmt();
+  const { tr, lang } = useFmt();
   const toast = useToast();
   const load = useLoad(() => Promise.all([adminApi.teams(), adminApi.users()]));
   const [editing, setEditing] = useState<{ team?: Team } | null>(null);
@@ -114,7 +115,7 @@ function TeamsTab() {
             <button type="button" onClick={() => open(t)} className="flex w-full flex-col gap-1 rounded-xl border border-line bg-card p-4 pe-28 text-start hover:border-accent">
               <b dir="auto">{lang === "en" && t.name_en ? t.name_en : t.name}</b>
               <span className="text-sm text-muted">
-                {tr(`القائد: ${nameOf(t.lead_id)} · ${num(users.filter((u) => u.active && u.team_id === t.id).length)} أعضاء`, `Leader: ${nameOf(t.lead_id)} · ${users.filter((u) => u.active && u.team_id === t.id).length} people`)}
+                {tr(`القائد: ${nameOf(t.lead_id)} · ${arN(users.filter((u) => u.active && u.team_id === t.id).length, W.member)}`, `Leader: ${nameOf(t.lead_id)} · ${users.filter((u) => u.active && u.team_id === t.id).length} people`)}
               </span>
             </button>
           </li>
@@ -174,7 +175,7 @@ function SettingsTab() {
   const [settings, health] = load.state.data;
   const v = draft ?? settings;
   const fields: { key: keyof Settings; ar: string; en: string }[] = [
-    { key: "due_soon_days", ar: "تذكير قرب موعد التسليم قبل (أيام)", en: "Due-soon reminder, days before" },
+    { key: "due_soon_days", ar: "التذكير قبل موعد التسليم بـ (أيام)", en: "Due-soon reminder, days before" },
     { key: "lock_after", ar: "قفل الحساب بعد محاولات دخول خاطئة", en: "Lock an account after wrong passwords" },
     { key: "lock_minutes", ar: "مدة القفل (دقائق)", en: "Lock time (minutes)" },
   ];
@@ -226,7 +227,7 @@ function SettingsTab() {
         </h2>
         <div className="grid grid-cols-2 gap-3">
           <Stat href="/admin?tab=users" label={tr("حسابات نشطة", "Active accounts")} value={num(health.users_active)} note={tr(`موقوفة ${num(health.users_stopped)} · مقفلة ${num(health.users_locked)}`, `${health.users_stopped} stopped · ${health.users_locked} locked`)} />
-          <Stat href="/" label={tr("المشاريع والمهام", "Projects and tasks")} value={num(health.projects)} note={tr(`${num(health.tasks)} مهمة`, `${health.tasks} tasks`)} />
+          <Stat href="/" label={tr("المشاريع والمهام", "Projects and tasks")} value={num(health.projects)} note={tr(`${arN(health.tasks, W.task)}`, `${health.tasks} tasks`)} />
           <Stat label={tr("الملفات", "Files")} value={num(health.files)} note={`${(health.files_bytes / 1024 / 1024).toFixed(1)} MB`} />
           <Stat href="/audit" label={tr("سجل العمليات", "Audit log")} value={num(health.audit_entries)} note={tr("سطر محفوظ", "lines kept")} />
         </div>

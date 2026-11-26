@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { Bug, Clock3, FolderKanban, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -30,8 +31,8 @@ export function MonitorSummary({ user, o, t }: { user: User; o: Overview; t: Ret
   const rows = useMemo(() => followUp(o.projects, filter, query), [o.projects, filter, query]);
   const projectName = (p: { name: string; name_en?: string }) => (lang === "en" && p.name_en ? p.name_en : p.name);
   const stats = [
-    { icon: FolderKanban, label: tr("المشاريع النشطة", "Active projects"), href: "/", value: num(t.projects.active), note: tr(`من ${num(t.projects.all)} مشاريع`, `of ${t.projects.all} projects`) },
-    { icon: TrendingUp, label: tr("الإنجاز الكلي", "Overall progress"), href: "/reports", value: pct(t.ratio), note: tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`) },
+    { icon: FolderKanban, label: tr("المشاريع النشطة", "Active projects"), href: "/", value: num(t.projects.active), note: tr(`من ${arN(t.projects.all, G.project)}`, `of ${t.projects.all} projects`) },
+    { icon: TrendingUp, label: tr("الإنجاز الكلي", "Overall progress"), href: "/reports", value: pct(t.ratio), note: tr(`${num(t.tasks.done)} من ${arN(t.tasks.total, G.task)}`, `${t.tasks.done} of ${t.tasks.total} tasks`) },
     { icon: Clock3, label: tr("مهام متأخرة", "Late tasks"), href: "#follow-title", value: num(t.tasks.late), note: tr(`متوقفة ${num(t.tasks.blocked)}`, `${t.tasks.blocked} blocked`), danger: t.tasks.late > 0 },
     { icon: Bug, label: tr("أخطاء مفتوحة", "Open bugs"), href: o.bugs.late > 0 ? "/bugs?show=late" : "/bugs", value: num(o.bugs.open), note: tr(`متأخرة ${num(o.bugs.late)} · حرجة ${num(o.bugs.critical_open)}`, `${o.bugs.late} late · ${o.bugs.critical_open} critical`), danger: o.bugs.late > 0 },
   ];

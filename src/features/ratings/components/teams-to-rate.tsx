@@ -32,7 +32,7 @@ export function TeamsToRate() {
           <ChevronLeft size={15} aria-hidden="true" className="ltr:rotate-180" />
         </Link>
       </div>
-      <p className="mb-3 text-[13px] text-muted">{tr("درجة وسبب بكلماتك، لأي سبب وفي أي وقت. يصل قائد الفريق إشعار إلا إن جعلته خاصاً.", "A score and your reason, any reason, any time. The team leader is told unless you make it private.")}</p>
+      <p className="mb-3 text-[13px] text-muted">{tr("درجة وسبب بكلماتك، لأي سبب وفي أي وقت. ويصل إشعار إلى قائد الفريق إلا إن جعلته خاصاً.", "A score and your reason, any reason, any time. The team leader is told unless you make it private.")}</p>
       <ul className="flex flex-col divide-y divide-line">
         {ordered.map((row) => {
           const last = row.ratings?.last;

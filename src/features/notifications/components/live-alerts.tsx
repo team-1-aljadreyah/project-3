@@ -87,7 +87,7 @@ function noticeFor(a: Alert, people: Map<number, User>, me: number, silent: bool
   }
   return {
     title: brand,
-    body: tr(`لديك ${fmt.num(a.count)} إشعارات جديدة`, `You have ${fmt.num(a.count)} new notifications`),
+    body: tr(`إشعارات جديدة: ${fmt.num(a.count)}`, `You have ${fmt.num(a.count)} new notifications`),
     tag: a.tag,
     url: "/notifications",
     silent,

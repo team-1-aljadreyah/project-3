@@ -68,7 +68,7 @@ export function PmOrbit({ user, projects }: { user: Pick<User, "id" | "name" | "
             {[
               { label: tr("الإنجاز", "Progress"), value: pct(ratio) },
               { label: tr("مهام متأخرة", "Late tasks"), value: num(late), alert: late > 0 },
-              { label: tr("خلف الخطة", "Behind plan"), value: num(behind), alert: behind > 0 },
+              { label: tr("متأخرة عن الخطة", "Behind plan"), value: num(behind), alert: behind > 0 },
             ].map((s) => (
               <div key={s.label} className="flex flex-col gap-1">
                 <dt className="text-[11px] text-[#e6d3da]">{s.label}</dt>

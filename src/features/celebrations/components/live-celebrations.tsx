@@ -79,7 +79,7 @@ export function LiveCelebrations() {
       return {
         key: `n-${n.id}`,
         effect: isToday ? "birthday-today" : "birthday-soon",
-        eyebrow: isToday ? tr("اليوم", "Today") : tr("تذكير قبل أسبوع", "A week's notice"),
+        eyebrow: isToday ? tr("اليوم", "Today") : tr("تذكير مسبق بأسبوع", "A week's notice"),
         title: isToday ? tr(`اليوم عيد ميلاد ${name}`, `Today is ${name}'s birthday`) : tr(`بعد أسبوع: عيد ميلاد ${name}`, `${name}'s birthday is in a week`),
         body: isToday
           ? tr("فرصة جميلة لتهنئة طيبة من الفريق.", "A good moment for a kind word from the team.")

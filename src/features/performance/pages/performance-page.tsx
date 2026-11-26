@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -94,14 +95,14 @@ function PeopleList() {
                       {rated?.ratings && <AverageMark summary={rated.ratings} href={`/teams/${t.team_id}#ratings`} />}
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-muted">{tr(`${num(t.members)} أعضاء`, `${t.members} people`)}</span>
+                      <span className="text-muted">{tr(`${arN(t.members, W.member)}`, `${t.members} people`)}</span>
                       {rated?.can_rate && <RateButton target={{ subject: { type: "team", id: t.team_id }, name: teamName }} onSaved={quick.reload} />}
                     </span>
                   </div>
                   <ProgressBar value={t.completion} planned={t.planned} label={tr(`إنجاز ${t.name}`, `${t.name_en ?? t.name} done`)} />
                   <p className="text-xs text-muted">
                     {tr(
-                      `الإنجاز ${pct(t.completion)} من ${pct(t.planned)} المخطط · منجزة ${num(t.done)} · متبقية ${num(t.left)} · متأخرة ${num(t.late)} · متوقفة ${num(t.blocked)}`,
+                      `الإنجاز ${pct(t.completion)} مقابل ${pct(t.planned)} مخطَّطاً · منجزة ${num(t.done)} · متبقية ${num(t.left)} · متأخرة ${num(t.late)} · متوقفة ${num(t.blocked)}`,
                       `${pct(t.completion)} done of ${pct(t.planned)} planned · ${t.done} done · ${t.left} left · ${t.late} late · ${t.blocked} blocked`,
                     )}
                   </p>
@@ -112,7 +113,7 @@ function PeopleList() {
           )}
 
           {load.data[0].people.length === 0 ? (
-            <Empty title={tr("لا أحد في قائمتك", "Nobody in your list")} body={tr("تظهر هنا الأسماء التي تتابع أداءها.", "The people whose work you follow show here.")} />
+            <Empty title={tr("لا أحد في قائمتك", "Nobody in your list")} body={tr("يظهر هنا الأشخاص الذين تتابع أداءهم.", "The people whose work you follow show here.")} />
           ) : (
             <div className="overflow-x-auto rounded-xl border border-line bg-card">
               <table className="w-full text-sm">

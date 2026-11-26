@@ -143,7 +143,7 @@ test("a picture sent in a chat shows as a preview and opens in the viewer, with 
   await expect(viewer.getByRole("img", { name: "لقطة-الشاشة.png" })).toBeVisible();
   await expect(viewer.getByRole("link", { name: "نزّل الصورة" })).toHaveAttribute("download", "لقطة-الشاشة.png");
   await viewer.getByRole("button", { name: "كبّر" }).click();
-  await expect(viewer.getByRole("button", { name: "صغّر" })).toHaveAttribute("aria-pressed", "true");
+  await expect(viewer.getByRole("button", { name: "بحجم الشاشة" })).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Escape");
   await expect(viewer).toBeHidden();
 });
@@ -260,7 +260,7 @@ test("a message that couldn't be sent goes away, and its text comes back in the 
   await box.press("Enter");
 
   const messages = page.getByRole("list", { name: "الرسائل" });
-  await expect(page.getByText("لا يوجد اتصال بالخادم. تحقق من الإنترنت.")).toBeVisible();
+  await expect(page.getByText("لا يوجد اتصال بالخادم. تحقّق من اتصالك بالإنترنت.")).toBeVisible();
   await expect(messages.getByText("لن تصل")).toHaveCount(0);
   await expect(box).toHaveValue("لن تصل");
 

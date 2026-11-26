@@ -1,3 +1,4 @@
+import { arN, G, W } from "@/shared/lib/count-words";
 import { AlertTriangle, ChevronLeft, Inbox, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { announcementsApi } from "@/features/announcements";
@@ -87,7 +88,7 @@ export function DashboardPage() {
           numbers={[
             { label: tr("مشاريع نشطة", "Active"), value: num(t.projects.active), href: "/" },
             { label: tr("الإنجاز", "Progress"), value: pct(t.ratio), href: "/reports" },
-            { label: tr("مهام تأخرت", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0, href: "#attention-title" },
+            { label: tr("مهام متأخرة", "Late"), value: num(t.tasks.late), alert: t.tasks.late > 0, href: "#attention-title" },
           ]}
         />
       ) : user.role === "lead" ? (
@@ -134,7 +135,7 @@ export function DashboardPage() {
             value={num(t.projects.active)}
             note={tr(`مكتملة ${num(t.projects.done)} · متوقفة ${num(t.projects.paused)} · مخطط لها ${num(t.projects.planned)}`, `${t.projects.done} done · ${t.projects.paused} paused · ${t.projects.planned} planned`)}
           />
-          <Stat href="/reports" label={tr("الإنجاز الكلي", "Overall progress")} value={pct(t.ratio)} note={tr(`${num(t.tasks.done)} من ${num(t.tasks.total)} مهمة`, `${t.tasks.done} of ${t.tasks.total} tasks`)} />
+          <Stat href="/reports" label={tr("الإنجاز الكلي", "Overall progress")} value={pct(t.ratio)} note={tr(`${num(t.tasks.done)} من ${arN(t.tasks.total, G.task)}`, `${t.tasks.done} of ${t.tasks.total} tasks`)} />
           <Stat
             href="/reports"
             label={tr("مهام متأخرة", "Late tasks")}
@@ -207,7 +208,7 @@ export function DashboardPage() {
                       {lang === "en" && team.name_en ? team.name_en : team.name}
                     </Link>
                     <span className="text-muted">
-                      {tr(`${num(team.members)} أعضاء · مفتوحة ${num(team.open)} · متأخرة ${num(team.late)}`, `${team.members} people · ${team.open} open · ${team.late} late`)}
+                      {tr(`${arN(team.members, W.member)} · مفتوحة ${num(team.open)} · متأخرة ${num(team.late)}`, `${team.members} people · ${team.open} open · ${team.late} late`)}
                     </span>
                   </div>
                   <ProgressBar value={team.ratio} label={tr(`إنجاز ${team.name}`, `${team.name_en ?? team.name} done`)} />

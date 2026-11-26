@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { useState } from "react";
 import { moveTargets, projectsApi, type Sprint, type SprintNumbers } from "@/features/projects";
 import { useFmt } from "@/shared/lib/i18n";
@@ -66,7 +67,7 @@ export function EndSprintDialog({
         <div className="flex flex-col gap-4 text-sm">
           <p>
             {tr(
-              `«${sprint.name}»: أُنجزت ${num(numbers.done)} من ${num(numbers.planned)} مهمة، وبقيت ${num(left)}.`,
+              `«${sprint.name}»: أُنجز ${num(numbers.done)} من ${arN(numbers.planned, G.task)}، وبقي ${num(left)}.`,
               `"${sprint.name}": ${numbers.done} of ${numbers.planned} tasks done, ${left} left.`,
             )}
           </p>

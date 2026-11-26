@@ -12,10 +12,10 @@ import { FormError } from "../form-error";
 /** What each colour family means. The family decides the rules: "blocked" needs a reason, "done" needs approval. */
 const TONES: { tone: StatusTone; ar: string; en: string }[] = [
   { tone: "new", ar: "جديدة", en: "New" },
-  { tone: "todo", ar: "بانتظار البدء", en: "To do" },
-  { tone: "progress", ar: "قيد العمل", en: "In progress" },
-  { tone: "review", ar: "مراجعة", en: "Review" },
-  { tone: "testing", ar: "اختبار", en: "Testing" },
+  { tone: "todo", ar: "قيد الانتظار", en: "To do" },
+  { tone: "progress", ar: "قيد التنفيذ", en: "In progress" },
+  { tone: "review", ar: "قيد المراجعة", en: "Review" },
+  { tone: "testing", ar: "قيد الاختبار", en: "Testing" },
   { tone: "done", ar: "مكتملة (تحتاج اعتماداً)", en: "Done (needs approval)" },
   { tone: "blocked", ar: "متوقفة (تحتاج سبباً)", en: "Blocked (needs a reason)" },
 ];

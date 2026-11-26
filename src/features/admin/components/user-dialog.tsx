@@ -173,7 +173,7 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <Cake size={13} aria-hidden="true" className="shrink-0 text-accent" />
-                {tr("مستحسن: به تصل تذكيرات أعياد الميلاد.", "Suggested: the birthday reminders need it.")}
+                {tr("يُستحسن ملؤه: تعتمد عليه تذكيرات أعياد الميلاد.", "Suggested: the birthday reminders need it.")}
               </span>
             )
           }
@@ -245,8 +245,8 @@ export function UserDialog({ user, teams, me, onClose, onSaved }: { user?: Admin
                 {tr("أوقف الحساب", "Stop the account")}
               </Button>
             ) : (
-              <Button variant="secondary" disabled={busy} onClick={() => run(() => adminApi.updateUser(user.id, { active: true }), tr("أُعيد تشغيل الحساب.", "Account restarted."))}>
-                {tr("أعد تشغيل الحساب", "Restart the account")}
+              <Button variant="secondary" disabled={busy} onClick={() => run(() => adminApi.updateUser(user.id, { active: true }), tr("أُعيد تفعيل الحساب.", "Account restarted."))}>
+                {tr("أعد تفعيل الحساب", "Restart the account")}
               </Button>
             ))}
           <span className="text-xs text-muted">{tr("لا يُحذف أي حساب: الإيقاف يمنع الدخول ويبقي سجله.", "No account is deleted: stopping blocks sign-in and keeps its history.")}</span>

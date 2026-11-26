@@ -94,7 +94,7 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`${who} سلّم إدارة ${project} إلى ${nameOf(d.pm_id)}`, `${who} handed ${project} to ${nameOf(d.pm_id)}`);
     case "github_pr_merged":
       // d.note = the pull request ("aljadreyah/booking-web #41").
-      return tr(`دُمج ${d.note ?? "-"} المرتبط بـ ${task}: هل تنقل المهمة؟`, `${d.note ?? "-"} for ${task} was merged: move the task?`);
+      return tr(`دُمج طلب السحب ${d.note ?? "-"} المرتبط بـ ${task}: هل تنقل المهمة؟`, `${d.note ?? "-"} for ${task} was merged: move the task?`);
     case "team_joined":
       // d.note = the team's name.
       return tr(`${who} أضافك إلى «${d.note ?? "-"}»`, `${who} put you in "${d.note ?? "-"}"`);
@@ -143,7 +143,7 @@ export function notificationText(n: Notification, fmt: Fmt, people: Map<number, 
       return tr(`عيد ميلاد ${name} ${when} (${day(d.due)})`, `${name}'s birthday is ${when} (${day(d.due)})`);
     }
     case "project_plan":
-      return tr(`${who} غيّر خطة ${project}: الإنجاز المتوقع ${d.due ? day(d.due) : "-"}`, `${who} changed ${project}'s plan: expected end ${d.due ? day(d.due) : "-"}`);
+      return tr(`${who} غيّر خطة ${project}: موعد الانتهاء المتوقع ${d.due ? day(d.due) : "-"}`, `${who} changed ${project}'s plan: expected end ${d.due ? day(d.due) : "-"}`);
   }
 }
 

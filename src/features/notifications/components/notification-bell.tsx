@@ -88,7 +88,7 @@ export function NotificationBell() {
             <h2 className="font-semibold">{tr("الإشعارات", "Notifications")}</h2>
             {unreadNotes > 0 && (
               <button type="button" onClick={() => notificationsApi.markAllRead()} className="text-[13px] font-medium text-accent hover:underline">
-                {tr("تحديد الكل كمقروء", "Mark all read")}
+                {tr("علّم الكل مقروءاً", "Mark all read")}
               </button>
             )}
           </div>

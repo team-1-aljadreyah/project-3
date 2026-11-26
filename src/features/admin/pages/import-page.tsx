@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { CircleAlert, CircleCheck, Download, FileSpreadsheet, RotateCcw, Upload } from "lucide-react";
 import { useState } from "react";
 import type { Team } from "@/shared/api/types";
@@ -166,13 +167,13 @@ function Importer({ teams }: { teams: Team[] }) {
         >
           {parsed.unknown.length > 0 && (
             <p className="border-b border-line px-4 py-2 text-xs text-muted">
-              {tr("أعمدة لا نعرفها تُركت:", "Columns we don't know were left out:")} <bdi>{parsed.unknown.join("، ")}</bdi>
+              {tr("أُهملت أعمدة غير معروفة:", "Columns we don't know were left out:")} <bdi>{parsed.unknown.join("، ")}</bdi>
             </p>
           )}
           <PreviewTable rows={parsed.rows} checks={check.rows.filter((r) => (show === "all" ? true : show === "ok" ? !r.problems.length : r.problems.length > 0))} colName={colName} teams={teams} />
           <div className="flex flex-wrap items-center gap-3 border-t border-line bg-card-2 px-4 py-3">
             <Button onClick={create} disabled={busy || ready === 0}>
-              {tr(`أنشئ ${num(ready)} حساب`, `Create ${ready} ${ready === 1 ? "account" : "accounts"}`)}
+              {tr(`أنشئ ${arN(ready, G.account)}`, `Create ${ready} ${ready === 1 ? "account" : "accounts"}`)}
             </Button>
             <Button variant="secondary" onClick={() => setCheck(null)}>
               {tr("عدّل الملف", "Edit the file")}
@@ -425,7 +426,7 @@ function ResultPanel({ result, rows, onRestart }: { result: ImportResult; rows: 
   const skipped = result.rows.filter((r) => r.user_id === undefined);
   return (
     <Panel
-      title={tr(`أُنشئ ${num(result.created)} حساب، وتُرك ${num(result.skipped)}`, `${result.created} created, ${result.skipped} skipped`)}
+      title={tr(`الحسابات المُنشأة: ${num(result.created)} · المتروكة: ${num(result.skipped)}`, `${result.created} created, ${result.skipped} skipped`)}
       note={tr("أصحاب الحسابات الجديدة يدخلون ببريدهم. سُجّل الاستيراد في سجل العمليات.", "The new accounts' owners sign in with their email. The import is in the audit log.")}
       tools={
         <div className="flex flex-wrap gap-2">
@@ -434,7 +435,7 @@ function ResultPanel({ result, rows, onRestart }: { result: ImportResult; rows: 
             {tr("استيراد ملف آخر", "Import another file")}
           </Button>
           <ButtonLink href="/admin?tab=users" size="sm">
-            {tr("افتح المستخدمين", "Open the users")}
+            {tr("افتح قائمة المستخدمين", "Open the users")}
           </ButtonLink>
         </div>
       }

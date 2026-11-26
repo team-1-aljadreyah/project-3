@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { ChevronLeft, ChevronRight, CircleCheck, DatabaseBackup, HardDrive, Lock, UserX, Users, UserRoundX, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -15,20 +16,20 @@ const ICON: Record<AttentionKey, LucideIcon> = { locked: Lock, storage: HardDriv
 function words(a: Attention, tr: (ar: string, en: string) => string, num: (n: number) => string, pct: (r: number) => string) {
   switch (a.key) {
     case "locked":
-      return { text: tr(`${num(a.count)} حساب مقفل الآن بعد محاولات خاطئة`, `${a.count} ${a.count === 1 ? "account is" : "accounts are"} locked after wrong passwords`), fix: tr("افتحها", "Unlock") };
+      return { text: tr(`حسابات مقفلة الآن بعد محاولات خاطئة: ${num(a.count)}`, `${a.count} ${a.count === 1 ? "account is" : "accounts are"} locked after wrong passwords`), fix: tr("ألغِ قفلها", "Unlock") };
     case "storage":
       return { text: tr(`المساحة المستعملة ${pct(a.count)} من المتاح`, `Storage is ${pct(a.count)} full`), fix: tr("انظر التفاصيل", "See the details") };
     case "backup":
       return { text: tr("آخر نسخة احتياطية فشلت أو مضى عليها أكثر من يومين", "The last backup failed or is more than two days old"), fix: tr("انظر الحالة", "See the status") };
     case "never":
       return {
-        text: tr(`${num(a.count)} حساب لم يدخل صاحبه منذ أكثر من ${num(NEVER_SIGNED_IN_DAYS)} أيام`, `${a.count} ${a.count === 1 ? "account" : "accounts"} older than ${NEVER_SIGNED_IN_DAYS} days never signed in`),
+        text: tr(`حسابات أُنشئت قبل أكثر من ${arN(NEVER_SIGNED_IN_DAYS, G.day)} ولم يدخلها أصحابها قط: ${num(a.count)}`, `${a.count} ${a.count === 1 ? "account" : "accounts"} older than ${NEVER_SIGNED_IN_DAYS} days never signed in`),
         fix: tr("راجعها", "Review"),
       };
     case "no_leader":
-      return { text: tr(`${num(a.count)} فريق بلا قائد`, `${a.count} ${a.count === 1 ? "team has" : "teams have"} no leader`), fix: tr("عيّن قائداً", "Set a leader") };
+      return { text: tr(`فرق بلا قائد: ${num(a.count)}`, `${a.count} ${a.count === 1 ? "team has" : "teams have"} no leader`), fix: tr("عيّن قائداً", "Set a leader") };
     case "no_team":
-      return { text: tr(`${num(a.count)} موظف أو قائد بلا فريق`, `${a.count} ${a.count === 1 ? "person is" : "people are"} in no team`), fix: tr("عيّن فريقاً", "Assign a team") };
+      return { text: tr(`أشخاص بلا فريق: ${num(a.count)}`, `${a.count} ${a.count === 1 ? "person is" : "people are"} in no team`), fix: tr("عيّن فريقاً", "Assign a team") };
   }
 }
 

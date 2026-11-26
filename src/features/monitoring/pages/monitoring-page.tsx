@@ -91,12 +91,12 @@ export function MonitoringPage() {
     { key: "all", ar: "الكل", en: "All" },
     { key: "report", ar: "التقارير", en: "Reports" },
     { key: "feedback", ar: "الملاحظات", en: "Feedback" },
-    { key: "problem", ar: "المشاكل", en: "Problems" },
+    { key: "problem", ar: "المشكلات", en: "Problems" },
     { key: "unsent", ar: "لم تُرسل", en: "Not sent" },
   ];
   const starts = [
     { kind: "report" as const, icon: FileText, ar: "تقرير عن فريق أو شخص", en: "A report on a team or a person" },
-    { kind: "feedback" as const, icon: MessageSquareHeart, ar: "ملاحظة على أي شخص", en: "Feedback on anyone" },
+    { kind: "feedback" as const, icon: MessageSquareHeart, ar: "ملاحظة عن أي شخص", en: "Feedback on anyone" },
     { kind: "problem" as const, icon: TriangleAlert, ar: "مشكلة تحتاج قراراً", en: "A problem that needs a decision" },
   ];
   const peopleById = new Map(people.map((p) => [p.id, p]));
@@ -126,7 +126,7 @@ export function MonitoringPage() {
           </span>
           <span className="flex flex-col">
             <span className="text-sm font-medium">{tr("تقرير بالأرقام", "A report with the numbers")}</span>
-            <span className="text-xs text-muted">{tr("صانع التقارير", "Report builder")}</span>
+            <span className="text-xs text-muted">{tr("منشئ التقارير", "Report builder")}</span>
           </span>
         </Link>
         {starts.map((s) => (
@@ -155,14 +155,14 @@ export function MonitoringPage() {
         ))}
       </div>
         {/* Next to the tabs, not among them: a tab list holds only tabs. */}
-        {shown.length > 0 && <PrintButton target={() => list.current} label={tr("اطبع القائمة أو احفظها PDF", "Print the list or save as PDF")} className="ms-auto" />}
+        {shown.length > 0 && <PrintButton target={() => list.current} label={tr("اطبع القائمة أو احفظها بصيغة PDF", "Print the list or save as PDF")} className="ms-auto" />}
       </div>
 
       {shown.length === 0 ? (
         filter === "requests" ? (
           <Empty title={tr("لا طلبات تنتظرك", "No requests waiting for you")} body={tr("طلبات الجميع إلى المدير التنفيذي تصل إليك هنا أولاً.", "Everyone's requests to the CEO reach you here first.")} />
         ) : (
-          <Empty title={tr("لا شيء هنا بعد", "Nothing here yet")} body={tr("ما تكتبينه يظهر هنا.", "What you write shows here.")} />
+          <Empty title={tr("لا شيء هنا بعد", "Nothing here yet")} body={tr("ما تكتبه يظهر هنا.", "What you write shows here.")} />
         )
       ) : (
         <>

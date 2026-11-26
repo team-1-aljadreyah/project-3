@@ -59,7 +59,7 @@ function Editor({ saved, canEdit, onSaved, tr }: { saved: GithubSettings; canEdi
           </label>
           <span className="text-sm text-muted">
             {tr(
-              "تظهر طلبات السحب والإيداعات التي تذكر رمز المهمة (مثل TSK-104) أو الخطأ (BUG-3) في صفحتها. العرض فقط: لا تتغير حالة مهمة وحدها.",
+              "تظهر طلبات السحب والإيداعات التي تذكر رمز المهمة (مثل TSK-104) أو الخطأ (BUG-3) في صفحتها. للعرض فقط: لا تتغير حالة أي مهمة تلقائياً.",
               "Pull requests and commits that mention a task's code (like TSK-104) or a bug's (BUG-3) show on its page. Showing only: no task changes status by itself.",
             )}
           </span>

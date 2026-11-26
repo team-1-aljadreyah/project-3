@@ -163,7 +163,7 @@ function BackupPanel({ health }: { health: DataHealth }) {
           <>
             <p className={cn("flex items-center gap-2 font-medium", ok ? "text-success" : b.status === "failed" ? "text-danger" : "text-muted")}>
               {ok ? <CircleCheck size={16} aria-hidden="true" /> : <CircleAlert size={16} aria-hidden="true" />}
-              {b.status === "ok" ? tr("نجحت آخر نسخة", "The last backup succeeded") : b.status === "failed" ? tr("فشلت آخر نسخة", "The last backup failed") : b.status === "running" ? tr("نسخة تجري الآن", "A backup is running") : tr("الحالة غير معروفة", "Status unknown")}
+              {b.status === "ok" ? tr("نجحت آخر نسخة", "The last backup succeeded") : b.status === "failed" ? tr("فشلت آخر نسخة", "The last backup failed") : b.status === "running" ? tr("نسخ احتياطي جارٍ الآن", "A backup is running") : tr("الحالة غير معروفة", "Status unknown")}
             </p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-muted">
               <dt>{tr("الوقت", "When")}</dt>
@@ -185,7 +185,7 @@ function BackupPanel({ health }: { health: DataHealth }) {
                 </>
               )}
             </dl>
-            {USE_MOCK && <p className="text-xs text-faint">{tr("في النسخة التجريبية هذه الحالة مخترعة؛ الخادم الحقيقي يرسل حالته.", "In the demo this status is invented; the real server sends its own.")}</p>}
+            {USE_MOCK && <p className="text-xs text-faint">{tr("في النسخة التجريبية هذه الحالة افتراضية؛ الخادم الحقيقي يرسل حالته.", "In the demo this status is invented; the real server sends its own.")}</p>}
           </>
         )}
       </div>
@@ -196,10 +196,10 @@ function BackupPanel({ health }: { health: DataHealth }) {
 function AboutPanel({ health }: { health: DataHealth }) {
   const { tr } = useFmt();
   const rows = [
-    { icon: Tag, label: tr("نسخة الواجهة", "Front end version"), value: APP_VERSION, ltr: true },
-    { icon: Server, label: tr("نسخة الخادم", "Server version"), value: health.server_version ?? tr("لا يرسلها", "Not sent"), ltr: !!health.server_version },
+    { icon: Tag, label: tr("إصدار الواجهة", "Front end version"), value: APP_VERSION, ltr: true },
+    { icon: Server, label: tr("إصدار الخادم", "Server version"), value: health.server_version ?? tr("لا يرسلها", "Not sent"), ltr: !!health.server_version },
     { icon: Globe, label: tr("الخادم المتصل به", "API in use"), value: USE_MOCK ? tr("تجريبي (بيانات في المتصفح)", "Demo (data in the browser)") : `${API_URL}/api/v1`, ltr: !USE_MOCK },
-    { icon: Clock, label: tr("وقت هذا الجهاز", "This device's time zone"), value: Intl.DateTimeFormat().resolvedOptions().timeZone, ltr: true },
+    { icon: Clock, label: tr("المنطقة الزمنية لهذا الجهاز", "This device's time zone"), value: Intl.DateTimeFormat().resolvedOptions().timeZone, ltr: true },
   ];
   return (
     <Panel title={tr("عن النظام", "About")}>

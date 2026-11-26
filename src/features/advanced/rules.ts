@@ -1,6 +1,7 @@
 // The CEO's advanced settings: who may open them, every default, and the checks. Pure functions used by the page (to
 // show mistakes as you type, and "Changed" beside what differs from the default) and by the demo backend (to refuse
 // the same mistakes with 422, and to keep only what differs). docs/backend.md section 17 lists them for the server.
+import { arN, G } from "@/shared/lib/count-words";
 import { DEFAULT_SETTINGS, SETTING_RANGE } from "@/features/admin";
 import type { Severity } from "@/features/bugs";
 import { NOTIFICATION_KINDS, REQUIRED_NOTIFICATIONS, type NotificationKind } from "@/shared/api/notification-kinds";
@@ -78,7 +79,7 @@ export const ACTION_GROUPS: Record<ActionGroup, { ar: string; en: string }> = {
   work: { ar: "المشاريع والمهام", en: "Projects and tasks" },
   talk: { ar: "الإعلانات والمحادثات", en: "Announcements and chat" },
   people: { ar: "الأداء والتقارير", en: "Performance and reports" },
-  bugs: { ar: "المشكلات البرمجية", en: "Bugs" },
+  bugs: { ar: "الأخطاء البرمجية", en: "Bugs" },
 };
 
 /** The features the CEO can switch off, in words. */
@@ -86,7 +87,7 @@ export const FEATURES: { key: FeatureKey; ar: string; en: string; hint_ar: strin
   { key: "chat", ar: "المحادثات", en: "Chat", hint_ar: "صفحة المحادثات كلها: المشاريع والفرق والخاصة والمجموعات.", hint_en: "The whole chat page: project, team, private and group chats." },
   { key: "group_chats", ar: "مجموعات المحادثة", en: "Group chats", hint_ar: "إنشاء مجموعات جديدة. المجموعات الموجودة تبقى.", hint_en: "Making new groups. Existing groups stay." },
   { key: "voice_messages", ar: "الرسائل الصوتية", en: "Voice messages", hint_ar: "تسجيل رسائل صوتية في المحادثات. المرسلة من قبل تبقى وتُسمع.", hint_en: "Recording voice messages in chats. Ones already sent stay and play." },
-  { key: "bugs", ar: "المشكلات البرمجية", en: "Bugs", hint_ar: "صفحة المشكلات وتسجيل مشكلة جديدة.", hint_en: "The bugs page and reporting a new bug." },
+  { key: "bugs", ar: "الأخطاء البرمجية", en: "Bugs", hint_ar: "صفحة المشكلات وتسجيل مشكلة جديدة.", hint_en: "The bugs page and reporting a new bug." },
   { key: "reviews", ar: "تقييمات الأداء", en: "Performance reviews", hint_ar: "صفحة الأداء وكتابة التقييمات.", hint_en: "The performance page and writing reviews." },
   { key: "announcements", ar: "الإعلانات", en: "Announcements", hint_ar: "صفحة الإعلانات ونشر إعلان جديد.", hint_en: "The announcements page and posting a new one." },
   { key: "requests", ar: "الطلبات إلى المدير التنفيذي", en: "Requests to the CEO", hint_ar: "صفحة «طلباتي» وإرسال طلب إلى المدير التنفيذي.", hint_en: "The «My requests» page and sending a request to the CEO." },
@@ -97,7 +98,7 @@ export const FEATURES: { key: FeatureKey; ar: string; en: string; hint_ar: strin
 export const CODE_KINDS: { key: CodeKind; ar: string; en: string; example: number }[] = [
   { key: "task", ar: "المهام", en: "Tasks", example: 1042 },
   { key: "project", ar: "المشاريع", en: "Projects", example: 4 },
-  { key: "bug", ar: "المشكلات البرمجية", en: "Bugs", example: 12 },
+  { key: "bug", ar: "الأخطاء البرمجية", en: "Bugs", example: 12 },
 ];
 
 export const APPROVERS: { key: Approver; ar: string; en: string }[] = [
@@ -244,7 +245,7 @@ export function checkRules(r: AdvancedRules): Problems {
   const w = r.work;
   if (!Array.isArray(w.days) || w.days.some((d) => !whole(d, [0, 6])) || new Set(w.days).size !== w.days.length) e["work.days"] = { ar: "أيام غير صحيحة", en: "Wrong days" };
   else if (!w.days.length) e["work.days"] = { ar: "اختر يوم عمل واحداً على الأقل", en: "Choose at least one working day" };
-  if (!isTime(w.from) || !isTime(w.to) || minutes(w.from) >= minutes(w.to)) e["work.hours"] = { ar: "البداية قبل النهاية", en: "The start comes before the end" };
+  if (!isTime(w.from) || !isTime(w.to) || minutes(w.from) >= minutes(w.to)) e["work.hours"] = { ar: "يجب أن تكون البداية قبل النهاية", en: "The start comes before the end" };
   if (!Array.isArray(w.holidays) || w.holidays.length > LIMITS.holidays) e["work.holidays"] = { ar: `حتى ${LIMITS.holidays} عطلة`, en: `Up to ${LIMITS.holidays} holidays` };
   else if (w.holidays.some((h) => !isDay(h.date) || !h.name?.trim() || h.name.length > LIMITS.holidayName || (h.name_en?.length ?? 0) > LIMITS.holidayName)) e["work.holidays"] = { ar: "لكل عطلة تاريخ واسم", en: "Each holiday needs a date and a name" };
   else if (new Set(w.holidays.map((h) => h.date)).size !== w.holidays.length) e["work.holidays"] = { ar: "عطلتان في اليوم نفسه", en: "Two holidays on the same day" };
@@ -361,7 +362,7 @@ export function checkRoles(roles: CustomRole[]): Problems {
     keys.add(r.key);
     for (const [f, v] of [["name", r.name], ["name_en", r.name_en]] as const) {
       const n = typeof v === "string" ? v.trim() : "";
-      if (!n || n.length > LIMITS.roleName) e[at(f)] = { ar: `اكتب الاسم (حتى ${LIMITS.roleName} حرفاً)`, en: `Write the name (up to ${LIMITS.roleName} letters)` };
+      if (!n || n.length > LIMITS.roleName) e[at(f)] = { ar: `اكتب الاسم (حتى ${arN(LIMITS.roleName, G.letter)})`, en: `Write the name (up to ${LIMITS.roleName} letters)` };
       else if (jobNames.includes(fold(n))) e[at(f)] = { ar: "اسم وظيفة موجودة", en: "That's the name of an existing job" };
       else if (names.has(fold(n)) && names.get(fold(n)) !== r.key) e[at(f)] = { ar: "مستعمل لدور آخر", en: "Used by another role" };
       else names.set(fold(n), r.key);
@@ -369,7 +370,7 @@ export function checkRoles(roles: CustomRole[]): Problems {
     if ((r.description?.length ?? 0) > LIMITS.roleDescription) e[at("description")] = { ar: `حتى ${LIMITS.roleDescription} حرف`, en: `Up to ${LIMITS.roleDescription} letters` };
     if (!ROLE_COLORS.includes(r.color)) e[at("color")] = { ar: "اختر لوناً", en: "Choose a colour" };
     if (!BASE_JOBS.includes(r.base)) {
-      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو متابعة أو قائد فريق أو موظف", en: "Starts like: a department manager, monitoring, a team leader or an employee" };
+      e[at("base")] = { ar: "يبدأ مثل: مدير قسم أو مسؤول المتابعة والتقييم أو قائد فريق أو موظف", en: "Starts like: a department manager, monitoring, a team leader or an employee" };
       continue;
     }
     if (!Array.isArray(r.actions) || r.actions.some((a) => !baseDoes(r.base, a))) e[at("actions")] = { ar: "لا يأخذ أكثر مما لوظيفته الأساسية", en: "Never more than its base job" };

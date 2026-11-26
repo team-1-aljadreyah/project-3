@@ -78,7 +78,7 @@ function NotificationsView({ list, users, prefs, convs }: { list: Notification[]
           </div>
           {unread > 0 && (
             <Button variant="secondary" size="sm" onClick={() => notificationsApi.markAllRead()}>
-              {tr("تحديد الكل كمقروء", "Mark all read")}
+              {tr("علّم الكل مقروءاً", "Mark all read")}
             </Button>
           )}
         </div>

@@ -106,7 +106,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
               </span>
               <span>
                 <b className="num">{pct(sprintCounts.ratio)}</b>{" "}
-                <span className="text-muted">{tr(`من ${pct(sprint.planned_ratio)} المخطط`, `of ${pct(sprint.planned_ratio)} planned`)}</span>
+                <span className="text-muted">{tr(`مقابل ${pct(sprint.planned_ratio)} مخطَّطاً`, `of ${pct(sprint.planned_ratio)} planned`)}</span>
               </span>
             </div>
             <ProgressBar value={sprintCounts.ratio} planned={sprint.planned_ratio} label={tr(`إنجاز ${sprint.name}`, `${sprint.name} progress`)} />
@@ -136,7 +136,7 @@ function Board({ project, tasks, users, sprints, reload }: { project: Project; t
         <Stat label={tr("مهام مفتوحة", "Open tasks")} value={num(counts.total - counts.done)} note={tr(`من أصل ${num(counts.total)}`, `of ${counts.total} tasks`)} />
         <Stat label={tr("متأخرة", "Late")} value={num(counts.late)} danger={counts.late > 0} note={counts.late > 0 ? tr("تحتاج متابعة", "Need follow-up") : tr("لا شيء متأخر", "Nothing late")} />
         <Stat label={tr("متوقفة", "Blocked")} value={num(counts.blocked)} danger={counts.blocked > 0} note={tr("لكل منها سبب مسجّل", "Each has a reason")} />
-        <Stat label={tr("بانتظار المراجعة", "In review")} value={num(counts.inReview)} note={tr(`المنجز ${pct(counts.ratio)}`, `${pct(counts.ratio)} done`)} />
+        <Stat label={tr("قيد المراجعة", "In review")} value={num(counts.inReview)} note={tr(`المنجز ${pct(counts.ratio)}`, `${pct(counts.ratio)} done`)} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

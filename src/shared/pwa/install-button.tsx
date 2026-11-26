@@ -50,7 +50,7 @@ const GUIDES: Record<BrowserKind, Guide> = {
     name: { ar: "Firefox على الحاسوب", en: "Firefox on a computer" },
     steps: [
       { ar: "Firefox على الحاسوب لا يثبّت المواقع كتطبيقات.", en: "Firefox on a computer can't install sites as apps." },
-      { ar: "افتح المنصة في Chrome أو Edge، ثم اضغط «حمّل التطبيق» هناك.", en: 'Open the platform in Chrome or Edge, then press "Download the app" there.' },
+      { ar: "افتح المنصة في Chrome أو Edge، ثم اضغط «ثبّت التطبيق» هناك.", en: 'Open the platform in Chrome or Edge, then press "Download the app" there.' },
     ],
   },
   "chrome-android": {
@@ -77,7 +77,7 @@ const GUIDES: Record<BrowserKind, Guide> = {
   },
   other: {
     name: { ar: "هذا المتصفح", en: "This browser" },
-    steps: [{ ar: "افتح المنصة في Chrome أو Edge أو Safari، ثم اضغط «حمّل التطبيق» هناك.", en: 'Open the platform in Chrome, Edge or Safari, then press "Download the app" there.' }],
+    steps: [{ ar: "افتح المنصة في Chrome أو Edge أو Safari، ثم اضغط «ثبّت التطبيق» هناك.", en: 'Open the platform in Chrome, Edge or Safari, then press "Download the app" there.' }],
   },
 };
 
@@ -103,7 +103,7 @@ export function InstallButton({ className }: { className?: string }) {
     <>
       <Button variant="ghost" size="sm" onClick={press} className={cn("gap-1.5", className)}>
         <Download size={15} aria-hidden="true" />
-        {tr("حمّل التطبيق", "Download the app")}
+        {tr("ثبّت التطبيق", "Download the app")}
       </Button>
       <Dialog
         open={!!guide}

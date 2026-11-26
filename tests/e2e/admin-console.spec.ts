@@ -30,8 +30,8 @@ test("the admin imports 3 rows with one bad email: 2 are created, 1 is skipped w
   await page.getByRole("button", { name: /^فيها مشكلة/ }).click();
   await expect(rows).toHaveCount(1);
 
-  await page.getByRole("button", { name: "أنشئ 2 حساب" }).click();
-  await expect(page.getByRole("heading", { name: "أُنشئ 2 حساب، وتُرك 1" })).toBeVisible();
+  await page.getByRole("button", { name: "أنشئ حسابين" }).click();
+  await expect(page.getByRole("heading", { name: "الحسابات المُنشأة: 2 · المتروكة: 1" })).toBeVisible();
   const created = page.getByRole("region", { name: "ما أُنشئ" });
   await expect(created).toContainText("كرار محمد");
   await expect(created).toContainText("ريم عادل");
@@ -40,7 +40,7 @@ test("the admin imports 3 rows with one bad email: 2 are created, 1 is skipped w
   await expect(skipped).toContainText("البريد غير صحيح");
 
   // They are in the users list, and the audit log has the import.
-  await page.getByRole("link", { name: "افتح المستخدمين" }).click();
+  await page.getByRole("link", { name: "افتح قائمة المستخدمين" }).click();
   await expect(page.getByRole("list", { name: "المستخدمون" }).getByRole("button", { name: /كرار محمد/ })).toBeVisible();
   await page.goto("/audit?action=users_imported");
   await expect(page.getByRole("list", { name: "العمليات" }).getByRole("listitem")).toHaveCount(1);
@@ -61,7 +61,7 @@ test("the admin signs a session out, and unlocks a locked account from the overv
 
   // The overview says so, and its line opens the security page at the locked accounts.
   const attention = page.getByRole("region", { name: "يحتاج إلى انتباه" });
-  await attention.getByRole("link", { name: /حساب مقفل الآن/ }).click();
+  await attention.getByRole("link", { name: /حسابات مقفلة الآن/ }).click();
   await expect(page).toHaveURL(/\/admin\/security#locked/);
   await expect(page.getByRole("heading", { level: 1, name: "الجلسات والأمان" })).toBeVisible();
 

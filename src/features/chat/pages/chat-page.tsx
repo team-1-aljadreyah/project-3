@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { ArrowRight, MessageSquarePlus, MessagesSquare, UsersRound } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
@@ -132,7 +133,7 @@ export function ChatPage() {
                       <span className="text-xs text-muted">
                         {KIND[open.kind]}
                         {" · "}
-                        {tr(`${num(open.member_ids.length)} أعضاء`, `${num(open.member_ids.length)} members`)}
+                        {tr(`${arN(open.member_ids.length, W.member)}`, `${num(open.member_ids.length)} members`)}
                       </span>
                     </span>
                     <span className="max-sm:hidden">

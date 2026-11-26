@@ -125,7 +125,7 @@ export function ratingProblems(input: Partial<RatingInput>): Record<string, { ar
     else if (p.from > p.to) e.period = { ar: "بداية الفترة بعد نهايتها.", en: "The period starts after it ends." };
   }
   if (input.project_id !== undefined && input.project_id !== null && !Number.isInteger(input.project_id)) e.project_id = { ar: "اختر مشروعاً من القائمة.", en: "Choose a project from the list." };
-  if (input.private !== undefined && typeof input.private !== "boolean") e.private = { ar: "خاص أو ظاهر.", en: "Private or visible." };
+  if (input.private !== undefined && typeof input.private !== "boolean") e.private = { ar: "اختر: خاص أو ظاهر.", en: "Private or visible." };
   return e;
 }
 

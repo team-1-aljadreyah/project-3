@@ -42,7 +42,7 @@ export function MySummary({ tasks, projects, today, onShow }: { tasks: Task[]; p
     { ar: "مكتملة", en: "Done", value: n.done },
     { ar: "مفتوحة", en: "Open", value: n.open },
     { ar: "متأخرة", en: "Late", value: n.late },
-    { ar: "مراجعة", en: "Review", value: n.inReview },
+    { ar: "قيد المراجعة", en: "Review", value: n.inReview },
   ];
 
   return (
@@ -72,7 +72,7 @@ export function MySummary({ tasks, projects, today, onShow }: { tasks: Task[]; p
             onClick={onShow && (() => onShow("top"))}
             className={SPANS[3]}
             value={num(n.inReview)}
-            label={tr("بانتظار المراجعة", "In review")}
+            label={tr("قيد المراجعة", "In review")}
             note={n.awaitingApproval > 0 ? tr(`بانتظار الاعتماد: ${num(n.awaitingApproval)}`, `${n.awaitingApproval} waiting for approval`) : undefined}
           />
           <Tile onClick={onShow && (() => onShow("done"))} look="done" className={SPANS[4]} value={num(n.done)} label={tr("مكتملة", "Done")} note={tr(`${pct(n.ratio)} من مهامي`, `${pct(n.ratio)} of my tasks`)} />

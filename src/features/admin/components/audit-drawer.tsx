@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { Check, ChevronDown, ChevronUp, Copy, Filter, Lock, ShieldX, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { User } from "@/shared/api/types";
@@ -36,7 +37,7 @@ export function signInResult(e: AuditEntry, tr: (ar: string, en: string) => stri
   }
   if (e.action === "login_locked") {
     return minutes
-      ? tr(`قُفل الحساب لمدة ${minutes} دقيقة بعد محاولات خاطئة`, `Account locked for ${minutes} minutes after wrong passwords`)
+      ? tr(`قُفل الحساب لمدة ${arN(Number(minutes), G.minute)} بعد محاولات خاطئة`, `Account locked for ${minutes} minutes after wrong passwords`)
       : tr("قُفل الحساب بعد محاولات خاطئة", "Account locked after wrong passwords");
   }
   return undefined;
@@ -250,7 +251,7 @@ export function AuditDrawer({
                     <Row label={tr("الاسم", "Name")}>
                       <PersonName person={actor} className="font-medium" />
                     </Row>
-                    <Row label={tr("الوظيفة", "Job")}>
+                    <Row label={tr("الدور", "Job")}>
                       {roleName(actor)}
                       {actor.title && <span className="text-muted"> · {actor.title}</span>}
                     </Row>
@@ -281,9 +282,9 @@ export function AuditDrawer({
                 )}
               </Section>
 
-              <Section title={tr("ماذا", "What")}>
+              <Section title={tr("الحدث", "What")}>
                 <Row label={tr("العملية", "Action")}>{capital(actionOf(entry))}</Row>
-                <Row label={tr("على", "Subject")}>
+                <Row label={tr("العنصر", "Subject")}>
                   <MaybeLink href={targetHref(entry.target)} className={cn("font-medium underline-offset-2", targetHref(entry.target) && "text-accent-ink")}>
                     <bdi>{entry.target.label}</bdi>
                   </MaybeLink>
@@ -302,7 +303,7 @@ export function AuditDrawer({
                 <Row label={tr("الوقت", "Time")}>
                   <time dateTime={entry.at}>{exact(entry.at)}</time>
                 </Row>
-                <Row label={tr("منذ", "Ago")}>{ago(entry.at)}</Row>
+                <Row label={tr("مضى عليه", "Ago")}>{ago(entry.at)}</Row>
                 <Row label="UTC">
                   <span dir="ltr" className="font-mono text-[13px]">
                     {entry.at}
@@ -364,7 +365,7 @@ export function AuditDrawer({
 
               <Section title={tr("ما تغيّر", "Changes")}>
                 {diff.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-muted sm:px-5">{tr("لم تتغيّر بيانات حقول في هذه العملية.", "No field values changed in this action.")}</p>
+                  <p className="px-4 py-3 text-sm text-muted sm:px-5">{tr("لم تتغيّر قيمة أي حقل في هذه العملية.", "No field values changed in this action.")}</p>
                 ) : (
                   <div className="px-4 sm:px-5">
                     <table className="w-full table-fixed border-collapse text-sm">
@@ -421,7 +422,7 @@ export function AuditDrawer({
                   {(
                     [
                       ["actor", tr("عمليات الشخص في ذلك اليوم", "Same person that day"), detail?.related_by_actor],
-                      ["target", tr("تاريخ هذا العنصر", "History of this subject"), detail?.related_by_target],
+                      ["target", tr("سجل هذا العنصر", "History of this subject"), detail?.related_by_target],
                     ] as const
                   ).map(([key, label, rows]) => (
                     <button
@@ -453,7 +454,7 @@ export function AuditDrawer({
                       empty={
                         tab === "actor"
                           ? entry.actor_id === undefined
-                            ? tr("لا شخص لهذا السطر.", "This line has no person.")
+                            ? tr("لا يرتبط هذا السطر بشخص.", "This line has no person.")
                             : tr("لا عمليات أخرى لهذا الشخص في ذلك اليوم.", "No other actions by this person that day.")
                           : tr("لا أسطر أخرى عن هذا العنصر.", "No other lines about this subject.")
                       }

@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { ArrowDown, ArrowUp, Lock, Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -18,7 +19,7 @@ import { ScoreBars, ScoreMark } from "./score-scale";
 
 /** The average as a number with its bars and word: "4.3 ▂▃▅▆ جيد جداً". */
 export function AverageBlock({ average, count }: { average: number | null; count: number }) {
-  const { tr, num } = useFmt();
+  const { tr } = useFmt();
   if (average === null) return <p className="text-sm text-muted">{tr("لا تقييمات بعد.", "No ratings yet.")}</p>;
   const w = SCORE_WORDS[scoreStep(average)];
   return (
@@ -29,7 +30,7 @@ export function AverageBlock({ average, count }: { average: number | null; count
       </span>
       <span className="text-sm">
         <b className="font-semibold">{tr(w.ar, w.en)}</b>
-        <span className="text-muted">{tr(` · من 5، ${num(count)} تقييم`, ` · of 5, ${count} rating${count === 1 ? "" : "s"}`)}</span>
+        <span className="text-muted">{tr(` · من 5، ${arN(count, W.rating)}`, ` · of 5, ${count} rating${count === 1 ? "" : "s"}`)}</span>
       </span>
     </div>
   );

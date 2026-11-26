@@ -1,5 +1,6 @@
 // The home of the advanced settings: a greeting, the health of the work and the accounts (from the data the platform
 // already has), the settings counts, and a "Needs a look" list where each line opens what it is about.
+import { arN, W } from "@/shared/lib/count-words";
 import { AlertTriangle, ArrowLeft, Bug, CalendarClock, CheckCircle2, FolderKanban, Megaphone, Settings2, ToggleRight, UserX } from "lucide-react";
 import Link from "next/link";
 import { adminApi } from "@/features/admin";
@@ -56,8 +57,8 @@ function HealthCard({ title, sub, warn, children, note, href, linkText }: { titl
           <p className="text-xs text-muted">{sub}</p>
         </div>
         {warn ? (
-          <span className="rounded-lg bg-(--st-review) p-1.5 text-(--st-review-ink)" title={tr("يحتاج نظرة", "Needs a look")}>
-            <AlertTriangle size={15} aria-label={tr("يحتاج نظرة", "Needs a look")} />
+          <span className="rounded-lg bg-(--st-review) p-1.5 text-(--st-review-ink)" title={tr("يحتاج إلى مراجعة", "Needs a look")}>
+            <AlertTriangle size={15} aria-label={tr("يحتاج إلى مراجعة", "Needs a look")} />
           </span>
         ) : (
           <span className="rounded-lg bg-(--st-done) p-1.5 text-(--st-done-ink)" title={tr("سليم", "Fine")}>
@@ -174,7 +175,7 @@ export function HomePart({ saved }: { saved: AdvancedRules }) {
         </h2>
         {warnings > 0 && (
           <p className="rounded-xl border-s-4 border-(--st-review-ink) bg-card px-4 py-2.5 text-[13px]">
-            <b>{tr("تنبيه:", "Heads-up:")}</b> {tr(`${warnings} من 4 مؤشرات تحتاج نظرة.`, `${warnings} of 4 signs need a look.`)}
+            <b>{tr("تنبيه:", "Heads-up:")}</b> {tr(`${warnings} من 4 مؤشرات تحتاج إلى مراجعة.`, `${warnings} of 4 signs need a look.`)}
           </p>
         )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -192,7 +193,7 @@ export function HomePart({ saved }: { saved: AdvancedRules }) {
           </HealthCard>
           <HealthCard
             title={tr("المشاريع", "Projects")}
-            sub={tr(`${num(projects.length)} مشاريع`, `${num(projects.length)} projects`)}
+            sub={tr(`${arN(projects.length, W.project)}`, `${num(projects.length)} projects`)}
             warn={pastEnd.length > 0}
             note={pastEnd.length ? tr(`${num(pastEnd.length)} تجاوز موعد نهايته`, `${num(pastEnd.length)} past the end date`) : tr("لا مشروع تجاوز موعد نهايته", "No project is past its end date")}
             href="/"
@@ -205,7 +206,7 @@ export function HomePart({ saved }: { saved: AdvancedRules }) {
             </ul>
           </HealthCard>
           <HealthCard
-            title={tr("المشكلات البرمجية", "Bugs")}
+            title={tr("الأخطاء البرمجية", "Bugs")}
             sub={tr(`${num(openBugs.length)} مفتوحة`, `${num(openBugs.length)} open`)}
             warn={overTarget.length > 0}
             note={tr(`${num(overTarget.length)} تجاوزت مهلة إصلاحها بأيام العمل`, `${num(overTarget.length)} past their fix target in work days`)}
@@ -239,7 +240,7 @@ export function HomePart({ saved }: { saved: AdvancedRules }) {
 
       <section aria-labelledby="adv-look" className="rounded-2xl border border-line bg-card p-5 shadow-card">
         <h2 id="adv-look" className="mb-3 text-lg font-semibold">
-          {tr("يحتاج نظرة", "Needs a look")}
+          {tr("يحتاج إلى مراجعة", "Needs a look")}
         </h2>
         {looks.length ? (
           <ul className="flex flex-col gap-2">

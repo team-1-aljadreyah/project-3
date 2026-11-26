@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -113,7 +114,7 @@ export function PmPlan({ today, people }: { today: string; people: Map<number, U
           <h2 id="board-title" className="font-semibold">
             {tr("كل المهام", "All tasks")}
           </h2>
-          <span className="text-xs text-muted">{tr(`${num(items.length)} مهمة في مشاريعك`, `${items.length} tasks in your projects`)}</span>
+          <span className="text-xs text-muted">{tr(`${arN(items.length, W.task)} في مشاريعك`, `${items.length} tasks in your projects`)}</span>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {PLAN_COLUMNS.map((key) => {

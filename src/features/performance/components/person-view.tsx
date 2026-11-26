@@ -81,7 +81,7 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
         <Stat label={tr("مسندة", "Assigned")} value={num(perf.assigned)} note={tr("في الفترة", "in the period")} />
         <Stat label={tr("منجزة", "Done")} value={num(perf.done)} note={tr(`الإنجاز ${pct(perf.completion)}`, `${pct(perf.completion)} done`)} />
         <Stat label={tr("متأخرة", "Late")} value={num(perf.late)} danger={perf.late > 0} note={tr("بعد موعد التسليم", "after the due day")} href={detail.blocked.length > 0 ? "#blocked-title" : undefined} />
-        <Stat label={tr("في الموعد", "On time")} value={perf.on_time === null ? "-" : pct(perf.on_time)} note={tr("من المنجزة ذات الموعد", "of the done ones with a due day")} />
+        <Stat label={tr("في الموعد", "On time")} value={perf.on_time === null ? "-" : pct(perf.on_time)} note={tr("من المهام المنجزة ذات الموعد", "of the done ones with a due day")} />
         <Stat label={tr("متوقفة", "Blocked")} value={num(perf.blocked)} danger={perf.blocked > 0} note={tr("الآن", "now")} href={detail.blocked.length > 0 ? "#blocked-title" : undefined} />
       </div>
 
@@ -124,7 +124,7 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
 
       <section aria-labelledby="trend-title" className="rounded-xl border border-line bg-card p-4">
         <h2 id="trend-title" className="mb-3 font-semibold">
-          {tr("التقييم الدوري عبر الفترات", "Periodic reviews over time")}
+          {tr("التقييمات الدورية السابقة", "Periodic reviews over time")}
         </h2>
         {finals.length === 0 ? (
           <p className="text-sm text-muted">{tr("لا تقييمات معتمدة بعد.", "No final reviews yet.")}</p>
@@ -158,7 +158,7 @@ export function PersonView({ userId, me }: { userId: number; me: User }) {
                 {r.state === "final" ? <Pill tone="done">{tr("معتمد", "Final")}</Pill> : <Pill tone="review">{tr("مسودة", "Draft")}</Pill>}
               </span>
               <span className="text-muted">
-                {tr(`بواسطة ${nameOf(people.get(r.reviewer_id))}`, `by ${nameOf(people.get(r.reviewer_id))}`)} · <b className="num text-text">{r.total}/100</b>
+                {tr(`من ${nameOf(people.get(r.reviewer_id))}`, `by ${nameOf(people.get(r.reviewer_id))}`)} · <b className="num text-text">{r.total}/100</b>
               </span>
             </div>
             <ul className="flex flex-wrap gap-1.5">

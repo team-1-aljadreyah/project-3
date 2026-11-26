@@ -72,7 +72,7 @@ export function ReportsPage() {
       ]);
     } else if (tab === "people") {
       downloadCsv("people-report.csv", [
-        [tr("الموظف", "Person"), tr("الفريق", "Team"), tr("مفتوحة", "Open"), tr("منجزة", "Done"), tr("متأخرة", "Late"), tr("متوقفة", "Blocked"), tr("بانتظار المراجعة", "In review")],
+        [tr("الموظف", "Person"), tr("الفريق", "Team"), tr("مفتوحة", "Open"), tr("منجزة", "Done"), tr("متأخرة", "Late"), tr("متوقفة", "Blocked"), tr("قيد المراجعة", "In review")],
         ...peopleRows.map((r) => [nameOf(r.user_id), teamName(r.team_id), r.open, r.done, r.late, r.blocked, r.in_review]),
       ]);
     } else if (chosen) {
@@ -206,7 +206,7 @@ export function ReportsPage() {
                     <th className={th}>{tr("منجزة", "Done")}</th>
                     <th className={th}>{tr("متأخرة", "Late")}</th>
                     <th className={th}>{tr("متوقفة", "Blocked")}</th>
-                    <th className={th}>{tr("بانتظار المراجعة", "In review")}</th>
+                    <th className={th}>{tr("قيد المراجعة", "In review")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -230,7 +230,7 @@ export function ReportsPage() {
               </table>
               {peopleRows.length === 0 && <p className="p-6 text-center text-sm text-muted">{tr("لا أحد هنا.", "Nobody here.")}</p>}
             </div>
-            <p className="text-xs text-faint">{tr("تُحسب مهام كل شخص في المشاريع التي تراها فقط. تقييم الأداء في جزء لاحق، ولا يعتمد على عدد المهام وحده.", "Each person's tasks count only in the projects you can see. Performance reviews come later and don't rest on task counts alone.")}</p>
+            <p className="text-xs text-faint">{tr("تُحسب مهام كل شخص في المشاريع التي تراها فقط. تقييم الأداء في صفحة «الأداء»، ولا يعتمد على عدد المهام وحده.", "Each person's tasks count only in the projects you can see. Performance reviews are on the Performance page and don't rest on task counts alone.")}</p>
           </div>
         )}
 

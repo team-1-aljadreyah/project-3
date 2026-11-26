@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { ChevronLeft, FlaskConical, Lock, Pencil, Plus, RotateCcw, Send, Square, UserPlus } from "lucide-react";
 import { useRef, useState } from "react";
 import { useFmt } from "@/shared/lib/i18n";
@@ -21,7 +22,7 @@ function PrivateNote() {
   return (
     <p className="flex items-center gap-1.5 text-sm text-muted print:hidden">
       <Lock size={14} aria-hidden="true" className="shrink-0 text-accent" />
-      {tr("خاص بك: لا يراه أحد غيرك، ولا المدير التنفيذي، إلا ما ترسلينه إليه.", "Yours only: nobody else sees it, not even the CEO, except what you send.")}
+      {tr("خاص بك: لا يراه أحد غيرك، ولا المدير التنفيذي، إلا ما ترسله إليه.", "Yours only: nobody else sees it, not even the CEO, except what you send.")}
     </p>
   );
 }
@@ -69,7 +70,7 @@ function TeamList({ onOpen }: { onOpen: (id: number) => void }) {
       ) : !load.data?.length ? (
         <Empty
           title={tr("لا فرق تجريبية بعد", "No trial teams yet")}
-          body={tr("أنشئي فريقاً تجريبياً، أضيفي أعضاءه الجدد، ثم قيّمي كل واحد منهم واكتبي ملاحظاتك.", "Make a trial team, add its new people, then rate each one and write your notes.")}
+          body={tr("أنشئ فريقاً تجريبياً، وأضف أعضاءه الجدد، ثم قيّم كل واحد منهم واكتب ملاحظاتك.", "Make a trial team, add its new people, then rate each one and write your notes.")}
         />
       ) : (
         <ul aria-label={tr("الفرق التجريبية", "Trial teams")} className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -119,7 +120,7 @@ function TeamCard({ row, onOpen, num, day }: { row: TrialTeamRow; onOpen: () => 
         </span>
       )}
       <span className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
-        <span>{tr(`${num(row.members)} أعضاء`, `${row.members} people`)}</span>
+        <span>{tr(`${arN(row.members, W.member)}`, `${row.members} people`)}</span>
         <span className="inline-flex items-center gap-1.5">
           <Stars value={row.average} size={13} />
           {row.average !== undefined && <span className="font-medium text-text">{scoreText(row.average)}</span>}
@@ -166,7 +167,7 @@ function TeamView({ id, onBack }: { id: number; onBack: () => void }) {
   const setStatus = async (status: TrialTeam["status"]) => {
     try {
       await trialsApi.updateTeam(team.id, { status });
-      toast(status === "ended" ? tr("انتهت التجربة. يبقى الفريق وسجله كما هما.", "The trial has ended. The team and its history stay.") : tr("عادت التجربة إلى العمل.", "The trial is running again."));
+      toast(status === "ended" ? tr("انتهت التجربة. يبقى الفريق وسجله كما هما.", "The trial has ended. The team and its history stay.") : tr("استُؤنفت التجربة.", "The trial is running again."));
       load.reload();
     } catch (e) {
       toast(errorText(e, tr));
@@ -225,8 +226,8 @@ function TeamView({ id, onBack }: { id: number; onBack: () => void }) {
             <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">
               <UserPlus size={22} />
             </span>
-            <p className="font-medium">{tr("أضيفي أعضاء الفريق الجدد", "Add the team's new people")}</p>
-            <p className="max-w-md text-sm text-muted">{tr("ليسوا حسابات في المنصة: اسم وتخصص يكفيان. بعدها قيّمي كل واحد واكتبي ملاحظاتك.", "They are not accounts on the platform: a name and what they do are enough. Then rate each one and write your notes.")}</p>
+            <p className="font-medium">{tr("أضف أعضاء الفريق الجدد", "Add the team's new people")}</p>
+            <p className="max-w-md text-sm text-muted">{tr("ليسوا حسابات في المنصة: اسم وتخصص يكفيان. بعدها قيّم كل واحد واكتب ملاحظاتك.", "They are not accounts on the platform: a name and what they do are enough. Then rate each one and write your notes.")}</p>
             <Button pill onClick={() => setAdding(true)}>
               <Plus size={16} aria-hidden="true" />
               {tr("عضو جديد", "New member")}
@@ -261,7 +262,7 @@ function TeamView({ id, onBack }: { id: number; onBack: () => void }) {
                     </span>
                     <span className="order-last col-span-2 flex items-center gap-2 text-sm md:order-none md:col-span-1">
                       <Stars value={m.average} size={14} />
-                      <span className="text-xs text-muted">{m.average !== undefined ? tr(`${scoreText(m.average)} · ${num(m.scores)} تقييم`, `${scoreText(m.average)} · ${m.scores} ratings`) : tr("لم يُقيَّم", "Not rated")}</span>
+                      <span className="text-xs text-muted">{m.average !== undefined ? tr(`${scoreText(m.average)} · ${arN(m.scores, W.rating)}`, `${scoreText(m.average)} · ${m.scores} ratings`) : tr("لم يُقيَّم", "Not rated")}</span>
                     </span>
                     <span dir="auto" className="col-span-2 line-clamp-2 text-sm text-muted md:col-span-1">
                       {note?.text ? `«${note.text}»` : <span className="text-faint">{tr("لا ملاحظات بعد", "No notes yet")}</span>}
@@ -292,7 +293,7 @@ function TeamView({ id, onBack }: { id: number; onBack: () => void }) {
           ) : (
             <Button size="sm" variant="secondary" onClick={() => void setStatus("running")}>
               <RotateCcw size={14} aria-hidden="true" />
-              {tr("أعد تشغيل التجربة", "Run the trial again")}
+              {tr("استأنف التجربة", "Run the trial again")}
             </Button>
           )}
         </div>

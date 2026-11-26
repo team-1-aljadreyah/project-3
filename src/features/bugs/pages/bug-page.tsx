@@ -70,7 +70,7 @@ function eventText(e: BugEvent, fmt: Fmt, people: Map<number, User>) {
     case "status":
       return tr(`نقلها من «${status(e.from)}» إلى «${status(e.to)}»`, `moved it from "${status(e.from)}" to "${status(e.to)}"`);
     case "assignee":
-      return tr(`حوّلها إلى ${person(e.to)}`, `gave it to ${person(e.to)}`);
+      return e.to ? tr(`حوّلها إلى ${person(e.to)}`, `gave it to ${person(e.to)}`) : tr("ألغى إسنادها", "unassigned it");
     case "severity":
       return tr("غيّر درجة الخطورة", "changed the severity");
     case "priority":
@@ -109,7 +109,7 @@ function BugView({ bug, project, task, people, history }: Loaded) {
   const move = async (to: BugStatus, why?: string) => {
     try {
       await bugsApi.move(bug.id, to, why);
-      toast(tr(`صارت «${BUG_STATUS[to].ar}».`, `Now "${BUG_STATUS[to].en}".`));
+      toast(tr(`أصبحت حالتها «${BUG_STATUS[to].ar}».`, `Now "${BUG_STATUS[to].en}".`));
       return true;
     } catch (e) {
       if (e instanceof ApiError && e.errors?.note) setNoteError(e.errors.note);

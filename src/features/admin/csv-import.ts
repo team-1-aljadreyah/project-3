@@ -193,7 +193,7 @@ export const PROBLEM_WORDS: Record<ImportProblem, { ar: string; en: string }> = 
   email_taken: { ar: "يوجد حساب بهذا البريد", en: "An account already uses this email" },
   role_unknown: { ar: "دور غير معروف", en: "Unknown job" },
   role_not_allowed: { ar: "لا يُستورد مدير تنفيذي ولا مسؤول نظام: أضفه من قائمة المستخدمين", en: "A CEO or a system admin isn't imported: add them in the users list" },
-  title_too_long: { ar: "المسمى أطول من 80 حرفاً", en: "The title is longer than 80 characters" },
+  title_too_long: { ar: "المسمى الوظيفي أطول من 80 حرفاً", en: "The title is longer than 80 characters" },
   team_unknown: { ar: "لا يوجد فريق بهذا الاسم", en: "No team has this name" },
   password_missing: { ar: "كلمة المرور فارغة: لا يُنشأ حساب بلا كلمة مرور", en: "No password: an account is never made without one" },
   password_short: { ar: "كلمة المرور أقصر من المسموح", en: "The password is shorter than allowed" },

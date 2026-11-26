@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
 import type { Team, User } from "@/shared/api/types";
@@ -10,7 +11,7 @@ import type { MonitorNote, NoteInput, NoteKind } from "../types";
 
 export const KIND: Record<NoteKind, { ar: string; en: string; hint_ar: string; hint_en: string }> = {
   report: { ar: "تقرير", en: "Report", hint_ar: "عن فريق أو شخص أو مشروع", hint_en: "About a team, a person or a project" },
-  feedback: { ar: "ملاحظة على شخص", en: "Feedback", hint_ar: "ثناء أو شيء يتحسن", hint_en: "Praise, or something to improve" },
+  feedback: { ar: "ملاحظة عن شخص", en: "Feedback", hint_ar: "ثناء أو يحتاج إلى تحسين", hint_en: "Praise, or something to improve" },
   problem: { ar: "مشكلة", en: "Problem", hint_ar: "شيء يحتاج قراراً", hint_en: "Something that needs a decision" },
   request: { ar: "طلب", en: "Request", hint_ar: "طلب إلى المدير التنفيذي", hint_en: "A request to the CEO" },
 };
@@ -101,7 +102,7 @@ export function NoteDialog({
     setFormError(undefined);
     try {
       const note = await monitoringApi.create(input);
-      const to = [send ? tr("المدير التنفيذي", "the CEO") : "", shareIds.length ? tr(`${shareIds.length} أشخاص آخرين`, `${shareIds.length} other people`) : ""].filter(Boolean);
+      const to = [send ? tr("المدير التنفيذي", "the CEO") : "", shareIds.length ? tr(`${arN(shareIds.length, G.otherPerson)}`, `${shareIds.length} other people`) : ""].filter(Boolean);
       toast(to.length ? tr(`حُفظت وأُرسلت إلى ${to.join(" و")}.`, `Saved and sent to ${to.join(" and ")}.`) : tr("حُفظت. أرسلها متى شئت.", "Saved. Send it whenever you like."));
       onSaved(note);
       onClose();
@@ -161,12 +162,12 @@ export function NoteDialog({
         </fieldset>
 
         {kind === "problem" && (
-          <Field label={tr("عن ماذا", "What it is about")} hint={tr("اكتب أي موضوع، بكلماتك.", "Any subject, in your own words.")} htmlFor="note-subject" error={errors.subject}>
+          <Field label={tr("الموضوع", "What it is about")} hint={tr("اكتب أي موضوع، بكلماتك.", "Any subject, in your own words.")} htmlFor="note-subject" error={errors.subject}>
             <Input id="note-subject" dir="auto" maxLength={L.subject} value={subject} invalid={!!errors.subject} onChange={(e) => setSubject(e.target.value)} />
           </Field>
         )}
         <Field
-          label={kind === "feedback" ? tr("على من", "About whom") : kind === "problem" ? tr("يخصّ فريقاً أو مشروعاً (اختياري)", "A team or project (optional)") : tr("يخصّ", "About")}
+          label={kind === "feedback" ? tr("عمّن", "About whom") : kind === "problem" ? tr("يخصّ فريقاً أو مشروعاً (اختياري)", "A team or project (optional)") : tr("يخصّ", "About")}
           htmlFor="note-about"
           error={errors.about}
         >
@@ -214,7 +215,7 @@ export function NoteDialog({
             {(["praise", "improve"] as const).map((t) => (
               <label key={t} className={cn("cursor-pointer rounded-full border px-3 py-1.5 text-sm", tone === t ? "border-accent bg-accent-soft font-medium" : "border-line")}>
                 <input type="radio" name="note-tone" value={t} checked={tone === t} onChange={() => setTone(t)} className="sr-only" />
-                {t === "praise" ? tr("ثناء", "Praise") : tr("شيء يتحسن", "To improve")}
+                {t === "praise" ? tr("ثناء", "Praise") : tr("يحتاج إلى تحسين", "To improve")}
               </label>
             ))}
           </fieldset>

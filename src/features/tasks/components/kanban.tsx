@@ -129,7 +129,7 @@ export function Kanban({
         announcements,
         screenReaderInstructions: {
           draggable: tr(
-            "لنقل المهمة: اضغط المسافة، ثم السهمين يميناً ويساراً لاختيار العمود، ثم المسافة للإفلات، أو Escape للإلغاء. Enter يفتح المهمة.",
+            "لنقل المهمة: اضغط مفتاح المسافة، ثم السهمين يميناً ويساراً لاختيار العمود، ثم المسافة للإفلات، أو Escape للإلغاء. Enter يفتح المهمة.",
             "To move the task: press Space, use the left and right arrows to pick a column, then Space to drop, or Escape to cancel. Enter opens the task.",
           ),
         },

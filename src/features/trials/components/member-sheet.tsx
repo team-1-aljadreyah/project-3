@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { Mail, Pencil, Phone, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
@@ -89,7 +90,7 @@ export function MemberSheet({
             <p className="flex items-center gap-2 text-sm">
               <Stars value={member.average} />
               <span className="text-muted">
-                {member.average !== undefined ? tr(`${scoreText(member.average)} من 5 · ${num(member.scores)} تقييم`, `${scoreText(member.average)} of 5 · ${member.scores} ratings`) : tr("لم يُقيَّم بعد", "Not rated yet")}
+                {member.average !== undefined ? tr(`${scoreText(member.average)} من 5 · ${arN(member.scores, W.rating)}`, `${scoreText(member.average)} of 5 · ${member.scores} ratings`) : tr("لم يُقيَّم بعد", "Not rated yet")}
               </span>
             </p>
           </div>
@@ -139,9 +140,9 @@ export function MemberSheet({
           }}
         >
           <h3 className="text-sm font-semibold">{tr("تقييم أو ملاحظة جديدة", "A new rating or note")}</h3>
-          {ended && <p className="text-xs text-muted">{tr("انتهت التجربة، ويمكنك ما زلت إضافة ملاحظة أخيرة.", "The trial has ended; you can still add a last note.")}</p>}
+          {ended && <p className="text-xs text-muted">{tr("انتهت التجربة، وما زال بإمكانك إضافة ملاحظة أخيرة.", "The trial has ended; you can still add a last note.")}</p>}
           <StarPicker value={score} onChange={setScore} />
-          <Field label={tr("ملاحظة (اختياري مع الدرجة)", "A note (optional with a score)")} htmlFor="te-text" error={errors.text}>
+          <Field label={tr("ملاحظة (اختيارية مع الدرجة)", "A note (optional with a score)")} htmlFor="te-text" error={errors.text}>
             <Textarea
               id="te-text"
               rows={3}
@@ -149,7 +150,7 @@ export function MemberSheet({
               value={text}
               invalid={!!errors.text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={tr("ما الذي أحسنه أو يحتاج إلى تحسينه؟", "What did they do well, or need to improve?")}
+              placeholder={tr("ما الذي أحسنه، وما الذي يحتاج إلى تحسين؟", "What did they do well, or need to improve?")}
             />
           </Field>
           {errors.form && (

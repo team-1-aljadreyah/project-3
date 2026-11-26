@@ -59,7 +59,7 @@ export function PasswordInput({
           className={cn("flex h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-muted hover:border-accent hover:text-text")}
         >
           <Wand2 size={15} aria-hidden="true" />
-          {tr("أنشئ واحدة", "Make one")}
+          {tr("أنشئ كلمة مرور", "Make one")}
         </button>
       )}
     </div>

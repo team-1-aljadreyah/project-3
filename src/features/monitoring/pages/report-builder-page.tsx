@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { ArrowRight, Calculator, FolderKanban, Printer, Save, Send, User as UserIcon, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -40,7 +41,7 @@ const PLAN = {
 export function ReportBuilderPage() {
   const fmt = useFmt();
   const { tr, num, pct, day, dateTime, lang } = fmt;
-  usePageTitle(tr("صانع التقارير", "Report builder"));
+  usePageTitle(tr("منشئ التقارير", "Report builder"));
   const user = useUser();
   const toast = useToast();
   const router = useRouter();
@@ -62,7 +63,7 @@ export function ReportBuilderPage() {
   const [toCeo, setToCeo] = useState(true);
   const [shareIds, setShareIds] = useState<number[]>([]);
 
-  if (!allowed) return <Empty title={tr("صانع التقارير لمسؤول المتابعة والتقييم", "The report builder is for the monitoring officer")} />;
+  if (!allowed) return <Empty title={tr("منشئ التقارير لمسؤول المتابعة والتقييم", "The report builder is for the monitoring officer")} />;
   if (load.state.status === "loading") {
     return (
       <LoadingBlock className="mx-auto flex w-full max-w-4xl flex-col gap-3">
@@ -123,7 +124,7 @@ export function ReportBuilderPage() {
         send: send && toCeo,
         ...(send && shareIds.length ? { share_ids: shareIds } : {}),
       });
-      const to = [send && toCeo ? tr("المدير التنفيذي", "the CEO") : "", send && shareIds.length ? tr(`${num(shareIds.length)} أشخاص آخرين`, `${num(shareIds.length)} other people`) : ""].filter(Boolean);
+      const to = [send && toCeo ? tr("المدير التنفيذي", "the CEO") : "", send && shareIds.length ? tr(`${arN(shareIds.length, G.otherPerson)}`, `${num(shareIds.length)} other people`) : ""].filter(Boolean);
       toast(to.length ? tr(`حُفظ التقرير وأُرسل إلى ${to.join(" و")}.`, `The report was saved and sent to ${to.join(" and ")}.`) : tr("حُفظ التقرير.", "The report was saved."));
       router.push("/monitoring");
     } catch (e) {
@@ -139,9 +140,9 @@ export function ReportBuilderPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3 print:hidden">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{tr("صانع التقارير", "Report builder")}</h1>
+          <h1 className="text-2xl font-semibold">{tr("منشئ التقارير", "Report builder")}</h1>
           <p className="text-sm text-muted">
-            {tr("اختاري فريقاً أو شخصاً أو مشروعاً وفترة، وتُحسب الأرقام وحدها. عدّلي النص وأضيفي ملاحظاتك.", "Pick a team, a person or a project and a period; the numbers are counted for you. Edit the text and add your comments.")}
+            {tr("اختر فريقاً أو شخصاً أو مشروعاً وفترة، فتُحسب الأرقام تلقائياً. عدّل النص وأضف ملاحظاتك.", "Pick a team, a person or a project and a period; the numbers are counted for you. Edit the text and add your comments.")}
           </p>
         </div>
         <ButtonLink href="/monitoring" variant="secondary" size="sm" pill>
@@ -153,7 +154,7 @@ export function ReportBuilderPage() {
       {/* 1. What the report is about, and the period. */}
       <section aria-labelledby="rb-choose" className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4 sm:p-5 print:hidden">
         <h2 id="rb-choose" className="text-base font-semibold">
-          {tr("عن ماذا التقرير، ولأي فترة؟", "What is the report about, and for which period?")}
+          {tr("عمّ التقرير، ولأي فترة؟", "What is the report about, and for which period?")}
         </h2>
         <div role="radiogroup" aria-label={tr("نوع التقرير", "Report type")} className="grid grid-cols-3 gap-2">
           {TYPES.map((t) => (
@@ -202,7 +203,7 @@ export function ReportBuilderPage() {
           </Button>
           {stale && (
             <p role="status" className="text-sm text-danger">
-              {tr("غيّرتِ الاختيار: احسبي الأرقام مرة أخرى قبل الحفظ.", "You changed the choice: count again before saving.")}
+              {tr("غيّرت الاختيار: احسب الأرقام مرة أخرى قبل الحفظ.", "You changed the choice: count again before saving.")}
             </p>
           )}
         </div>
@@ -243,7 +244,7 @@ export function ReportBuilderPage() {
               <Stat label={tr("المنجزة", "Done")} value={num(facts.done)} note={pct(facts.completion)} />
             </li>
             <li>
-              <Stat label={tr("في موعدها", "On time")} value={facts.on_time === null ? "-" : pct(facts.on_time)} note={tr("من المنجزة ذات الموعد", "of the done tasks with a due day")} />
+              <Stat label={tr("في موعدها", "On time")} value={facts.on_time === null ? "-" : pct(facts.on_time)} note={tr("من المهام المنجزة ذات الموعد", "of the done tasks with a due day")} />
             </li>
             <li>
               <Stat label={tr("المتأخرة", "Late")} value={num(facts.late)} danger={facts.late > 0} />
@@ -255,7 +256,7 @@ export function ReportBuilderPage() {
               <Stat
                 label={tr("الأخطاء المفتوحة", "Open bugs")}
                 value={num(facts.bugs_open)}
-                note={tr(`أُبلغ ${num(facts.bugs_reported)} · أُغلق ${num(facts.bugs_closed)}`, `${num(facts.bugs_reported)} reported · ${num(facts.bugs_closed)} closed`)}
+                note={tr(`المُبلَّغ عنها ${num(facts.bugs_reported)} · المُغلقة ${num(facts.bugs_closed)}`, `${num(facts.bugs_reported)} reported · ${num(facts.bugs_closed)} closed`)}
               />
             </li>
           </ul>
@@ -325,7 +326,7 @@ export function ReportBuilderPage() {
 
           <div className="flex flex-col gap-4">
             <div className="print:hidden">
-              <Field label={tr("نص التقرير", "The report")} hint={tr("كُتب من الأرقام، عدّليه كما تشائين.", "Written from the numbers; change it as you like.")} htmlFor="rb-summary" error={errors.summary}>
+              <Field label={tr("نص التقرير", "The report")} hint={tr("كُتب من الأرقام، عدّله كما تشاء.", "Written from the numbers; change it as you like.")} htmlFor="rb-summary" error={errors.summary}>
                 <Textarea
                   id="rb-summary"
                   dir="auto"
@@ -353,7 +354,7 @@ export function ReportBuilderPage() {
 
           {/* Who receives it: not only the CEO. Nobody chosen: "Save" keeps it, to send later from the list. */}
           <fieldset className="flex flex-col gap-2 rounded-xl border border-line p-3 print:hidden">
-            <legend className="px-1 text-sm font-medium">{tr("أرسليه إلى", "Send it to")}</legend>
+            <legend className="px-1 text-sm font-medium">{tr("أرسله إلى", "Send it to")}</legend>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={toCeo} onChange={(e) => setToCeo(e.target.checked)} className="size-4 accent-[var(--accent)]" />
               {tr("المدير التنفيذي", "The CEO")}
@@ -368,9 +369,9 @@ export function ReportBuilderPage() {
           </fieldset>
 
           <footer className="flex flex-wrap items-center gap-2 border-t border-line pt-4 print:hidden">
-            <Button variant="secondary" pill onClick={() => window.print()} title={tr("اختاري «حفظ بصيغة PDF» في نافذة الطباعة لتنزيله.", "Choose \"Save as PDF\" in the print window to download it.")}>
+            <Button variant="secondary" pill onClick={() => window.print()} title={tr("اختر «حفظ بصيغة PDF» في نافذة الطباعة لتنزيله.", "Choose \"Save as PDF\" in the print window to download it.")}>
               <Printer size={16} aria-hidden="true" />
-              {tr("اطبع أو احفظ PDF", "Print or save as PDF")}
+              {tr("اطبع أو احفظ بصيغة PDF", "Print or save as PDF")}
             </Button>
             <span className="ms-auto flex flex-wrap gap-2">
               <Button variant="secondary" pill onClick={() => save(false)} disabled={!!busy || stale}>

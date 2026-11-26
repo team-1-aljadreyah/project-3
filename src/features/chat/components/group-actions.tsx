@@ -59,7 +59,7 @@ export function GroupActions({ group, people, me }: { group: Conversation; peopl
               {tr("إلغاء", "Cancel")}
             </Button>
             <Button onClick={leave} disabled={busy} className="bg-danger hover:bg-danger">
-              {busy ? tr("جارٍ الخروج…", "Leaving…") : tr("غادر", "Leave")}
+              {busy ? tr("جارٍ المغادرة…", "Leaving…") : tr("غادر", "Leave")}
             </Button>
           </>
         }

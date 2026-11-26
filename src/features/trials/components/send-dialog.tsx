@@ -51,7 +51,7 @@ export function SendToCeoDialog({ detail, onClose }: { detail: TrialTeamDetail; 
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label={tr("كلمة منك في أوله (اختياري)", "Your own words on top (optional)")} htmlFor="ts-extra">
+        <Field label={tr("كلمة منك في أوّله (اختيارية)", "Your own words on top (optional)")} htmlFor="ts-extra">
           <Textarea id="ts-extra" rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} placeholder={tr("مثلاً: أقترح قبول ثلاثة منهم.", "For example: I suggest keeping three of them.")} />
         </Field>
         <div className="flex flex-col gap-1.5">

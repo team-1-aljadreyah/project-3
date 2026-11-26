@@ -219,10 +219,10 @@ export function RatingDialog({
               </Select>
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label={tr("من يوم", "From")} htmlFor="rating-from" error={errors.period}>
+              <Field label={tr("من تاريخ", "From")} htmlFor="rating-from" error={errors.period}>
                 <Input id="rating-from" type="date" invalid={!!errors.period} value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
               </Field>
-              <Field label={tr("إلى يوم", "To")} htmlFor="rating-to">
+              <Field label={tr("إلى تاريخ", "To")} htmlFor="rating-to">
                 <Input id="rating-to" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
               </Field>
             </div>
@@ -262,7 +262,7 @@ export function RatingDialog({
         </fieldset>
 
         {editing ? (
-          <p className="text-xs text-muted">{tr("يبقى التقييم قابلاً للتعديل والحذف 24 ساعة من كتابته، ثم يُحفظ في السجل.", "A rating can be changed or removed for 24 hours after it is written; then it stays in the history.")}</p>
+          <p className="text-xs text-muted">{tr("يبقى التقييم قابلاً للتعديل والحذف خلال 24 ساعة من كتابته، ثم يُحفظ في السجل.", "A rating can be changed or removed for 24 hours after it is written; then it stays in the history.")}</p>
         ) : (
           <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
             <Pill tone="new">{tr("تقييم سريع", "Quick rating")}</Pill>

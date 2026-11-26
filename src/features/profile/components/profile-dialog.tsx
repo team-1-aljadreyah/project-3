@@ -42,7 +42,7 @@ export function ProfileDialog({ start = "view", onClose }: { start?: ProfileStar
     const problem = pickProblem(file);
     if (problem === "type") return setError(tr("اختر صورة بصيغة JPEG أو PNG أو WebP.", "Choose a JPEG, PNG or WebP picture."));
     if (problem === "empty") return setError(tr("الملف فارغ. اختر صورة أخرى.", "The file is empty. Choose another picture."));
-    if (problem === "size") return setError(tr("الصورة أكبر من 5 م.ب. اختر صورة أصغر.", "The picture is bigger than 5 MB. Choose a smaller one."));
+    if (problem === "size") return setError(tr("الصورة أكبر من 5 ميغابايت. اختر صورة أصغر.", "The picture is bigger than 5 MB. Choose a smaller one."));
     const read = await readPicture(file);
     if (!read) return setError(tr("تعذّرت قراءة هذه الصورة، فقد تكون تالفة. جرّب صورة أخرى.", "This picture can't be read; it may be damaged. Try another one."));
     setPicked(read);
@@ -208,7 +208,7 @@ export function ProfileDialog({ start = "view", onClose }: { start?: ProfileStar
             </span>
             <span className="font-medium">{tr("اسحب صورة إلى هنا، أو اخترها من جهازك", "Drag a picture here, or choose one from your device")}</span>
             <span className="text-sm text-muted">
-              {tr(`JPEG أو PNG أو WebP، حتى ${PICTURE.maxPickBytes / 1024 / 1024} م.ب`, `JPEG, PNG or WebP, up to ${PICTURE.maxPickBytes / 1024 / 1024} MB`)}
+              {tr(`JPEG أو PNG أو WebP، حتى ${PICTURE.maxPickBytes / 1024 / 1024} ميغابايت`, `JPEG, PNG or WebP, up to ${PICTURE.maxPickBytes / 1024 / 1024} MB`)}
             </span>
           </label>
         )}

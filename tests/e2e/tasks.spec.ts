@@ -85,7 +85,7 @@ test("the PM adds a task, and it opens from its card", async ({ page }) => {
 
   await column(page, "جديدة").getByRole("link", { name: /صفحة إعدادات الإشعارات/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "صفحة إعدادات الإشعارات" })).toBeVisible();
-  await page.getByRole("tab", { name: "سجل التحديثات" }).click();
+  await page.getByRole("tab", { name: "السجل" }).click();
   await expect(page.getByText("أنشأ المهمة")).toBeVisible();
 });
 
@@ -131,7 +131,7 @@ test("comments are added, and the history says who did what", async ({ page }) =
   await page.getByLabel("أضف تعليقاً").fill("حصلنا على الصلاحية، أكمل العمل.");
   await page.getByRole("button", { name: "أرسل التعليق" }).click();
   await expect(page.getByRole("tabpanel").getByText("حصلنا على الصلاحية، أكمل العمل.")).toBeVisible();
-  await page.getByRole("tab", { name: "سجل التحديثات" }).click();
+  await page.getByRole("tab", { name: "السجل" }).click();
   await expect(page.getByRole("tabpanel").getByText("أضاف تعليقاً")).toBeVisible();
   await expect(page.getByRole("tabpanel").getByText("أوقفها")).toBeVisible();
 });
@@ -146,7 +146,7 @@ test("the PM changes the due date with a reason; it shows in the history", async
   await dialog.getByLabel(/سبب تغيير موعد التسليم/).fill("أُضيف تقرير الفرق");
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(dialog).toBeHidden();
-  await page.getByRole("tab", { name: "سجل التحديثات" }).click();
+  await page.getByRole("tab", { name: "السجل" }).click();
   await expect(page.getByRole("tabpanel").getByText(/غيّر موعد التسليم/)).toBeVisible();
   await expect(page.getByRole("tabpanel").getByText("«أُضيف تقرير الفرق»")).toBeVisible();
 });

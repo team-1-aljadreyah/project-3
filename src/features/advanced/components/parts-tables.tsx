@@ -55,7 +55,7 @@ export function PermissionsPart(c: Ctx) {
     <div className="flex flex-col gap-5">
       <Note>
         {tr(
-          "علّم الوظائف التي يحق لها كل عمل. المدير التنفيذي يحق له كل شيء دائماً. ما تراه الآن هو قواعد المنصة اليوم.",
+          "علّم الوظائف التي يحق لها كل عمل. المدير التنفيذي يحق له كل شيء دائماً. ما تراه الآن هي قواعد المنصة اليوم.",
           "Tick the jobs that may do each thing. The CEO may always do everything. What you see now is how the platform works today.",
         )}
       </Note>
