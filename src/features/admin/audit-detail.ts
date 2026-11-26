@@ -213,7 +213,7 @@ export function detailText(
     `${tr("سجل العمليات", "Audit log")} #${e.id}`,
     `${tr("من", "Who")}: ${words.who}`,
     `${tr("العملية", "Action")}: ${words.action}`,
-    `${tr("على", "Subject")}: ${e.target.label}${e.target.id ? ` (#${e.target.id})` : ""}`,
+    `${tr("العنصر", "Subject")}: ${e.target.label}${e.target.id ? ` (#${e.target.id})` : ""}`,
     `${tr("النوع", "Kind")}: ${words.kind}`,
     `${tr("الوقت", "When")}: ${words.when} (${e.at})`,
   ];

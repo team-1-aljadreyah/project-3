@@ -299,7 +299,7 @@ export function HistoryPreview() {
     <Reveal as="section" delay={120} className="relative isolate rounded-3xl border border-line bg-card p-6">
       <Frost />
       <p className="text-xs text-muted">{tr("سجل لا يُمحى", "A record nobody erases")}</p>
-      <h3 className="mt-1 mb-5 text-xl font-semibold">{tr("كل تغيير، مع من ومتى ولماذا", "Every change: who, when and why")}</h3>
+      <h3 className="mt-1 mb-5 text-xl font-semibold">{tr("كل تغيير: مَن ومتى ولماذا", "Every change: who, when and why")}</h3>
       <ul className="flex flex-col gap-3 text-sm">
         {lines.map((l) => (
           <li key={l.en} className="flex items-start gap-3">

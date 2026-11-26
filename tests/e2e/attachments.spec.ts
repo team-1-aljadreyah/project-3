@@ -15,7 +15,7 @@ test("a member attaches a file to a task, it is in the list and the history, and
   await expect(page.getByText("أُرفق «ملاحظات-الإعلانات.txt».")).toBeVisible();
   await expect(files.getByRole("link", { name: /ملاحظات-الإعلانات\.txt/ })).toBeVisible();
 
-  await page.getByRole("tab", { name: "سجل التحديثات" }).click();
+  await page.getByRole("tab", { name: "السجل" }).click();
   await expect(page.getByRole("tabpanel").getByText("أرفق الملف «ملاحظات-الإعلانات.txt»")).toBeVisible();
 
   await files.getByRole("button", { name: "احذف ملاحظات-الإعلانات.txt" }).click();

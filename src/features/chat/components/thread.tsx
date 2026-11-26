@@ -262,7 +262,7 @@ export function Thread({ chatKey, people, members, me }: { chatKey: ChatKey; peo
       )}
       {readOnly ? (
         <p className="border-t border-line bg-card-2 px-4 py-3 text-sm text-muted">
-          {tr("لا تُراسَل المديرة التنفيذية مباشرة. ", "You don't message the CEO directly. ")}
+          {tr("لا يُراسَل المدير التنفيذي مباشرةً. ", "You don't message the CEO directly. ")}
           <Link href="/requests" className="font-medium text-accent-ink underline">
             {tr("أرسل طلباً بدلاً من ذلك", "Send a request instead")}
           </Link>

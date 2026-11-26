@@ -86,7 +86,7 @@ function Framed({ children }: { children: React.ReactNode }) {
   const badge = (key: Key, className?: string) => {
     const n = counts[key];
     if (!n) return null;
-    const words = key === "security" ? tr(`${num(n)} حساب مقفل`, `${n} locked`) : tr(`${num(n)} بحاجة إلى إصلاح`, `${n} to fix`);
+    const words = key === "security" ? tr(`حسابات مقفلة: ${num(n)}`, `${n} locked`) : tr(`${num(n)} بحاجة إلى إصلاح`, `${n} to fix`);
     return (
       <span className={cn("num ms-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold", key === "security" ? "bg-danger text-card" : "bg-chip text-text", className)}>
         <span aria-hidden="true">{num(n)}</span>

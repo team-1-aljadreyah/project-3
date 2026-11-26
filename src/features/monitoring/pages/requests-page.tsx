@@ -70,7 +70,7 @@ export function RequestsPage() {
   const toMonitor = user.role !== "monitor";
   const send = async () => {
     const problems: Record<string, string> = {};
-    if (!subject.trim()) problems.subject = tr("اكتب عن ماذا طلبك.", "Write what your request is about.");
+    if (!subject.trim()) problems.subject = tr("اكتب موضوع طلبك.", "Write what your request is about.");
     if (!title.trim()) problems.title = tr("اكتب عنواناً.", "Enter a title.");
     if (!body.trim()) problems.body = tr("اكتب طلبك.", "Write your request.");
     if (Object.keys(problems).length) return setErrors(problems);
@@ -187,7 +187,7 @@ export function RequestsPage() {
           }}
         >
           {toMonitor && <p className="rounded-lg bg-card-2 px-3 py-2 text-xs text-muted">{tr("يصل أولاً إلى مسؤول المتابعة: يجيبك بنفسه أو يرسله إلى المدير التنفيذي.", "It reaches the monitoring officer first: she answers you herself or sends it on to the CEO.")}</p>}
-          <Field label={tr("عن ماذا", "What it is about")} hint={tr("أي موضوع، بكلماتك.", "Anything, in your own words.")} htmlFor="request-subject" error={errors.subject}>
+          <Field label={tr("الموضوع", "What it is about")} hint={tr("أي موضوع، بكلماتك.", "Anything, in your own words.")} htmlFor="request-subject" error={errors.subject}>
             <Input id="request-subject" dir="auto" maxLength={L.subject} value={subject} invalid={!!errors.subject} onChange={(e) => setSubject(e.target.value)} />
           </Field>
           <Field label={tr("العنوان", "Title")} htmlFor="request-title" error={errors.title}>

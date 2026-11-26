@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
@@ -35,7 +36,7 @@ export function ChangePassword() {
     const p = passwordProblem(next, min);
     if (p) problems.password = tr(p.ar, p.en);
     else if (next === current) problems.password = tr("اختر كلمة مرور غير الحالية.", "Choose a password other than the current one.");
-    if (!problems.password && next !== again) problems.password_again = tr("الكلمتان غير متطابقتين.", "The two don't match.");
+    if (!problems.password && next !== again) problems.password_again = tr("كلمتا المرور غير متطابقتين.", "The two don't match.");
     if (Object.keys(problems).length) return setErrors(problems);
     setBusy(true);
     try {
@@ -63,7 +64,7 @@ export function ChangePassword() {
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-medium">{tr("غيّر كلمة المرور", "Change your password")}</span>
-          <span className="text-xs text-muted">{tr(`${min} أحرف على الأقل`, `At least ${min} characters`)}</span>
+          <span className="text-xs text-muted">{tr(`${arN(min, W.letter)} على الأقل`, `At least ${min} characters`)}</span>
         </span>
       </button>
     );
@@ -86,10 +87,10 @@ export function ChangePassword() {
         <Field label={tr("كلمة المرور الحالية", "Current password")} htmlFor="pw-current" error={errors.current_password}>
           <PasswordInput id="pw-current" value={current} onChange={setCurrent} invalid={!!errors.current_password} autoComplete="current-password" />
         </Field>
-        <Field label={tr("كلمة المرور الجديدة", "New password")} hint={tr(`${min} أحرف على الأقل`, `At least ${min} characters`)} htmlFor="pw-new" error={errors.password}>
+        <Field label={tr("كلمة المرور الجديدة", "New password")} hint={tr(`${arN(min, W.letter)} على الأقل`, `At least ${min} characters`)} htmlFor="pw-new" error={errors.password}>
           <PasswordInput id="pw-new" value={next} onChange={setNext} invalid={!!errors.password} />
         </Field>
-        <Field label={tr("أعد كتابة الجديدة", "The new one again")} htmlFor="pw-again" error={errors.password_again}>
+        <Field label={tr("تأكيد كلمة المرور الجديدة", "The new one again")} htmlFor="pw-again" error={errors.password_again}>
           <PasswordInput id="pw-again" value={again} onChange={setAgain} invalid={!!errors.password_again} />
         </Field>
         {errors.form && (

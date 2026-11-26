@@ -105,7 +105,7 @@ test("a new account can't be saved without a password; the admin makes one, and 
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(dialog.getByText("اكتب كلمة مرور.")).toBeVisible();
   // "Make one": a strong password, shown so it can be given to the person.
-  await dialog.getByRole("button", { name: "أنشئ واحدة" }).click();
+  await dialog.getByRole("button", { name: "أنشئ كلمة مرور" }).click();
   const made = await dialog.getByLabel("كلمة المرور", { exact: true }).inputValue();
   expect(made).toHaveLength(12);
   await dialog.getByRole("button", { name: "احفظ" }).click();
@@ -140,7 +140,7 @@ test("the monitor adds a new account from Users: any job but the CEO and the sys
   await dialog.getByLabel("الاسم", { exact: true }).fill("نادية سالم");
   await dialog.getByLabel("البريد الإلكتروني").fill("nadia@demo.test");
   await roles.selectOption({ label: "قائد الفريق" });
-  await dialog.getByRole("button", { name: "أنشئ واحدة" }).click();
+  await dialog.getByRole("button", { name: "أنشئ كلمة مرور" }).click();
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(page.getByText("أُضيف المستخدم.")).toBeVisible();
   await expect(list.getByText("نادية سالم")).toBeVisible();

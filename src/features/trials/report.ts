@@ -1,5 +1,6 @@
 // The report of a trial team that the monitoring officer sends to the CEO: plain text for her inbox (a monitoring report
 // note), in one language, from what the screen already has. Pure: no React, tested in tests/unit/trials.test.ts.
+import { arN, W } from "@/shared/lib/count-words";
 import { DECISION_WORDS, NOTE_BODY_MAX, scoreText } from "./rules";
 import type { TrialEntry, TrialTeamDetail } from "./types";
 
@@ -29,7 +30,7 @@ export function trialReport(detail: TrialTeamDetail, { tr, day, extra }: { tr: T
     .slice()
     .sort((a, b) => (b.average ?? 0) - (a.average ?? 0))
     .forEach((m, i) => {
-      const score = m.average !== undefined ? tr(`${scoreText(m.average)} من 5 (${m.scores} تقييم)`, `${scoreText(m.average)} of 5 (${m.scores} ratings)`) : tr("بلا تقييم بعد", "not rated yet");
+      const score = m.average !== undefined ? tr(`${scoreText(m.average)} من 5 (${arN(m.scores, W.rating)})`, `${scoreText(m.average)} of 5 (${m.scores} ratings)`) : tr("بلا تقييم بعد", "not rated yet");
       const decision = tr(DECISION_WORDS[m.decision].ar, DECISION_WORDS[m.decision].en);
       lines.push(`${i + 1}. ${m.name}، ${m.specialty}: ${score} · ${decision}`);
       const note = lastNote(entries, m.id);

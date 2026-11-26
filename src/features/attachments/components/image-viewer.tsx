@@ -85,7 +85,7 @@ export function ImageViewer({ images, index, onIndex, onClose }: { images: Viewe
                 {images.length > 1 ? ` · ${tr(`${num(index! + 1)} من ${num(images.length)}`, `${index! + 1} of ${images.length}`)}` : ""}
               </p>
             </div>
-            <button type="button" onClick={toggleZoom} aria-pressed={zoom} aria-label={zoom ? tr("صغّر", "Fit to screen") : tr("كبّر", "Zoom in")} className={btn}>
+            <button type="button" onClick={toggleZoom} aria-pressed={zoom} aria-label={zoom ? tr("بحجم الشاشة", "Fit to screen") : tr("كبّر", "Zoom in")} className={btn}>
               {zoom ? <ZoomOut size={19} aria-hidden="true" /> : <ZoomIn size={19} aria-hidden="true" />}
             </button>
             <a href={img.url} download={img.name} aria-label={tr("نزّل الصورة", "Download the picture")} className={btn}>

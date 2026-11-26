@@ -128,7 +128,7 @@ test.describe("on an iPhone", () => {
 
 test("the sign-in page has 'Download the app': steps for this browser, or the browser's own window when it offers one", async ({ page }, info) => {
   await page.goto("/login");
-  const download = page.getByRole("button", { name: "حمّل التطبيق" });
+  const download = page.getByRole("button", { name: "ثبّت التطبيق" });
   // No offer from the browser yet: short steps for this browser (Chrome here).
   await download.click();
   const dialog = page.getByRole("dialog", { name: "ثبّت المنصة على جهازك" });

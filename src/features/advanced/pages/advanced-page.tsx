@@ -271,7 +271,7 @@ function Setup() {
               {errorParts.length ? <AlertTriangle size={17} aria-hidden="true" className="shrink-0 text-danger" /> : <Save size={17} aria-hidden="true" className="shrink-0 text-accent" />}
               {errorParts.length ? (
                 <span>
-                  {tr("صحّح الحقول المؤشرة بالأحمر قبل الحفظ", "Fix the fields marked in red before saving")}
+                  {tr("صحّح الحقول المعلَّمة بالأحمر قبل الحفظ", "Fix the fields marked in red before saving")}
                   <span className="font-normal text-muted">
                     {" "}
                     {tr("في: ", "in: ")}
@@ -317,7 +317,7 @@ function Title() {
   return (
     <header className="flex flex-col gap-1">
       <h1 className="text-2xl font-semibold">{tr("الإعدادات المتقدمة", "Advanced settings")}</h1>
-      <p className="text-sm text-muted">{tr("قواعد العمل والصلاحيات والإشعارات والميزات، بيدك بلا مبرمج", "Business rules, rights, notifications and features, in your hands, no developer needed")}</p>
+      <p className="text-sm text-muted">{tr("قواعد العمل والصلاحيات والإشعارات والميزات، بيدك دون الحاجة إلى مبرمج", "Business rules, rights, notifications and features, in your hands, no developer needed")}</p>
     </header>
   );
 }

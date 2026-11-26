@@ -22,7 +22,7 @@ const GROUP = {
   page: { ar: "الصفحات", en: "Pages" },
   project: { ar: "المشاريع", en: "Projects" },
   task: { ar: "المهام", en: "Tasks" },
-  bug: { ar: "المشكلات البرمجية", en: "Bugs" },
+  bug: { ar: "الأخطاء البرمجية", en: "Bugs" },
   announcement: { ar: "الإعلانات", en: "Announcements" },
   person: { ar: "الأشخاص", en: "People" },
 };

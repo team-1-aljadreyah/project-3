@@ -163,7 +163,7 @@ function TaskView({ task, project, users, sprints, comments, history, projectTas
                   onClick={() => setTab(key)}
                   className={cn("-mb-px border-b-2 py-3 text-sm", tab === key ? "border-accent font-semibold text-text" : "border-transparent text-muted hover:text-text")}
                 >
-                  {key === "comments" ? tr(`التعليقات (${comments.length})`, `Comments (${comments.length})`) : tr("سجل التحديثات", "History")}
+                  {key === "comments" ? tr(`التعليقات (${comments.length})`, `Comments (${comments.length})`) : tr("السجل", "History")}
                 </button>
               ))}
             </div>

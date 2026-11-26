@@ -48,7 +48,7 @@ export function WorkPart(c: Ctx) {
       <Part title={tr("أيام الدوام وساعاته", "Working days and hours")} sub={tr("منها تُحسب مواعيد التسليم ومهل الإصلاح بأيام العمل", "Due dates and fix targets count working days from these")} icon={icon(CalendarDays)} action={<Later />}>
         <Row
           label={tr("أيام العمل", "Working days")}
-          hint={tr("الجمعة والسبت عطلة في الأصل", "Friday and Saturday are off by default")}
+          hint={tr("الجمعة والسبت عطلة افتراضياً", "Friday and Saturday are off by default")}
           changed={!same([...w.days].sort(), [...D.work.days].sort())}
           onDefault={() => setWork({ days: D.work.days })}
           defText={dayNames(D.work.days)}
@@ -96,14 +96,14 @@ export function WorkPart(c: Ctx) {
         ))}
       </Part>
 
-      <Part title={tr("مهلة إصلاح المشكلات", "Bug fix targets")} sub={tr("«أصلحها خلال N يوم عمل» حسب خطورة المشكلة", "\"Fix within N working days\" by the bug's severity")} icon={icon(Wrench)} action={<Later />}>
+      <Part title={tr("مهلة إصلاح الأخطاء البرمجية", "Bug fix targets")} sub={tr("«أصلحها خلال N يوم عمل» حسب خطورة المشكلة", "\"Fix within N working days\" by the bug's severity")} icon={icon(Wrench)} action={<Later />}>
         {SEVERITIES.map((s) => (
           <NumRow
             key={s}
             c={c}
             field={`fix_days.${s}`}
             label={tr(`مشكلة ${SEVERITY_WORDS[s].ar}`, `${SEVERITY_WORDS[s].en} bug`)}
-            hint={s === "critical" ? tr("الأخطر لا تنتظر أكثر من الأخف", "A worse bug never waits longer than a lighter one") : undefined}
+            hint={s === "critical" ? tr("الأخطر لا تنتظر أطول من الأخف", "A worse bug never waits longer than a lighter one") : undefined}
             value={r.fix_days[s]}
             def={D.fix_days[s]}
             put={(v) => c.set({ fix_days: { ...r.fix_days, [s]: v } })}
@@ -182,7 +182,7 @@ function Holidays({ c }: { c: Ctx }) {
             {tr("أضف العطلة", "Add the holiday")}
           </Button>
         </div>
-        {taken && <p className="mt-1.5 text-xs font-medium text-danger">{tr("في هذا اليوم عطلة من قبل", "There is a holiday on that day already")}</p>}
+        {taken && <p className="mt-1.5 text-xs font-medium text-danger">{tr("توجد عطلة في هذا اليوم مسبقاً", "There is a holiday on that day already")}</p>}
       </Row>
     </Part>
   );
@@ -229,7 +229,7 @@ export function TasksPart(c: Ctx) {
         <NumRow
           c={c}
           field="tasks.wip_limit"
-          label={tr("أكثر عدد مهام قيد التنفيذ للشخص", "Most tasks in progress per person")}
+          label={tr("الحد الأقصى للمهام قيد التنفيذ لكل شخص", "Most tasks in progress per person")}
           hint={tr("0 = بلا حد. بعده لا يبدأ مهمة جديدة حتى ينهي واحدة", "0 = no limit. Past it, a person finishes one before starting another")}
           value={t.wip_limit}
           def={D.tasks.wip_limit}
@@ -291,10 +291,10 @@ export function SecurityPart(c: Ctx) {
         <NumRow c={c} field="security.lock_minutes" label={tr("مدة القفل", "How long it stays locked")} hint={tr("من 5 إلى 120 دقيقة. يفتحه مسؤول النظام قبلها إن شاء", "5 to 120 minutes. The system admin may unlock it sooner")} value={s.lock_minutes} def={D.security.lock_minutes} put={(lock_minutes) => put({ lock_minutes })} unit={tr("دقيقة", "min")} />
       </Part>
       <Part title={tr("كلمات المرور", "Passwords")} icon={icon(ShieldCheck)} action={<Later />}>
-        <NumRow c={c} field="security.password_min" label={tr("أقصر كلمة مرور مسموحة", "The shortest password allowed")} hint={tr("للكلمات الجديدة والمغيَّرة فقط، من 6 إلى 32 حرفاً", "New and changed ones only, 6 to 32 letters")} value={s.password_min} def={D.security.password_min} put={(password_min) => put({ password_min })} unit={tr("حرف", "letters")} />
+        <NumRow c={c} field="security.password_min" label={tr("أقل طول مسموح به لكلمة المرور", "The shortest password allowed")} hint={tr("لكلمات المرور الجديدة والمغيَّرة فقط، من 6 إلى 32 حرفاً", "New and changed ones only, 6 to 32 letters")} value={s.password_min} def={D.security.password_min} put={(password_min) => put({ password_min })} unit={tr("حرف", "letters")} />
       </Part>
       <Part title={tr("التذكير", "Reminders")} icon={icon(Timer)} action={<Live />}>
-        <NumRow c={c} field="security.due_soon_days" label={tr("تذكير قرب موعد التسليم قبل", "Due-soon reminder, days before")} hint={tr("من 1 إلى 7 أيام", "1 to 7 days")} value={s.due_soon_days} def={D.security.due_soon_days} put={(due_soon_days) => put({ due_soon_days })} unit={tr("يوم", "days")} />
+        <NumRow c={c} field="security.due_soon_days" label={tr("التذكير قبل موعد التسليم بـ (أيام)", "Due-soon reminder, days before")} hint={tr("من 1 إلى 7 أيام", "1 to 7 days")} value={s.due_soon_days} def={D.security.due_soon_days} put={(due_soon_days) => put({ due_soon_days })} unit={tr("يوم", "days")} />
       </Part>
     </div>
   );

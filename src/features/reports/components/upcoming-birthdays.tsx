@@ -1,3 +1,4 @@
+import { arN, G } from "@/shared/lib/count-words";
 import { Cake } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@/shared/api/types";
@@ -29,7 +30,7 @@ export function UpcomingBirthdays({ viewer, people, today, projects = [] }: { vi
         <Cake size={17} aria-hidden="true" className="text-accent" />
         {tr("أعياد الميلاد القادمة", "Upcoming birthdays")}
       </h2>
-      <p className="mt-0.5 mb-3 text-xs text-muted">{tr(`خلال ${UPCOMING_DAYS} يوماً · اليوم والشهر فقط`, `The next ${UPCOMING_DAYS} days · day and month only`)}</p>
+      <p className="mt-0.5 mb-3 text-xs text-muted">{tr(`خلال ${arN(UPCOMING_DAYS, G.day)} · اليوم والشهر فقط`, `The next ${UPCOMING_DAYS} days · day and month only`)}</p>
       {rows.length === 0 ? (
         <p className="text-sm text-muted">{tr("لا أعياد ميلاد خلال الأيام الثلاثين القادمة.", "No birthdays in the next 30 days.")}</p>
       ) : (
@@ -69,7 +70,7 @@ export function UpcomingBirthdays({ viewer, people, today, projects = [] }: { vi
       )}
       {rows.length > SHOWN && (
         <button type="button" onClick={() => setAll((x) => !x)} className="mt-2 text-sm font-medium text-accent hover:underline">
-          {all ? tr("أقل", "Show fewer") : tr(`عرض الكل (${rows.length})`, `Show all (${rows.length})`)}
+          {all ? tr("اعرض أقل", "Show fewer") : tr(`اعرض الكل (${rows.length})`, `Show all (${rows.length})`)}
         </button>
       )}
     </section>

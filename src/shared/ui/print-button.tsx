@@ -25,7 +25,7 @@ export function printPart(el: HTMLElement | null) {
 
 export function PrintButton({ target, label, compact, className }: { target: () => HTMLElement | null; label?: string; compact?: boolean; className?: string }) {
   const { tr } = useFmt();
-  const text = label ?? tr("اطبع أو احفظ PDF", "Print or save as PDF");
+  const text = label ?? tr("اطبع أو احفظ بصيغة PDF", "Print or save as PDF");
   return (
     <button
       type="button"

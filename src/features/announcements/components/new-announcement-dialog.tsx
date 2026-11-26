@@ -84,7 +84,7 @@ export function NewAnnouncementDialog({ open, onClose }: { open: boolean; onClos
           <input type="checkbox" className="mt-0.5 size-4 accent-[var(--accent)]" checked={important} onChange={(e) => setImportant(e.target.checked)} />
           <span className="flex flex-col gap-0.5 text-sm font-medium">
             {tr("إعلان مهم", "Important")}
-            <span className="text-[13px] font-normal text-muted">{tr("يُثبَّت أعلى القائمة ويظهر في لوحة الإدارة.", "Pinned at the top, and shown on the CEO dashboard.")}</span>
+            <span className="text-[13px] font-normal text-muted">{tr("يُثبَّت أعلى القائمة ويظهر في لوحة التحكم.", "Pinned at the top, and shown on the CEO dashboard.")}</span>
           </span>
         </label>
         {formError && (

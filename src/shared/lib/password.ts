@@ -8,9 +8,9 @@ export const PASSWORD_MAX = 128;
 /** What is wrong with a new password, in both languages; null when it is fine. */
 export function passwordProblem(password: string, min = PASSWORD_MIN_DEFAULT): { ar: string; en: string } | null {
   if (!password) return { ar: "اكتب كلمة مرور.", en: "Enter a password." };
-  if (password.length < min) return { ar: `كلمة المرور قصيرة: ${min} أحرف على الأقل.`, en: `The password is too short: at least ${min} characters.` };
+  if (password.length < min) return { ar: `كلمة المرور قصيرة: ${arN(min, W.letter)} على الأقل.`, en: `The password is too short: at least ${min} characters.` };
   if (password.length > PASSWORD_MAX) return { ar: "كلمة المرور أطول من المسموح.", en: "The password is too long." };
-  if (!password.trim()) return { ar: "كلمة المرور لا تكون فراغات فقط.", en: "The password can't be only spaces." };
+  if (!password.trim()) return { ar: "لا يمكن أن تتكون كلمة المرور من مسافات فقط.", en: "The password can't be only spaces." };
   return null;
 }
 
@@ -22,4 +22,5 @@ export function makePassword(length = 12) {
   const bytes = new Uint32Array(length);
   globalThis.crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => LETTERS[b % LETTERS.length]).join("");
-}
+}import { arN, W } from "@/shared/lib/count-words";
+

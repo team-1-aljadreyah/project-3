@@ -50,7 +50,7 @@ test("the CEO opens a line: who, IP, device and changes; ↓ steps on; the subje
   await expect(changes.getByRole("rowheader", { name: /قريب الموعد/ })).toBeVisible();
 
   // The history of this subject: the other settings changes; one press switches the panel to it.
-  await panel.getByRole("tab", { name: /تاريخ هذا العنصر/ }).click();
+  await panel.getByRole("tab", { name: /سجل هذا العنصر/ }).click();
   const history = panel.getByRole("tabpanel");
   await expect(history.getByRole("button")).toHaveCount(2);
   await history.getByRole("button").last().click();

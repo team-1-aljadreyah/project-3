@@ -66,7 +66,7 @@ export function SprintBoard({
           {day(sprint.start)} – {day(sprint.end)}
         </span>
         {closed && <Pill tone="done">{tr("منتهية", "Ended")}</Pill>}
-        {overdue && <Pill tone="blocked">{tr("انتهى موعدها ولم تُغلق", "Past its end, not ended yet")}</Pill>}
+        {overdue && <Pill tone="blocked">{tr("انتهى موعدها ولم تُنهَ بعد", "Past its end, not ended yet")}</Pill>}
         {canManageProject(user, project) && canCloseSprint(sprint, today) && (
           <Button variant="secondary" pill onClick={() => setEnding(sprint)} className="ms-auto">
             <Flag size={15} aria-hidden="true" />

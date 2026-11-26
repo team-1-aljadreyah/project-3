@@ -36,7 +36,7 @@ test("the admin sets a birth date: wrong ones are refused, a good one is kept, a
   await expect(dialog.getByLabel("تاريخ الميلاد")).toHaveValue("1994-03-07");
   // Cleared: allowed (it is optional), and the list marks the account.
   await dialog.getByLabel("تاريخ الميلاد").fill("");
-  await expect(dialog.getByText("مستحسن: به تصل تذكيرات أعياد الميلاد.")).toBeVisible();
+  await expect(dialog.getByText("يُستحسن ملؤه: تعتمد عليه تذكيرات أعياد الميلاد.")).toBeVisible();
   await dialog.getByRole("button", { name: "احفظ" }).click();
   await expect(users.getByRole("button", { name: /علي حسين/ }).getByText("بلا تاريخ ميلاد")).toBeVisible();
   await page.getByRole("button", { name: "بلا تاريخ ميلاد: 1" }).click();

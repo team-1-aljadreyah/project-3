@@ -85,7 +85,7 @@ export function NoteCard({
           <Icon size={16} aria-hidden="true" />
         </span>
         <Pill tone={KIND_TONE[note.kind]}>{tr(KIND[note.kind].ar, KIND[note.kind].en)}</Pill>
-        {note.tone && <Pill tone={note.tone === "praise" ? "done" : "review"}>{note.tone === "praise" ? tr("ثناء", "Praise") : tr("شيء يتحسن", "To improve")}</Pill>}
+        {note.tone && <Pill tone={note.tone === "praise" ? "done" : "review"}>{note.tone === "praise" ? tr("ثناء", "Praise") : tr("يحتاج إلى تحسين", "To improve")}</Pill>}
         <span className="inline-flex items-center gap-1">
           <AboutIcon size={13} aria-hidden="true" />
           <MaybeLink href={aboutHref} className={inner}>

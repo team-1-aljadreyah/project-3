@@ -9,22 +9,22 @@ test("a waiting task shows what it waits for; the PM makes another task wait, an
   await expect(page.getByRole("link", { name: /TSK-092/ }).getByText("تنتظر مهمة واحدة")).toBeVisible();
 
   await page.getByRole("link", { name: /TSK-092/ }).click();
-  const deps = page.getByRole("region", { name: "الاعتماديات" });
+  const deps = page.getByRole("region", { name: "التبعيات" });
   await expect(deps.getByRole("link", { name: /TSK-109/ })).toBeVisible();
   await expect(deps.getByText("لا يمكن إكمال هذه المهمة قبل إنجاز ما تنتظره.")).toBeVisible();
 
   // TSK-109 is waited for by TSK-092, so it can't be chosen to wait for it (that would be a loop).
   await deps.getByRole("link", { name: /TSK-109/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "صفحة إعلانات الشركة" })).toBeVisible(); // TSK-109's page is open
-  await page.getByRole("region", { name: "الاعتماديات" }).getByRole("button", { name: "عدّل ما تنتظره المهمة" }).click();
+  await page.getByRole("region", { name: "التبعيات" }).getByRole("button", { name: "عدّل ما تنتظره المهمة" }).click();
   const dialog = page.getByRole("dialog", { name: "ما تنتظره TSK-109" });
   await expect(dialog.getByText("TSK-092")).toHaveCount(0);
   await dialog.getByLabel("ابحث عن مهمة").fill("TSK-115");
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "احفظ" }).click();
-  await expect(page.getByText("حُفظت الاعتماديات.")).toBeVisible();
-  await expect(page.getByRole("region", { name: "الاعتماديات" }).getByRole("link", { name: /TSK-115/ })).toBeVisible();
-  await page.getByRole("tab", { name: "سجل التحديثات" }).click();
+  await expect(page.getByText("حُفظت التبعيات.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "التبعيات" }).getByRole("link", { name: /TSK-115/ })).toBeVisible();
+  await page.getByRole("tab", { name: "السجل" }).click();
   await expect(page.getByRole("tabpanel").getByText("جعلها تنتظر TSK-115")).toBeVisible();
 });
 

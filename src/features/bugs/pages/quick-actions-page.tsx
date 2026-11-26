@@ -146,7 +146,7 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
             {tr("إجراءات سريعة", "Quick actions")}
           </h1>
           <p className="text-sm text-muted">
-            {tr("كل خطأ مفتوح في سطر واحد: أسنده، غيّر خطورته أو أولويته أو موعده، وانقله خطوة، دون أن تفتحه.", "Every open bug on one line: assign it, change its severity, priority or day, and move it a step, without opening it.")}
+            {tr("كل مشكلة مفتوحة في سطر واحد: أسندها، غيّر خطورتها أو أولويته أو موعده، وانقله خطوة، دون أن تفتحه.", "Every open bug on one line: assign it, change its severity, priority or day, and move it a step, without opening it.")}
           </p>
         </div>
         <ButtonLink href="/bugs" variant="secondary" pill size="sm">
@@ -308,7 +308,7 @@ function Desk({ bugs: first, projects, people }: { bugs: Bug[]; projects: Projec
 
       <p className="flex items-center gap-1.5 text-xs text-muted">
         <ArrowLeft size={13} aria-hidden="true" className="ltr:rotate-180" />
-        {tr("كل تغيير هنا يُكتب في سجل الخطأ ويُبلَّغ به المعنيون.", "Every change here goes into the bug's history and the people concerned are told.")}
+        {tr("كل تغيير هنا يُكتب في سجل المشكلة ويُبلَّغ به المعنيون.", "Every change here goes into the bug's history and the people concerned are told.")}
       </p>
 
       <Dialog

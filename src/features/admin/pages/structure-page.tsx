@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { CircleCheck, Crown, UserX } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -124,7 +125,7 @@ function StructureBody({ s, users, teams, me, reload }: { s: Structure; users: A
                   <PickRow
                     key={t.team.id}
                     team={nameOf(t.team)}
-                    sub={tr(`${num(t.members.length)} أعضاء`, `${t.members.length} members`)}
+                    sub={tr(`${arN(t.members.length, W.member)}`, `${t.members.length} members`)}
                     label={tr(`قائد ${nameOf(t.team)}`, `${nameOf(t.team)}'s leader`)}
                     choices={activeLeads.map((u) => ({ value: u.id, label: leading.has(u.id) ? tr(`${nameOf(u)} (يقود ${nameOf(leading.get(u.id)!)})`, `${nameOf(u)} (leads ${nameOf(leading.get(u.id)!)})`) : nameOf(u) }))}
                     empty={tr("لا أحد بدور «قائد الفريق»: غيّر دور أحدهم من قائمة المستخدمين.", "Nobody has the team leader job: change someone's job in the users list.")}
@@ -180,7 +181,7 @@ function StructureBody({ s, users, teams, me, reload }: { s: Structure; users: A
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col">
                     <b dir="auto">{nameOf(t.team)}</b>
-                    <span className="text-xs text-muted">{tr(`${num(t.members.length + (t.leader ? 1 : 0))} أشخاص`, `${t.members.length + (t.leader ? 1 : 0)} people`)}</span>
+                    <span className="text-xs text-muted">{tr(`${arN(t.members.length + (t.leader ? 1 : 0), W.person)}`, `${t.members.length + (t.leader ? 1 : 0)} people`)}</span>
                   </span>
                   {!t.leader && (
                     <span className="inline-flex items-center gap-1 rounded-md border border-danger px-1.5 py-px text-xs text-danger">
@@ -222,7 +223,7 @@ function StructureBody({ s, users, teams, me, reload }: { s: Structure; users: A
             </ul>
           </div>
         )}
-        {stopped > 0 && <p className="border-t border-line px-4 py-2 text-xs text-faint">{tr(`${num(stopped)} حسابات موقوفة لا تظهر هنا.`, `${stopped} stopped accounts are not shown here.`)}</p>}
+        {stopped > 0 && <p className="border-t border-line px-4 py-2 text-xs text-faint">{tr(`الحسابات الموقوفة لا تظهر هنا: ${num(stopped)}.`, `${stopped} stopped accounts are not shown here.`)}</p>}
       </Panel>
       {editing && <UserDialog user={editing} teams={teams} me={me} onClose={() => setEditing(null)} onSaved={reload} />}
     </>

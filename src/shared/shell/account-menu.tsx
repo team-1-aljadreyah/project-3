@@ -301,7 +301,7 @@ export function AccountMenu({ user, profile, switches }: { user: User; profile?:
                 }}
               >
                 <RotateCcw size={13} aria-hidden="true" />
-                {tr("إعادة البيانات التجريبية", "Reset demo data")}
+                {tr("إعادة ضبط البيانات التجريبية", "Reset demo data")}
               </button>
             )}
             <InstallMenuItem className={rowClass} iconClassName={cn(iconBox, "bg-accent-soft text-accent-ink")} onPick={() => setOpen(false)} />

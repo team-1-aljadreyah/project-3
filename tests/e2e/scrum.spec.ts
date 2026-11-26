@@ -22,7 +22,7 @@ test("the PM plans a backlog task into the sprint, then ends the sprint and move
 
   await page.getByRole("button", { name: "أنهِ الدورة" }).click();
   const dialog = page.getByRole("dialog", { name: "إنهاء الدورة" });
-  await expect(dialog.getByText(/أُنجزت 1 من 9 مهمة، وبقيت 8/)).toBeVisible();
+  await expect(dialog.getByText(/أُنجز 1 من 9 مهام، وبقي 8/)).toBeVisible();
   await expect(dialog.getByRole("radio", { name: /الدورة 5/ })).toBeChecked(); // the next open sprint by default
   await dialog.getByRole("button", { name: "أنهِ الدورة" }).click();
   await expect(page.getByText("انتهت «الدورة 4».")).toBeVisible();
@@ -37,7 +37,7 @@ test("the PM plans a backlog task into the sprint, then ends the sprint and move
   // The task's history says where it went.
   await page.goto("/projects/1");
   await page.getByRole("link", { name: /TSK-104/ }).click();
-  await page.getByRole("tab", { name: "سجل التحديثات" }).click();
+  await page.getByRole("tab", { name: "السجل" }).click();
   await expect(page.getByRole("tabpanel").getByText("نقلها إلى الدورة «الدورة 5»")).toBeVisible();
 });
 

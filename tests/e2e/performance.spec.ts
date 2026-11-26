@@ -30,7 +30,7 @@ test("Sara sees her own performance and her final reviews, and can't write one",
 test("the CEO's criteria: weights must add up to 100; a change needs a new approval", async ({ page }) => {
   await signInAs(page, /مريم العبيدي/);
   await page.goto("/performance/criteria");
-  await expect(page.getByText(/معتمدة منذ/)).toBeVisible();
+  await expect(page.getByText(/اعتُمدت في/)).toBeVisible();
   await page.getByLabel("وزن المعيار 1").fill("35");
   await expect(page.getByText("مجموع الأوزان: 110 من 100")).toBeVisible();
   await page.getByLabel("وزن المعيار 3").fill("20");
@@ -38,5 +38,5 @@ test("the CEO's criteria: weights must add up to 100; a change needs a new appro
   await expect(page.getByText("حُفظت المعايير. اعتمدها لتُستعمل.")).toBeVisible();
   await expect(page.getByText(/غير معتمدة/)).toBeVisible();
   await page.getByRole("button", { name: "اعتمد المعايير" }).click();
-  await expect(page.getByText(/معتمدة منذ/)).toBeVisible();
+  await expect(page.getByText(/اعتُمدت في/)).toBeVisible();
 });

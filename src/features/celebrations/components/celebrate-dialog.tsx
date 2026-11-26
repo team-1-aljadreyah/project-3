@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { Eye, PartyPopper, Sparkles, Trophy } from "lucide-react";
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
@@ -53,7 +54,7 @@ export function CelebrateDialog({ teams, teamId, onClose }: { teams: TeamChoice[
     setErrors({});
     try {
       const sent = await celebrationsApi.celebrate({ team_id: Number(team), kind, message: message.trim() || undefined });
-      toast(tr(`أُرسل الاحتفال إلى «${nameOf(chosen)}» (${num(sent.sent_to)} أشخاص). يرونه عند فتح المنصة.`, `Sent to ${nameOf(chosen)} (${sent.sent_to} people). They see it when they open the platform.`));
+      toast(tr(`أُرسل الاحتفال إلى «${nameOf(chosen)}» (${arN(sent.sent_to, W.person)}). يرونه عند فتح المنصة.`, `Sent to ${nameOf(chosen)} (${sent.sent_to} people). They see it when they open the platform.`));
       onClose();
     } catch (e) {
       setErrors(e instanceof ApiError && e.errors ? e.errors : { form: errorText(e, tr) });
@@ -136,7 +137,7 @@ export function CelebrateDialog({ teams, teamId, onClose }: { teams: TeamChoice[
             </div>
           </fieldset>
           <Field
-            label={tr("كلمة للفريق (اختياري)", "A few words for the team (optional)")}
+            label={tr("كلمة للفريق (اختيارية)", "A few words for the team (optional)")}
             htmlFor="cel-message"
             error={errors.message}
             hint={`${num(message.length)} / ${num(CELEBRATION_LIMITS.message)}`}

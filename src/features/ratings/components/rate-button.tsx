@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { Gauge } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -42,7 +43,7 @@ export function AverageMark({ summary, href, className }: { summary: Pick<Rating
   const { tr, num } = useFmt();
   if (summary.average === null) return <span className={cn("text-xs text-faint", className)}>{tr("لا تقييم", "Not rated")}</span>;
   const w = SCORE_WORDS[scoreStep(summary.average)];
-  const label = tr(`متوسط التقييم ${summary.average.toFixed(1)} من 5 (${w.ar})، ${num(summary.count)} تقييم`, `Average rating ${summary.average.toFixed(1)} of 5 (${w.en}), ${summary.count} rating${summary.count === 1 ? "" : "s"}`);
+  const label = tr(`متوسط التقييم ${summary.average.toFixed(1)} من 5 (${w.ar})، ${arN(summary.count, W.rating)}`, `Average rating ${summary.average.toFixed(1)} of 5 (${w.en}), ${summary.count} rating${summary.count === 1 ? "" : "s"}`);
   const body = (
     <>
       <span className="num font-semibold text-text">{summary.average.toFixed(1)}</span>

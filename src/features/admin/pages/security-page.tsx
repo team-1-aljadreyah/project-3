@@ -1,3 +1,4 @@
+import { arN, G, W } from "@/shared/lib/count-words";
 import { CircleCheck, KeyRound, LockOpen, LogOut, Monitor, Smartphone, Tablet } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -70,16 +71,16 @@ function SecurityBody({ sessions, summary, users, teams, me, reload }: { session
   const addresses = summary.by_ip.length;
 
   const cells: { id: string; label: string; value: number; note: string; danger?: boolean }[] = [
-    { id: "sessions", label: tr("جلسات نشطة", "Active sessions"), value: sessions.length, note: tr(`لـ ${num(signedIn)} أشخاص`, `for ${signedIn} people`) },
+    { id: "sessions", label: tr("جلسات نشطة", "Active sessions"), value: sessions.length, note: tr(`لـ ${arN(signedIn, G.person)}`, `for ${signedIn} people`) },
     {
       id: "failed",
-      label: tr(`دخول خاطئ (${num(summary.days)} أيام)`, `Failed sign-ins (${summary.days} days)`),
+      label: tr(`محاولات دخول فاشلة (آخر ${arN(summary.days, G.day)})`, `Failed sign-ins (${summary.days} days)`),
       value: summary.failed_total,
       note: tr(`من ${num(addresses)} عنوان`, `from ${addresses} addresses`),
       danger: summary.failed_total >= summary.lock_after,
     },
-    { id: "locked", label: tr("مقفلة الآن", "Locked now"), value: summary.locked.length, note: summary.locked.length ? tr("افتحها من هنا", "Unlock them here") : tr("لا شيء", "None"), danger: summary.locked.length > 0 },
-    { id: "never", label: tr("لم تسجّل الدخول قط", "Never signed in"), value: summary.never_signed_in.length, note: tr("حسابات نشطة", "active accounts") },
+    { id: "locked", label: tr("مقفلة الآن", "Locked now"), value: summary.locked.length, note: summary.locked.length ? tr("ألغِ قفلها من هنا", "Unlock them here") : tr("لا شيء", "None"), danger: summary.locked.length > 0 },
+    { id: "never", label: tr("لم يدخلها أصحابها قط", "Never signed in"), value: summary.never_signed_in.length, note: tr("حسابات نشطة", "active accounts") },
   ];
 
   return (
@@ -102,7 +103,7 @@ function SecurityBody({ sessions, summary, users, teams, me, reload }: { session
         <span>
           <KeyRound size={15} aria-hidden="true" className="me-2 inline align-[-2px]" />
           {tr(
-          `يُقفل الحساب بعد ${num(summary.lock_after)} محاولات خاطئة متتالية، لمدة ${num(summary.lock_minutes)} دقيقة.`,
+          `يُقفل الحساب بعد محاولات دخول خاطئة متتالية عددها ${num(summary.lock_after)}، لمدة ${arN(summary.lock_minutes, G.minute)}.`,
           `An account locks after ${summary.lock_after} wrong passwords in a row, for ${summary.lock_minutes} minutes.`,
           )}
         </span>
@@ -121,14 +122,14 @@ function SecurityBody({ sessions, summary, users, teams, me, reload }: { session
 }
 
 function SessionsPanel({ sessions, people, reload }: { sessions: AdminSession[]; people: Map<number, AdminUser>; reload: () => void }) {
-  const { tr, num, lang, ago, dateTime } = useFmt();
+  const { tr, lang, ago, dateTime } = useFmt();
   const toast = useToast();
   const [q, setQ] = useQueryParam<string>("q", "");
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const now = new Date().getTime();
-  const nameOf = (u?: AdminUser) => (u ? (lang === "en" && u.name_en ? u.name_en : u.name) : tr("حساب محذوف", "Unknown account"));
+  const nameOf = (u?: AdminUser) => (u ? (lang === "en" && u.name_en ? u.name_en : u.name) : tr("حساب غير معروف", "Unknown account"));
 
   // One block per person, the most recently active first; the search finds a person, an address or a device.
   const groups = useMemo(() => {
@@ -152,7 +153,7 @@ function SessionsPanel({ sessions, people, reload }: { sessions: AdminSession[];
         toast(tr("انتهت الجلسة: على صاحبها تسجيل الدخول من جديد على ذلك الجهاز.", "The session ended: its owner must sign in again on that device."));
       } else {
         const { ended } = await adminApi.endUserSessions(confirm.user.id);
-        toast(tr(`أُخرج من ${num(ended)} جلسة.`, `Signed out of ${ended} sessions.`));
+        toast(tr(`أُخرج من ${arN(ended, G.session)}.`, `Signed out of ${ended} sessions.`));
       }
       setConfirm(null);
       reload();
@@ -167,7 +168,7 @@ function SessionsPanel({ sessions, people, reload }: { sessions: AdminSession[];
     if (!confirm) return "";
     if (confirm.kind === "all") {
       return tr(
-        `سيخرج ${nameOf(confirm.user)} من ${num(confirm.count)} جلسة على كل أجهزته، ويحتاج إلى تسجيل الدخول من جديد. لا تتغير كلمة مروره.`,
+        `سيخرج ${nameOf(confirm.user)} من ${arN(confirm.count, G.session)} على كل أجهزته، ويحتاج إلى تسجيل الدخول من جديد. لا تتغير كلمة مروره.`,
         `${nameOf(confirm.user)} will be signed out of ${confirm.count} sessions on every device and must sign in again. The password stays the same.`,
       );
     }
@@ -210,7 +211,7 @@ function SessionsPanel({ sessions, people, reload }: { sessions: AdminSession[];
                   <span className="flex min-w-40 flex-1 flex-col">
                     <span className="font-medium">{nameOf(u)}</span>
                     <span className="text-xs text-muted">
-                      {u && roleName(u, lang)} · {tr(`${num(list.length)} جلسة`, `${list.length} ${list.length === 1 ? "session" : "sessions"}`)}
+                      {u && roleName(u, lang)} · {tr(`${arN(list.length, W.session)}`, `${list.length} ${list.length === 1 ? "session" : "sessions"}`)}
                     </span>
                   </span>
                   {u && others > 0 && (
@@ -240,7 +241,7 @@ function SessionsPanel({ sessions, people, reload }: { sessions: AdminSession[];
                           </span>
                         </span>
                         <span className="col-start-2 text-xs text-muted sm:col-start-auto">
-                          {tr("الدخول:", "Signed in:")} <time dateTime={s.started_at}>{dateTime(s.started_at)}</time>
+                          {tr("وقت الدخول:", "Signed in:")} <time dateTime={s.started_at}>{dateTime(s.started_at)}</time>
                         </span>
                         <span className="col-start-2 flex items-center gap-1.5 text-xs text-muted sm:col-start-auto">
                           <span aria-hidden="true" className={cn("size-1.5 rounded-full", live ? "bg-success" : "bg-line-strong")} />
@@ -306,13 +307,13 @@ function FailedPanel({ summary, people }: { summary: SecuritySummary; people: Ma
   return (
     <Panel
       id="failed"
-      title={tr(`محاولات الدخول الخاطئة (آخر ${num(summary.days)} أيام)`, `Failed sign-ins (last ${summary.days} days)`)}
-      note={tr("الأكثر أولاً. الأحمر بلغ حد القفل. كل صف يفتح محاولاته في سجل العمليات.", "The most first. Red reached the lock limit. Each row opens its attempts in the audit log.")}
+      title={tr(`محاولات الدخول الخاطئة (آخر ${arN(summary.days, G.day)})`, `Failed sign-ins (last ${summary.days} days)`)}
+      note={tr("مرتبة من الأكثر محاولات. الصفوف الحمراء بلغت حد القفل. اضغط على صف لترى محاولاته في سجل العمليات.", "The most first. Red reached the lock limit. Each row opens its attempts in the audit log.")}
     >
       {summary.failed_total === 0 ? (
         <p className="flex items-center gap-2 px-4 py-6 text-sm text-muted">
           <CircleCheck size={16} aria-hidden="true" className="text-success" />
-          {tr(`لا محاولات خاطئة في آخر ${num(summary.days)} أيام.`, `No failed sign-ins in the last ${summary.days} days.`)}
+          {tr(`لا محاولات خاطئة في آخر ${arN(summary.days, G.day)}.`, `No failed sign-ins in the last ${summary.days} days.`)}
         </p>
       ) : (
         <div className="grid divide-line lg:grid-cols-2 lg:divide-x rtl:lg:divide-x-reverse max-lg:divide-y">
@@ -324,7 +325,7 @@ function FailedPanel({ summary, people }: { summary: SecuritySummary; people: Ma
                   <th scope="col" className={th}>{tr("الحساب", "Account")}</th>
                   <th scope="col" className={th}>{tr("المحاولات", "Attempts")}</th>
                   <th scope="col" className={cn(th, "max-sm:hidden")}>{tr("العناوين", "Addresses")}</th>
-                  <th scope="col" className={th}>{tr("آخرها", "Last")}</th>
+                  <th scope="col" className={th}>{tr("آخر محاولة", "Last")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -370,7 +371,7 @@ function FailedPanel({ summary, people }: { summary: SecuritySummary; people: Ma
                   <th scope="col" className={th}>{tr("عنوان IP", "IP address")}</th>
                   <th scope="col" className={th}>{tr("المحاولات", "Attempts")}</th>
                   <th scope="col" className={cn(th, "max-sm:hidden")}>{tr("حسابات جُرّبت", "Accounts tried")}</th>
-                  <th scope="col" className={th}>{tr("آخرها", "Last")}</th>
+                  <th scope="col" className={th}>{tr("آخر محاولة", "Last")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -462,14 +463,14 @@ function NeverPanel({ summary, people, teams, me, reload }: { summary: SecurityS
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const old = new Date().getTime() - NEVER_SIGNED_IN_DAYS * 86_400_000;
   return (
-    <Panel id="never" title={tr("لم تسجّل الدخول قط", "Never signed in")} note={tr("حسابات نشطة لم يدخل بها أصحابها بعد: تأكد أنهم استلموا بياناتهم.", "Active accounts their owners have not used yet: check they got their details.")}>
+    <Panel id="never" title={tr("لم يدخلها أصحابها قط", "Never signed in")} note={tr("حسابات نشطة لم يدخل بها أصحابها بعد: تأكد أنهم استلموا بياناتهم.", "Active accounts their owners have not used yet: check they got their details.")}>
       {summary.never_signed_in.length === 0 ? (
         <p className="flex items-center gap-2 px-4 py-6 text-sm text-muted">
           <CircleCheck size={16} aria-hidden="true" className="text-success" />
           {tr("دخل كل أصحاب الحسابات مرة على الأقل.", "Everyone has signed in at least once.")}
         </p>
       ) : (
-        <ul aria-label={tr("لم تسجّل الدخول قط", "Never signed in")} className="divide-y divide-line">
+        <ul aria-label={tr("لم يدخلها أصحابها قط", "Never signed in")} className="divide-y divide-line">
           {summary.never_signed_in.map((n) => {
             const u = people.get(n.user_id);
             if (!u) return null;
@@ -488,7 +489,7 @@ function NeverPanel({ summary, people, teams, me, reload }: { summary: SecurityS
                     </span>
                   </span>
                   <span className="text-xs text-muted">{n.created_at ? tr(`أُضيف ${day(n.created_at)}`, `Added ${day(n.created_at)}`) : tr("أُضيف قبل السجل", "Added before the log")}</span>
-                  {stale && <Pill tone="review">{tr(`أقدم من ${NEVER_SIGNED_IN_DAYS} أيام`, `Older than ${NEVER_SIGNED_IN_DAYS} days`)}</Pill>}
+                  {stale && <Pill tone="review">{tr(`أقدم من ${arN(NEVER_SIGNED_IN_DAYS, G.day)}`, `Older than ${NEVER_SIGNED_IN_DAYS} days`)}</Pill>}
                 </button>
               </li>
             );

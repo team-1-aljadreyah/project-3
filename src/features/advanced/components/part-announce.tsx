@@ -11,7 +11,7 @@ import { Live } from "./parts-rules";
 
 // Ready texts: switching on writes one you can change, so nothing turns red at once.
 const READY_BANNER = { ar: "إعلان من الإدارة: اكتب هنا ما تريد أن يراه الجميع.", en: "A notice from the management." };
-const READY_READ_ONLY = { ar: "نحدّث المنصة الآن. يمكنكم الاطلاع على كل شيء، وتعود التعديلات خلال وقت قصير.", en: "We are updating the platform. You can look at everything; changes come back shortly." };
+const READY_READ_ONLY = { ar: "نحدّث المنصة الآن. يمكنكم الاطلاع على كل شيء، وسيُتاح التعديل مجدداً قريباً.", en: "We are updating the platform. You can look at everything; changes come back shortly." };
 
 /** "2026-11-21T10:30" for a datetime box, in local time. */
 const toLocalInput = (iso: string) => {
@@ -88,7 +88,7 @@ export function AnnouncePart(c: Ctx) {
 
       <Part
         title={tr("وضع القراءة فقط", "Read-only mode")}
-        sub={tr("الجميع غيرك يرون كل شيء، ولا يحفظ الخادم تعديلاتهم (مثلاً أثناء نقل البيانات)", "Everyone but you sees everything, and the server saves none of their changes (during a data move, say)")}
+        sub={tr("يرى الجميع غيرك كل شيء، ولا يحفظ الخادم تعديلاتهم (مثلاً أثناء نقل البيانات)", "Everyone but you sees everything, and the server saves none of their changes (during a data move, say)")}
         icon={<Lock size={17} aria-hidden="true" className="text-accent" />}
         action={<Live />}
       >

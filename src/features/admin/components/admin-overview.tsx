@@ -126,7 +126,7 @@ export function AdminOverview({ me }: { me: number }) {
               {o.lines.ratio > 0 ? "+" : "-"}
               {pct(Math.abs(o.lines.ratio))}
             </span>{" "}
-            {tr("عن الأسبوع الماضي", "vs last week")}
+            {tr("مقارنةً بالأسبوع الماضي", "vs last week")}
           </>
         ),
       trend: o.perDay,

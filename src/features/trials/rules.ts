@@ -26,7 +26,7 @@ export const DECISION_WORDS: Record<TrialDecision, { ar: string; en: string; ton
 /** The words of each score (the stars' names). */
 export const SCORE_NAMES: Record<number, { ar: string; en: string }> = {
   1: { ar: "ضعيف", en: "Weak" },
-  2: { ar: "متوسط", en: "Fair" },
+  2: { ar: "مقبول", en: "Fair" },
   3: { ar: "جيد", en: "Good" },
   4: { ar: "جيد جداً", en: "Very good" },
   5: { ar: "ممتاز", en: "Excellent" },

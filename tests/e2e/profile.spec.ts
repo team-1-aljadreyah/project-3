@@ -128,8 +128,8 @@ test("anyone changes their own password from their profile; the new one signs in
   const dialog = page.getByRole("dialog", { name: "ملفي الشخصي" });
   await dialog.getByRole("button", { name: /غيّر كلمة المرور/ }).click();
   await dialog.getByLabel("كلمة المرور الحالية").fill("wrong-one");
-  await dialog.getByLabel("كلمة المرور الجديدة").fill("Sara-Mine-2026");
-  await dialog.getByLabel("أعد كتابة الجديدة").fill("Sara-Mine-2026");
+  await dialog.getByLabel("كلمة المرور الجديدة", { exact: true }).fill("Sara-Mine-2026");
+  await dialog.getByLabel("تأكيد كلمة المرور الجديدة").fill("Sara-Mine-2026");
   await dialog.getByRole("button", { name: "احفظ كلمة المرور" }).click();
   await expect(dialog.getByText("كلمة المرور الحالية غير صحيحة.")).toBeVisible();
   await dialog.getByLabel("كلمة المرور الحالية").fill("123456");

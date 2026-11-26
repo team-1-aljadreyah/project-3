@@ -1,5 +1,6 @@
 // The report builder's numbers and its first draft. Pure functions, tested in tests/unit/monitoring.test.ts. The demo
 // backend uses countReport; the real server must count the same way (docs/backend.md, section 16).
+import { arN, W } from "@/shared/lib/count-words";
 import type { Bug } from "@/features/bugs";
 import { doneAt, personPerf } from "@/features/performance";
 import { plannedRatio, type Project } from "@/features/projects";
@@ -104,7 +105,7 @@ export function draftSummary(f: ReportFacts, { tr, pct, day, lang }: Pick<Fmt, "
   const label = (r: ReportRow) => (lang === "en" && r.label_en) || r.label;
   const lines = [
     tr(
-      `من ${day(f.period.from)} إلى ${day(f.period.to)}: كان لدى ${name} ${f.assigned} مهمة، أُنجز منها ${f.done} (${pct(f.completion)}) وبقي ${f.left}.`,
+      `من ${day(f.period.from)} إلى ${day(f.period.to)}: كان لدى ${name} ${arN(f.assigned, W.task)}، أُنجز منها ${f.done} (${pct(f.completion)}) وبقي ${f.left}.`,
       `From ${day(f.period.from)} to ${day(f.period.to)}: ${name} had ${f.assigned} tasks; ${f.done} were done (${pct(f.completion)}) and ${f.left} are left.`,
     ),
     f.late || f.blocked

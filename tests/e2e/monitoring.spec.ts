@@ -7,8 +7,8 @@ test("the monitoring officer writes feedback on someone and sends it to the CEO;
   await signInAs(page, /هدى ناصر/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "المتابعة" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "المتابعة" })).toBeVisible();
-  await page.getByRole("button", { name: "ملاحظة على أي شخص" }).click();
-  await page.getByLabel("على من").selectOption({ label: "علي حسين" });
+  await page.getByRole("button", { name: "ملاحظة عن أي شخص" }).click();
+  await page.getByLabel("عمّن").selectOption({ label: "علي حسين" });
   await page.getByLabel("العنوان").fill("تعاون ممتاز مع الفريق");
   await page.getByLabel("النص").fill("ساعد زملاءه في إصلاح مشكلة الدفع قبل موعدها.");
   await page.getByRole("button", { name: "احفظ وأرسل" }).click();
@@ -49,7 +49,7 @@ test("a problem can be about anything and involve any people", async ({ page }) 
   await signInAs(page, /هدى ناصر/);
   await page.goto("/monitoring");
   await page.getByRole("button", { name: "مشكلة تحتاج قراراً" }).click();
-  await page.getByLabel("عن ماذا").fill("الموافقات على الإجازات");
+  await page.getByLabel("الموضوع").fill("الموافقات على الإجازات");
   await page.getByRole("group", { name: /الأشخاص المعنيون/ }).getByRole("checkbox", { name: /سارة علي/ }).check();
   await page.getByRole("group", { name: /الأشخاص المعنيون/ }).getByRole("checkbox", { name: /علي حسين/ }).check();
   await page.getByLabel("العنوان").fill("الموافقات تتأخر");
@@ -65,7 +65,7 @@ test("an employee sends the CEO a request instead of a message; it waits with th
   await signInAs(page, /سارة علي/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "طلباتي" }).click();
   await page.getByRole("button", { name: "طلب جديد" }).click();
-  await page.getByLabel("عن ماذا").fill("جهاز العمل");
+  await page.getByLabel("الموضوع").fill("جهاز العمل");
   await page.getByLabel("العنوان").fill("حاسوب أسرع");
   await page.getByLabel("الطلب").fill("حاسوبي بطيء في تشغيل الاختبارات.");
   await page.getByRole("button", { name: "أرسل الطلب" }).click();
@@ -82,7 +82,7 @@ test("the monitoring officer builds a report from the numbers, adds her comments
   await signInAs(page, /هدى ناصر/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "المتابعة" }).click();
   await page.getByRole("link", { name: /تقرير بالأرقام/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "صانع التقارير" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "منشئ التقارير" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "فريق" })).toHaveAttribute("aria-checked", "true");
   await page.getByLabel("الفريق").selectOption({ label: "فريق التطوير" });
   await page.getByRole("button", { name: "احسب الأرقام" }).click();
@@ -104,7 +104,7 @@ test("a department manager's request goes through monitoring to the CEO; the CEO
   await signInAs(page, /أحمد كريم/);
   await page.getByRole("navigation", { name: "القائمة الرئيسية" }).getByRole("link", { name: "طلباتي" }).click();
   await page.getByRole("button", { name: "طلب جديد" }).click();
-  await page.getByLabel("عن ماذا").fill("ميزانية");
+  await page.getByLabel("الموضوع").fill("ميزانية");
   await page.getByLabel("العنوان").fill("زيادة ميزانية الحملة");
   await page.getByLabel("الطلب").fill("نحتاج ميزانية إضافية للإعلانات.");
   await page.getByRole("button", { name: "أرسل الطلب" }).click();
@@ -133,7 +133,7 @@ test("a department manager's request goes through monitoring to the CEO; the CEO
   const inbox = page.getByRole("list", { name: "الوارد" });
   await inbox.getByRole("button", { name: "زيادة ميزانية الحملة" }).click();
   await page.getByLabel("الرد").fill("موافق، أرسل التفاصيل.");
-  await page.getByRole("button", { name: "أرسل الرد و«تمّ الإنجاز»" }).click();
+  await page.getByRole("button", { name: "أرسل الرد وانقله إلى «المنجزة»" }).click();
   await expect(inbox.getByRole("button", { name: "زيادة ميزانية الحملة" })).toHaveCount(0);
 
   // Done keeps it, to read again; it can be opened again.
@@ -151,7 +151,7 @@ test("the monitoring officer answers a request herself; the answer reaches the e
   await signInAs(page, /سارة علي/);
   await page.goto("/requests");
   await page.getByRole("button", { name: "طلب جديد" }).click();
-  await page.getByLabel("عن ماذا").fill("إجازة");
+  await page.getByLabel("الموضوع").fill("إجازة");
   await page.getByLabel("العنوان").fill("يوم إجازة الخميس");
   await page.getByLabel("الطلب").fill("أحتاج يوم الخميس إجازة.");
   await page.getByRole("button", { name: "أرسل الطلب" }).click();

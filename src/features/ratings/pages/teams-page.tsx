@@ -1,3 +1,4 @@
+import { arN, G, W } from "@/shared/lib/count-words";
 import { ArrowDown, ArrowUp, Users } from "lucide-react";
 import Link from "next/link";
 import { authApi } from "@/features/auth";
@@ -68,12 +69,12 @@ export function TeamsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <Stat label={tr("الفرق", "Teams")} value={num(rows.length)} note={tr(`${num(users.filter((u) => u.active && u.team_id).length)} شخصاً فيها`, `${users.filter((u) => u.active && u.team_id).length} people in them`)} onClick={() => setShow("all")} />
+        <Stat label={tr("الفرق", "Teams")} value={num(rows.length)} note={tr(`${arN(users.filter((u) => u.active && u.team_id).length, W.person)} فيها`, `${users.filter((u) => u.active && u.team_id).length} people in them`)} onClick={() => setShow("all")} />
         <Stat label={tr("تقييمات آخر 90 يوماً", "Ratings, last 90 days")} value={num(recent)} note={tr("مما تراه أنت", "of the ones you can see")} />
         <Stat
           label={tr("تنتظر تقييماً", "Waiting for a rating")}
           value={num(waitingRows.length)}
-          note={tr(`لم تُقيَّم منذ ${WAIT_DAYS} يوماً`, `Not rated for ${WAIT_DAYS} days`)}
+          note={tr(`لم تُقيَّم منذ ${arN(WAIT_DAYS, G.day)}`, `Not rated for ${WAIT_DAYS} days`)}
           danger={waitingRows.length > 0}
           onClick={() => setShow(show === "waiting" ? "all" : "waiting")}
           className={cn("col-span-2 md:col-span-1", show === "waiting" && "border-accent")}
@@ -130,7 +131,7 @@ export function TeamsPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   {members.length > 0 && <AvatarStack users={members} max={4} />}
-                  <span className="text-xs text-muted">{tr(`${num(row.member_count)} أعضاء`, `${row.member_count} people`)}</span>
+                  <span className="text-xs text-muted">{tr(`${arN(row.member_count, W.member)}`, `${row.member_count} people`)}</span>
                 </div>
                 <div className="flex items-center gap-2 justify-self-end md:justify-self-start">
                   {row.ratings ? <AverageMark summary={row.ratings} /> : <span className="text-xs text-faint">{tr("لا تراها", "Not yours to see")}</span>}
@@ -138,7 +139,7 @@ export function TeamsPage() {
                     <span className={cn("inline-flex items-center text-xs font-semibold", delta > 0 ? "text-success" : "text-danger")}>
                       {delta > 0 ? <ArrowUp size={13} aria-hidden="true" /> : <ArrowDown size={13} aria-hidden="true" />}
                       <span className="num">{`${delta > 0 ? "+" : ""}${delta.toFixed(1)}`}</span>
-                      <span className="sr-only">{tr(" عن قبل 90 يوماً", " against before the last 90 days")}</span>
+                      <span className="sr-only">{tr(" مقارنةً بما قبل آخر 90 يوماً", " against before the last 90 days")}</span>
                     </span>
                   )}
                 </div>

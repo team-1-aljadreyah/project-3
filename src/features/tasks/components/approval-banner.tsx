@@ -72,7 +72,7 @@ export function ApprovalBanner({ task, people, canDecide, onDone }: { task: Task
         open={sendingBack}
         title={tr(`إرجاع ${task.code}`, `Send back ${task.code}`)}
         label={tr("ما الذي يحتاج إلى إصلاح؟", "What needs fixing?")}
-        hint={tr("تعود المهمة إلى الحالة التي طُلب منها الاعتماد، ويرى المسؤول ملاحظتك.", "The task goes back to where it was, and the assignee sees your note.")}
+        hint={tr("تعود المهمة إلى الحالة التي كانت عليها قبل طلب الاعتماد، ويرى المسؤول ملاحظتك.", "The task goes back to where it was, and the assignee sees your note.")}
         submitLabel={tr("أرجعها", "Send back")}
         onClose={() => setSendingBack(false)}
         onSubmit={(note) => decide(false, note)}

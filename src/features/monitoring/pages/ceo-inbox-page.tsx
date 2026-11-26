@@ -152,7 +152,7 @@ export function CeoInboxPage() {
         notes.length === 0 ? (
           <Empty title={tr("لا شيء وارد بعد", "Nothing has arrived yet")} body={tr("تقارير المتابعة وطلبات الجميع تظهر هنا حين تُرسَل.", "Monitoring's reports and everyone's requests show here when they are sent.")} />
         ) : show === "done" && !q && !kind ? (
-          <Empty title={tr("لا شيء منجز بعد", "Nothing done yet")} body={tr("ما تضعه «تمّ الإنجاز» يُحفظ هنا لتقرأه متى شئت.", 'What you mark "Done" is kept here, to read again any time.')} />
+          <Empty title={tr("لا شيء منجز بعد", "Nothing done yet")} body={tr("ما تضع عليه «تمّ الإنجاز» يُحفظ هنا لتقرأه متى شئت.", 'What you mark "Done" is kept here, to read again any time.')} />
         ) : (
           <Empty title={tr("لا شيء يطابق", "Nothing matches")} body={tr("جرّب كلمة أخرى أو نوعاً آخر.", "Try another word or kind.")} />
         )
@@ -187,7 +187,7 @@ export function CeoInboxPage() {
                         ) : (
                           <Button type="button" variant="secondary" pill disabled={busy} onClick={() => answer(n, "done", reply.trim() || undefined)}>
                             <Check size={15} aria-hidden="true" />
-                            {reply.trim() ? tr("أرسل الرد و«تمّ الإنجاز»", "Send and mark done") : tr("تمّ الإنجاز", "Mark done")}
+                            {reply.trim() ? tr("أرسل الرد وانقله إلى «المنجزة»", "Send and mark done") : tr("تمّ الإنجاز", "Mark done")}
                           </Button>
                         )}
                         <Button type="submit" pill disabled={busy || !reply.trim()}>

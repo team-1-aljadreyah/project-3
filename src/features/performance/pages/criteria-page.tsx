@@ -39,7 +39,7 @@ export function CriteriaPage() {
         </nav>
         <h1 className="text-2xl font-semibold">{tr("معايير التقييم وطريقة الحساب", "Review criteria and formula")}</h1>
         <p className="text-sm text-muted">
-          {tr("المجموع = مجموع (الدرجة × الوزن ÷ 100). المعايير المحسوبة من المهام، والبقية يقيّمها المسؤول من 1 إلى 5.", "Total = sum of (score × weight ÷ 100). Counted criteria come from the tasks; the reviewer scores the rest 1–5.")}
+          {tr("المجموع = مجموع (الدرجة × الوزن ÷ 100). تُحسب بعض المعايير من المهام، ويقيّم المسؤول البقية من 1 إلى 5.", "Total = sum of (score × weight ÷ 100). Counted criteria come from the tasks; the reviewer scores the rest 1–5.")}
         </p>
       </div>
       {load.state.status === "loading" && (
@@ -83,10 +83,10 @@ function CriteriaEditor({ criteria, canEdit, onSaved }: { criteria: Criteria; ca
         {criteria.approved_at ? (
           <Pill tone="done">
             <CheckCircle2 size={13} aria-hidden="true" />
-            {tr(`معتمدة منذ ${day(criteria.approved_at)}`, `Approved on ${day(criteria.approved_at)}`)}
+            {tr(`اعتُمدت في ${day(criteria.approved_at)}`, `Approved on ${day(criteria.approved_at)}`)}
           </Pill>
         ) : (
-          <Pill tone="blocked">{tr("غير معتمدة: لا تُعتمد التقييمات حتى تعتمدها الإدارة", "Not approved: reviews can't be final until the management approves")}</Pill>
+          <Pill tone="blocked">{tr("غير معتمدة: لا تُعتمد التقييمات قبل أن تعتمد الإدارة المعايير", "Not approved: reviews can't be final until the management approves")}</Pill>
         )}
       </p>
 
@@ -96,7 +96,7 @@ function CriteriaEditor({ criteria, canEdit, onSaved }: { criteria: Criteria; ca
             {canEdit ? (
               <>
                 <Input aria-label={tr(`اسم المعيار ${i + 1}`, `Criterion ${i + 1} name`)} value={c.name} onChange={(e) => set(i, { name: e.target.value })} className="h-9" />
-                <Input aria-label={tr(`الاسم بالإنجليزية ${i + 1}`, `Criterion ${i + 1} English name`)} dir="ltr" value={c.name_en} onChange={(e) => set(i, { name_en: e.target.value })} className="h-9" />
+                <Input aria-label={tr(`الاسم الإنجليزي للمعيار ${i + 1}`, `Criterion ${i + 1} English name`)} dir="ltr" value={c.name_en} onChange={(e) => set(i, { name_en: e.target.value })} className="h-9" />
                 <Select
                   aria-label={tr(`نوع المعيار ${i + 1}`, `Criterion ${i + 1} kind`)}
                   value={c.kind === "auto" ? c.metric : "manual"}

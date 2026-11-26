@@ -42,7 +42,7 @@ export function Dependencies({ task, project, tasks, canEdit, onSaved }: { task:
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 id="deps-title" className="flex items-center gap-1.5 text-sm font-semibold text-muted">
           <Link2 size={15} aria-hidden="true" />
-          {tr("الاعتماديات", "Dependencies")}
+          {tr("التبعيات", "Dependencies")}
         </h2>
         {canEdit && (
           <IconButton label={tr("عدّل ما تنتظره المهمة", "Change what the task waits for")} onClick={() => setEditing(true)} className="bg-transparent">
@@ -57,7 +57,7 @@ export function Dependencies({ task, project, tasks, canEdit, onSaved }: { task:
       )}
       <h3 className="mt-1 text-xs font-medium text-faint">{tr("تنتظر", "Waits for")}</h3>
       {waitsFor.length ? <ul className="flex flex-col">{waitsFor.map(row)}</ul> : <p className="px-2 py-1.5 text-sm text-faint">{tr("لا شيء.", "Nothing.")}</p>}
-      <h3 className="mt-2 text-xs font-medium text-faint">{tr("تنتظرها", "Waited for by")}</h3>
+      <h3 className="mt-2 text-xs font-medium text-faint">{tr("مهام تنتظرها", "Waited for by")}</h3>
       {blocks.length ? <ul className="flex flex-col">{blocks.map(row)}</ul> : <p className="px-2 py-1.5 text-sm text-faint">{tr("لا شيء.", "Nothing.")}</p>}
 
       {editing && <EditDependencies task={task} project={project} tasks={tasks} onClose={() => setEditing(false)} onSaved={onSaved} />}
@@ -82,7 +82,7 @@ function EditDependencies({ task, project, tasks, onClose, onSaved }: { task: Ta
     setError(undefined);
     try {
       await tasksApi.setDependencies(task.id, chosen);
-      toast(tr("حُفظت الاعتماديات.", "Dependencies saved."));
+      toast(tr("حُفظت التبعيات.", "Dependencies saved."));
       onClose();
       onSaved();
     } catch (e) {
@@ -121,14 +121,14 @@ function EditDependencies({ task, project, tasks, onClose, onSaved }: { task: Ta
                 <span dir="auto" className="min-w-0 flex-1 truncate">
                   {t.title}
                 </span>
-                {isDone(project, t) && <span className="text-xs text-faint">{tr("منجزة", "done")}</span>}
+                {isDone(project, t) && <span className="text-xs text-faint">{tr("مكتملة", "done")}</span>}
               </label>
             </li>
           ))}
           {choices.length === 0 && <li className="p-4 text-center text-sm text-muted">{tr("لا مهام مطابقة.", "No matching tasks.")}</li>}
         </ul>
         <p className="text-xs text-muted">
-          {tr(`اختر حتى ${LIMITS.dependencies} مهام. المهام التي تنتظر هذه المهمة لا تظهر (كي لا تنتظر كل مهمة الأخرى).`, `Choose up to ${LIMITS.dependencies} tasks. Tasks that wait for this one are left out (so no two tasks wait for each other).`)}
+          {tr(`اختر حتى ${LIMITS.dependencies} مهام. المهام التي تنتظر هذه المهمة لا تظهر (كي لا تنتظر كلٌّ من المهمتين الأخرى).`, `Choose up to ${LIMITS.dependencies} tasks. Tasks that wait for this one are left out (so no two tasks wait for each other).`)}
         </p>
         {error && (
           <p role="alert" className="text-sm text-danger">

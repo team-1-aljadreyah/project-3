@@ -208,7 +208,7 @@ export function HistoryPart({ saved, dirty }: { saved: AdvancedRules; dirty: boo
         <div className="flex flex-col gap-3 text-sm">
           <p>
             {tr(
-              `تعود الإعدادات المعدَّلة (${resetChanges.length}) كما كانت أول مرة، ومعها أرقام الدخول في إدارة النظام، ويختفي الإعلان ويتوقف وضع القراءة فقط. نزّل ملف الإعدادات أولاً إن أردت الرجوع إليها.`,
+              `تعود الإعدادات المعدَّلة (${resetChanges.length}) كما كانت أول مرة، ومعها إعدادات الدخول في إدارة النظام، ويختفي الإعلان ويتوقف وضع القراءة فقط. نزّل ملف الإعدادات أولاً إن أردت الرجوع إليها.`,
               `${resetChanges.length} settings return to how they first were, with the sign-in numbers of the administration; the banner goes and read-only mode stops. Download the settings file first to keep them.`,
             )}
           </p>

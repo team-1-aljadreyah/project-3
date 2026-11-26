@@ -17,7 +17,7 @@ test("My tasks opens with the summary: the numbers, the projects, the statuses a
   await expect(tiles(page).filter({ hasText: "مهام مفتوحة" })).toHaveText(/^2\s*مهام مفتوحة\s*من أصل 2$/);
   await expect(tiles(page).filter({ hasText: "موعدها اليوم" })).toHaveText(/^0\s*موعدها اليوم\s*خلال 7 أيام: 1$/);
   await expect(tiles(page).filter({ hasText: "متأخرة" })).toHaveText(/^1\s*متأخرة\s*أقدمها متأخرة يومين$/);
-  await expect(tiles(page).filter({ hasText: "بانتظار المراجعة" })).toHaveText(/^0\s*بانتظار المراجعة$/);
+  await expect(tiles(page).filter({ hasText: "قيد المراجعة" })).toHaveText(/^0\s*قيد المراجعة$/);
   await expect(tiles(page).filter({ hasText: "مكتملة" })).toHaveText(/^0\s*مكتملة\s*0% من مهامي$/);
 
   // One pill per project with open tasks, with the count.
@@ -52,8 +52,8 @@ test("a project's pill in the summary opens the project's board", async ({ page 
 test("a completion that waits for approval counts as in review, and the task stays open", async ({ page }) => {
   await signInAs(page, /سارة علي/);
   await page.goto("/my-tasks");
-  const review = tiles(page).filter({ hasText: "بانتظار المراجعة" });
-  await expect(review).toHaveText(/^0\s*بانتظار المراجعة$/);
+  const review = tiles(page).filter({ hasText: "قيد المراجعة" });
+  await expect(review).toHaveText(/^0\s*قيد المراجعة$/);
 
   // Sara asks to mark TSK-109 done: an employee's "done" becomes an approval request.
   await page.getByRole("link", { name: /TSK-109/ }).click();
@@ -62,7 +62,7 @@ test("a completion that waits for approval counts as in review, and the task sta
   await expect(page.getByText("أُرسل طلب اعتماد الإكمال إلى مدير القسم.")).toBeVisible();
 
   await page.goto("/my-tasks");
-  await expect(review).toHaveText(/^1\s*بانتظار المراجعة\s*بانتظار الاعتماد: 1$/);
+  await expect(review).toHaveText(/^1\s*قيد المراجعة\s*بانتظار الاعتماد: 1$/);
   // Until the department manager approves, nothing is done yet.
   await expect(tiles(page).filter({ hasText: "مهام مفتوحة" })).toHaveText(/^2\s*مهام مفتوحة/);
   await expect(page.getByRole("img", { name: "المنجز: 0 من 2 (0%)" })).toBeVisible();

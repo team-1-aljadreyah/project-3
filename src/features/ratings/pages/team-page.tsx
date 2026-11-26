@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { BarChart3, Users } from "lucide-react";
 import Link from "next/link";
 import { CelebrateButton } from "@/features/celebrations";
@@ -63,7 +64,7 @@ export function TeamPage() {
               ) : (
                 tr("بلا قائد", "No leader")
               )}
-              <span>· {tr(`${num(members.length)} أعضاء`, `${members.length} people`)}</span>
+              <span>· {tr(`${arN(members.length, W.member)}`, `${members.length} people`)}</span>
             </p>
           </div>
         </div>

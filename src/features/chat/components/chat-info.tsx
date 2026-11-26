@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { ArrowLeft, FolderKanban, MessagesSquare, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import type { Role, User } from "@/shared/api/types";
@@ -16,7 +17,7 @@ const ORDER: Role[] = ["ceo", "pm", "monitor", "lead", "employee", "admin"];
  * team or person, and every member with their job. A member's row opens their page when the reader may see it.
  */
 export function ChatInfo({ open, onClose, chat, title, kindLabel, people, me }: { open: boolean; onClose: () => void; chat: Conversation; title: string; kindLabel: string; people: Map<number, User>; me: User }) {
-  const { tr, lang, num } = useFmt();
+  const { tr, lang } = useFmt();
   const members = chat.member_ids
     .flatMap((id) => people.get(id) ?? [])
     .sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id) || ORDER.indexOf(a.role) - ORDER.indexOf(b.role) || a.name.localeCompare(b.name, "ar"));
@@ -44,7 +45,7 @@ export function ChatInfo({ open, onClose, chat, title, kindLabel, people, me }: 
               {title}
             </span>
             <span className="text-sm text-muted">
-              {kindLabel} · {tr(`${num(members.length)} أعضاء`, `${members.length} members`)}
+              {kindLabel} · {tr(`${arN(members.length, W.member)}`, `${members.length} members`)}
             </span>
           </div>
           {place && (

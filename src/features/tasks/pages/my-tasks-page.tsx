@@ -17,7 +17,7 @@ import type { Task } from "../types";
 /** The groups, most urgent first. A task is in the first group it fits. */
 const GROUPS = [
   { key: "late", ar: "متأخرة", en: "Late" },
-  { key: "soon", ar: "خلال 3 أيام", en: "In the next 3 days" },
+  { key: "soon", ar: "خلال الأيام الثلاثة القادمة", en: "In the next 3 days" },
   { key: "later", ar: "لاحقاً", en: "Later" },
   { key: "none", ar: "بلا موعد تسليم", en: "No due date" },
   { key: "done", ar: "مكتملة", en: "Done" },

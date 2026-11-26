@@ -1,3 +1,4 @@
+import { arN, W } from "@/shared/lib/count-words";
 import { Download, Lock, Search, ShieldX, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -117,7 +118,7 @@ export function AuditPage() {
         tr("البريد", "Email"),
         tr("العملية", "Action"),
         tr("النوع", "Kind"),
-        tr("على", "On"),
+        tr("العنصر", "On"),
         tr("ما تغيّر", "What changed"),
         tr("عنوان IP", "IP address"),
         tr("الجهاز", "Device"),
@@ -149,7 +150,7 @@ export function AuditPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold">{tr("سجل العمليات", "Audit log")}</h1>
-          <p className="text-sm text-muted">{tr("لا يمكن لأحد تعديل سطر أو حذفه. اضغط أي سطر لترى كل تفاصيله.", "Nobody can change or remove a line. Press any line to see everything about it.")}</p>
+          <p className="text-sm text-muted">{tr("لا يمكن لأحد تعديل سطر أو حذفه. اضغط على أي سطر لترى كل تفاصيله.", "Nobody can change or remove a line. Press any line to see everything about it.")}</p>
         </div>
         <Button variant="secondary" size="sm" disabled={!entries} onClick={csv}>
           <Download size={15} aria-hidden="true" />
@@ -180,8 +181,8 @@ export function AuditPage() {
               </option>
             ))}
           </Select>
-          <Select aria-label={tr("القسم", "Kind")} value={kind} onChange={(e) => setKind(e.target.value as AuditKind | "")} className="h-9 w-auto">
-            <option value="">{tr("كل الأقسام", "All kinds")}</option>
+          <Select aria-label={tr("النوع", "Kind")} value={kind} onChange={(e) => setKind(e.target.value as AuditKind | "")} className="h-9 w-auto">
+            <option value="">{tr("كل الأنواع", "All kinds")}</option>
             {KINDS.map((k) => (
               <option key={k} value={k}>
                 {tr(KIND_WORDS[k].ar, KIND_WORDS[k].en)}
@@ -206,8 +207,8 @@ export function AuditPage() {
             placeholder={tr("عنوان IP", "IP address")}
             className="h-9 w-40 font-mono text-[13px] placeholder:font-sans"
           />
-          <Input type="date" aria-label={tr("من يوم", "From")} value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-auto" />
-          <Input type="date" aria-label={tr("إلى يوم", "To")} value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-auto" />
+          <Input type="date" aria-label={tr("من تاريخ", "From")} value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-auto" />
+          <Input type="date" aria-label={tr("إلى تاريخ", "To")} value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-auto" />
           {filtered && (
             <button type="button" onClick={clearAll} className="inline-flex h-9 items-center gap-1 rounded-md px-2 text-[13px] text-muted hover:bg-chip hover:text-text">
               <X size={14} aria-hidden="true" />
@@ -227,7 +228,7 @@ export function AuditPage() {
       {entries && entries.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-muted" aria-live="polite">
-            {tr(`${entries.length} سطراً`, `${entries.length} line${entries.length === 1 ? "" : "s"}`)}
+            {tr(`${arN(entries.length, W.line)}`, `${entries.length} line${entries.length === 1 ? "" : "s"}`)}
           </p>
           <ol aria-label={tr("العمليات", "Actions")} className="flex flex-col divide-y divide-line overflow-hidden rounded-lg border border-line bg-card">
             {entries.map((e) => {
