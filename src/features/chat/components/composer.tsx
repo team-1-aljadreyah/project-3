@@ -2,7 +2,7 @@ import { Paperclip, Send, X } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { ACCEPT, attachmentsApi, fileProblem, isImage, voiceProblem } from "@/features/attachments";
 import type { User } from "@/shared/api/types";
-import { isTyping, pastedFiles } from "@/shared/lib/clipboard";
+import { isTyping, pastedFiles, pasteIsFiles } from "@/shared/lib/clipboard";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn, matches } from "@/shared/lib/utils";
 import { Avatar, errorText, IconButton } from "@/shared/ui";
@@ -100,7 +100,7 @@ export function Composer({
       const plain = e.clipboardData?.getData("text/plain") ?? "";
       if (!pasted.length && !plain) return;
       e.preventDefault();
-      if (pasted.length && !plain.trim()) addFiles(pasted);
+      if (pasteIsFiles(plain, [...(e.clipboardData?.files ?? [])])) addFiles(pasted);
       else insertText(plain);
       box.current?.focus({ preventScroll: true });
     };
@@ -110,7 +110,43 @@ export function Composer({
     document.addEventListener("paste", on);
     return () => document.removeEventListener("paste", on);
   }, []);
+
+  // Files dropped anywhere on the page while a chat is open join the message: dragged from the computer, or sent by
+  // Windows' emoji and GIF panel (Win + .), which drops the GIF where the mouse is. Without this, the browser opens
+  // the file in a new tab instead.
   const [dropping, setDropping] = useState(false);
+  const dropAnywhere = useRef<(e: DragEvent) => void>(() => {});
+  useEffect(() => {
+    dropAnywhere.current = (e: DragEvent) => {
+      const files = !!e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+      if (!files || document.querySelector("dialog[open]")) return;
+      // The browser never opens the file; it is attached only when the box is ready (not while recording).
+      e.preventDefault();
+      const ready = voiceState === "idle";
+      if (e.type === "dragover") {
+        e.dataTransfer!.dropEffect = ready ? "copy" : "none";
+        setDropping(ready);
+      } else {
+        setDropping(false);
+        if (ready) addFiles(pastedFiles(e.dataTransfer));
+      }
+    };
+  });
+  useEffect(() => {
+    const on = (e: DragEvent) => dropAnywhere.current(e);
+    // Leaving the window hides the hint.
+    const leave = (e: DragEvent) => {
+      if (!e.relatedTarget) setDropping(false);
+    };
+    document.addEventListener("dragover", on);
+    document.addEventListener("drop", on);
+    document.addEventListener("dragleave", leave);
+    return () => {
+      document.removeEventListener("dragover", on);
+      document.removeEventListener("drop", on);
+      document.removeEventListener("dragleave", leave);
+    };
+  }, []);
 
   // A microphone problem shows where the other errors show, with how to fix it.
   const micError = rec.problem && micProblemText(rec.problem, tr);
@@ -221,24 +257,7 @@ export function Composer({
   const showMic = voiceOn && ((!text.trim() && files.length === 0) || voiceState === "recording" || voiceState === "asking");
 
   return (
-    // Files dragged from the computer can be dropped anywhere on the box.
-    <div
-      className={cn("relative flex flex-col gap-2 border-t border-line p-3 transition-colors", dropping && "bg-accent-soft")}
-      onDragOver={(e) => {
-        if (![...e.dataTransfer.types].includes("Files") || voiceState !== "idle") return;
-        e.preventDefault();
-        setDropping(true);
-      }}
-      onDragLeave={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
-      }}
-      onDrop={(e) => {
-        setDropping(false);
-        if (!e.dataTransfer.files.length) return;
-        e.preventDefault();
-        addFiles([...e.dataTransfer.files]);
-      }}
-    >
+    <div className={cn("relative flex flex-col gap-2 border-t border-line p-3 transition-colors", dropping && "bg-accent-soft")}>
       {dropping && (
         <p aria-hidden="true" className="pointer-events-none absolute inset-1 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-card/90 text-sm font-medium text-accent-ink">
           {tr("أفلت الملفات هنا لإرفاقها", "Drop the files here to attach them")}
@@ -337,12 +356,12 @@ export function Composer({
                 setQuery(mentionQuery(e.target.value, e.target.selectionStart));
               }}
               onPaste={(e) => {
-                // A picture or file on the clipboard (with no text) joins the message as a file. Text pastes as usual,
-                // so copying from Word, which puts both text and a picture of it, pastes the text.
-                const pasted = pastedFiles(e.clipboardData);
-                if (!pasted.length || e.clipboardData.getData("text/plain").trim()) return;
+                // A picture or file on the clipboard joins the message as a file, also when its only text is its own
+                // path or address (Windows' GIF panel, the file explorer). Text pastes as usual, so copying from Word,
+                // which puts both text and a picture of it, pastes the text.
+                if (!pasteIsFiles(e.clipboardData.getData("text/plain"), [...e.clipboardData.files])) return;
                 e.preventDefault();
-                addFiles(pasted);
+                addFiles(pastedFiles(e.clipboardData));
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
