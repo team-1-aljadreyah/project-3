@@ -1,5 +1,5 @@
 import { arN, W } from "@/shared/lib/count-words";
-import { ArrowRight, MessageSquarePlus, MessagesSquare, UsersRound } from "lucide-react";
+import { ArrowRight, MessageSquarePlus, MessagesSquare, Search, UsersRound } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { authApi } from "@/features/auth";
@@ -19,7 +19,7 @@ import { GroupActions } from "../components/group-actions";
 import { GroupDialog } from "../components/group-dialog";
 import { NewDirectDialog } from "../components/new-direct-dialog";
 import { Thread } from "../components/thread";
-import { canCreateGroupChat, chatTitle } from "../rules";
+import { canCreateGroupChat, chatMatches, chatTitle } from "../rules";
 import type { ChatKind, Conversation } from "../types";
 
 /**
@@ -38,6 +38,9 @@ export function ChatPage() {
   const [starting, setStarting] = useState(false);
   const [grouping, setGrouping] = useState(false);
   const [info, setInfo] = useState(false);
+  // The list's search box and kind filter: with many chats, one is found by its name, a member's name, or its kind.
+  const [search, setSearch] = useState("");
+  const [only, setOnly] = useState<ChatKind | "all">("all");
   const KIND: Record<ChatKind, string> = {
     project: tr("محادثة المشروع", "Project chat"),
     team: tr("محادثة الفريق", "Team chat"),
@@ -53,6 +56,17 @@ export function ChatPage() {
   if (made && list?.some((c) => c.key === made.key)) setMade(undefined); // the list has it now
   const open = list?.find((c) => c.key === key) ?? (list && made?.key === key ? made : undefined);
   const title = open ? chatTitle(open, people, me.id, lang) : undefined;
+  const FILTERS: { kind: ChatKind | "all"; label: string }[] = [
+    { kind: "all", label: tr("الكل", "All") },
+    { kind: "group", label: tr("المجموعات", "Groups") },
+    { kind: "team", label: tr("الفرق", "Teams") },
+    { kind: "project", label: tr("المشاريع", "Projects") },
+    { kind: "direct", label: tr("الخاصة", "Private") },
+  ];
+  // Only the kinds this person has chats of.
+  const filters = FILTERS.filter((f) => f.kind === "all" || list?.some((c) => c.kind === f.kind));
+  const shownList = list?.filter((c) => (only === "all" || c.kind === only) && chatMatches(c, search, people, me.id));
+  const searching = !!search.trim() || only !== "all";
   usePageTitle(title ?? tr("المحادثات", "Chats"));
 
   return (
@@ -76,6 +90,43 @@ export function ChatPage() {
                 <MessageSquarePlus size={18} aria-hidden="true" />
               </IconButton>
             </div>
+            {list && list.length > 0 && (
+              <div className="flex flex-col gap-2 border-b border-line px-3 py-2.5">
+                <label className="relative block">
+                  <span className="sr-only">{tr("ابحث في المحادثات", "Search the chats")}</span>
+                  <Search size={15} aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-faint" />
+                  <input
+                    type="search"
+                    dir="auto"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setSearch("");
+                    }}
+                    placeholder={tr("ابحث باسم مجموعة أو فريق أو شخص", "Search by group, team or person")}
+                    className="h-9 w-full rounded-lg border border-line bg-card-2 ps-9 pe-3 text-sm outline-none placeholder:text-faint focus:border-accent focus:bg-card focus:ring-2 focus:ring-accent-soft"
+                  />
+                </label>
+                {filters.length > 2 && (
+                  <div role="group" aria-label={tr("نوع المحادثة", "Kind of chat")} className="-mx-1 flex gap-1 overflow-x-auto px-1">
+                    {filters.map((f) => (
+                      <button
+                        key={f.kind}
+                        type="button"
+                        aria-pressed={only === f.kind}
+                        onClick={() => setOnly(f.kind)}
+                        className={cn(
+                          "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                          only === f.kind ? "bg-text text-card" : "text-muted hover:bg-chip hover:text-text",
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto">
               {!list && (
                 <LoadingBlock className="flex flex-col gap-2 p-2">
@@ -85,7 +136,25 @@ export function ChatPage() {
                 </LoadingBlock>
               )}
               {list && list.length === 0 && <p className="p-6 text-center text-sm text-muted">{tr("لا محادثات بعد.", "No chats yet.")}</p>}
-              {list && list.length > 0 && <ConversationList list={list} people={people} me={me.id} active={key} />}
+              {shownList && shownList.length > 0 && <ConversationList list={shownList} people={people} me={me.id} active={key} />}
+              {list && list.length > 0 && shownList?.length === 0 && (
+                <div className="flex flex-col items-center gap-2 p-6 text-center text-sm text-muted">
+                  <p>{tr("لا محادثة تطابق البحث.", "No chat matches the search.")}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setOnly("all");
+                    }}
+                    className="font-medium text-accent-ink hover:underline"
+                  >
+                    {tr("اعرض كل المحادثات", "Show all chats")}
+                  </button>
+                </div>
+              )}
+              <p role="status" className="sr-only">
+                {searching && shownList ? tr(`النتائج: ${num(shownList.length)}`, `${shownList.length} results`) : ""}
+              </p>
             </div>
           </nav>
 

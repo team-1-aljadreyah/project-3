@@ -58,7 +58,7 @@ test("Sara starts a private chat with Zainab and sends a file", async ({ page })
   await expect(page).toHaveURL(/\/chat\/d-\d+$/);
 
   // The hidden file picker behind the paperclip (choosing a file in the system window can't be automated).
-  await page.locator('input[type="file"]').setInputFiles({ name: "خطة-الاختبار.txt", mimeType: "text/plain", buffer: Buffer.from("خطة") });
+  await page.locator('input[type="file"]').first().setInputFiles({ name: "خطة-الاختبار.txt", mimeType: "text/plain", buffer: Buffer.from("خطة") });
   await page.getByLabel("اكتب رسالة").fill("هذه خطة الاختبار");
   await page.getByRole("button", { name: "أرسل" }).click();
   const sent = page.getByRole("list", { name: "الرسائل" }).getByRole("listitem").filter({ hasText: "هذه خطة الاختبار" });
@@ -132,7 +132,7 @@ test("a picture sent in a chat shows as a preview and opens in the viewer, with 
   await page.goto("/chat/p-1");
   // A real 1×1 PNG (the server checks the file's first bytes).
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-  await page.locator('input[type="file"]').setInputFiles({ name: "لقطة-الشاشة.png", mimeType: "image/png", buffer: png });
+  await page.locator('input[type="file"]').first().setInputFiles({ name: "لقطة-الشاشة.png", mimeType: "image/png", buffer: png });
   await page.getByLabel("اكتب رسالة").fill("هذه لقطة الشاشة");
   await page.getByRole("button", { name: "أرسل" }).click();
   const sent = page.getByRole("list", { name: "الرسائل" }).getByRole("listitem").filter({ hasText: "هذه لقطة الشاشة" });
@@ -269,4 +269,113 @@ test("a message that couldn't be sent goes away, and its text comes back in the 
   await box.press("Enter");
   await expect(messages.getByRole("listitem").filter({ hasText: "لن تصل" })).toHaveCount(1);
   await expect(box).toHaveValue("");
+});
+
+// A real 1×1 PNG and a real 1×1 GIF (the server checks the file's first bytes).
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+const GIF = Buffer.from("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==", "base64");
+
+test("a web address in a message is a link that opens in a new tab", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await page.getByLabel("اكتب رسالة").fill("التصميم هنا https://example.com/design?v=2. وانظر www.example.org أيضاً");
+  await page.getByRole("button", { name: "أرسل" }).click();
+  const sent = page.getByRole("list", { name: "الرسائل" }).getByRole("listitem").filter({ hasText: "التصميم هنا" });
+  const link = sent.getByRole("link", { name: "https://example.com/design?v=2" });
+  await expect(link).toHaveAttribute("href", "https://example.com/design?v=2");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", /noopener/);
+  await expect(sent.getByRole("link", { name: "www.example.org" })).toHaveAttribute("href", "https://www.example.org");
+  // Pressing it opens the page in a new tab (the request is stopped: the test stays offline).
+  await page.context().route("https://example.com/**", (r) => r.fulfill({ body: "<title>design</title>", contentType: "text/html" }));
+  const [tab] = await Promise.all([page.context().waitForEvent("page"), link.click()]);
+  await expect(tab).toHaveURL("https://example.com/design?v=2");
+  await expect(page).toHaveURL(/\/chat\/p-1$/);
+});
+
+test("emoji: the picker puts them where the cursor is, remembers the last ones, and an emoji-only message is large", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  const box = page.getByLabel("اكتب رسالة");
+  await box.fill("تم");
+  await page.getByRole("button", { name: "أضف رمزاً تعبيرياً" }).click();
+  const picker = page.getByRole("dialog", { name: "الرموز التعبيرية" });
+  await picker.getByRole("tab", { name: "أيادٍ وأشخاص" }).click();
+  await picker.getByRole("button", { name: "👍", exact: true }).click();
+  await expect(box).toHaveValue("تم👍");
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeHidden();
+  await box.press("Enter");
+  await expect(page.getByRole("list", { name: "الرسائل" }).getByText("تم👍")).toBeVisible();
+
+  // Next time the emoji used last come first; a message of emoji only is shown large.
+  await page.getByRole("button", { name: "أضف رمزاً تعبيرياً" }).click();
+  await expect(picker.getByRole("tab", { name: "المستخدمة مؤخراً" })).toHaveAttribute("aria-selected", "true");
+  await picker.getByRole("button", { name: "👍", exact: true }).click();
+  await page.getByRole("button", { name: "أرسل" }).click();
+  const big = page.getByRole("list", { name: "الرسائل" }).getByRole("listitem").last().getByText("👍", { exact: true });
+  await expect(big).toHaveClass(/text-4xl/);
+});
+
+test("Ctrl+C on a picture in the chat, then Ctrl+V: it is attached to the next message, even with the cursor outside the box", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await page.locator('input[type="file"]').first().setInputFiles({ name: "الأصل.png", mimeType: "image/png", buffer: PNG });
+  await page.getByLabel("اكتب رسالة").fill("الصورة الأصلية");
+  await page.getByRole("button", { name: "أرسل" }).click();
+  const messages = page.getByRole("list", { name: "الرسائل" });
+  await messages.getByRole("listitem").filter({ hasText: "الصورة الأصلية" }).getByRole("button", { name: "اعرض الصورة الأصل.png" }).click();
+
+  // The viewer's copy button (Ctrl+C there does the same).
+  const viewer = page.getByRole("dialog", { name: "صورة: الأصل.png" });
+  await viewer.getByRole("button", { name: "انسخ الصورة" }).click();
+  await expect(viewer.getByRole("button", { name: "نُسخت الصورة" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // Ctrl+V with nothing focused: the picture waits in the box, with a preview, named by the time.
+  await page.locator("body").click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("ControlOrMeta+V");
+  const chip = page.getByRole("button", { name: /^أزل pasted-\d{8}-\d{6}\.png$/ });
+  await expect(chip).toBeVisible();
+  await page.getByLabel("اكتب رسالة").fill("ملصقة");
+  await page.getByRole("button", { name: "أرسل" }).click();
+  await expect(messages.getByRole("listitem").filter({ hasText: "ملصقة" }).getByRole("button", { name: /اعرض الصورة pasted-/ })).toBeVisible();
+
+  // Text copied and pasted stays text (nothing is attached).
+  await page.evaluate(() => navigator.clipboard.writeText("نص منسوخ"));
+  await page.getByLabel("اكتب رسالة").focus();
+  await page.keyboard.press("ControlOrMeta+V");
+  await expect(page.getByLabel("اكتب رسالة")).toHaveValue("نص منسوخ");
+  await expect(page.getByRole("button", { name: /^أزل / })).toHaveCount(0);
+});
+
+test("a GIF picked with the GIF button is sent and shows in the chat as a picture", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  await page.locator('input[type="file"][accept=".gif,image/gif"]').setInputFiles({ name: "تصفيق.gif", mimeType: "image/gif", buffer: GIF });
+  await expect(page.getByRole("button", { name: "أزل تصفيق.gif" })).toBeVisible();
+  await page.getByRole("button", { name: "أرسل" }).click();
+  const shown = page.getByRole("list", { name: "الرسائل" }).getByRole("button", { name: "اعرض الصورة تصفيق.gif" });
+  await expect(shown).toBeVisible();
+});
+
+test("with many chats, the list is searched by name or member and filtered by kind", async ({ page }) => {
+  await signInAs(page, /هدى ناصر/);
+  await page.goto("/chat");
+  const list = chatList(page);
+  const search = list.getByLabel("ابحث في المحادثات");
+  await search.fill("التسويق");
+  await expect(list.getByRole("link", { name: /حملة التسويق الشتوية/ })).toBeVisible();
+  await expect(list.getByRole("link")).toHaveCount(1);
+  // Arabic letter forms count as the same, and nothing found says so, with a way back.
+  await search.fill("لا يوجد شيء بهذا الاسم");
+  await expect(list.getByText("لا محادثة تطابق البحث.")).toBeVisible();
+  await list.getByRole("button", { name: "اعرض كل المحادثات" }).click();
+  await expect(search).toHaveValue("");
+  // Only the team chats.
+  await list.getByRole("button", { name: "الفرق" }).click();
+  const rows = list.getByRole("link");
+  await expect(rows.first()).toBeVisible();
+  for (const href of await rows.evaluateAll((a) => a.map((x) => x.getAttribute("href")))) expect(href).toMatch(/\/chat\/t-\d+$/);
 });

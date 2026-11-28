@@ -1,7 +1,9 @@
 // The chat on the demo backend, as different people, plus its small rules: the same rules the real backend must keep.
 import { beforeEach, describe, expect, it } from "vitest";
-import { canCreateGroupChat, canManageGroupChat, chatKey, chatTitle, mentionQuery, parseKey, splitMentions } from "@/features/chat/rules";
+import { canCreateGroupChat, canManageGroupChat, chatKey, chatMatches, chatTitle, mentionQuery, onlyEmoji, parseKey, splitLinks, splitMentions } from "@/features/chat/rules";
 import { ApiError } from "@/shared/api/errors";
+import type { User } from "@/shared/api/types";
+import type { Conversation } from "@/features/chat/types";
 
 // The demo backend reads the session from localStorage: a small in-memory one for Node.
 const store = new Map<string, string>();
@@ -277,5 +279,56 @@ describe("employees and the CEO", () => {
     await api.send(c.key, { body: "كيف سير العمل؟" });
     as(5);
     expect((await api.send(c.key, { body: "جيد، شكراً." })).body).toBe("جيد، شكراً.");
+  });
+});
+
+describe("links and emoji in messages", () => {
+  it("finds web addresses, leaving the punctuation of the sentence outside", () => {
+    expect(splitLinks("انظر https://a.com/x?y=1.")).toEqual(["انظر ", { link: "https://a.com/x?y=1", href: "https://a.com/x?y=1" }, "."]);
+    expect(splitLinks("(see http://a.com/b), then")).toEqual(["(see ", { link: "http://a.com/b", href: "http://a.com/b" }, "), then"]);
+    expect(splitLinks("https://en.wikipedia.org/wiki/Go_(language)")).toEqual([{ link: "https://en.wikipedia.org/wiki/Go_(language)", href: "https://en.wikipedia.org/wiki/Go_(language)" }]);
+    expect(splitLinks("الموقع www.follow.ama8.uk، شكراً")).toEqual(["الموقع ", { link: "www.follow.ama8.uk", href: "https://www.follow.ama8.uk" }, "، شكراً"]);
+    expect(splitLinks("two: https://a.com https://b.com/c")).toEqual(["two: ", { link: "https://a.com", href: "https://a.com" }, " ", { link: "https://b.com/c", href: "https://b.com/c" }]);
+  });
+
+  it("makes only http and https into links", () => {
+    expect(splitLinks("javascript:alert(1) and ftp://a.com")).toEqual(["javascript:alert(1) and ftp://a.com"]);
+    expect(splitLinks("no link here")).toEqual(["no link here"]);
+    expect(splitLinks("https://.")).toEqual(["https://."]);
+  });
+
+  it("knows a message that is only a few emoji", () => {
+    expect(onlyEmoji("😂")).toBe(true);
+    expect(onlyEmoji("👍🏽 🎉 ❤️")).toBe(true);
+    expect(onlyEmoji("👨‍👩‍👧")).toBe(true);
+    expect(onlyEmoji("😂😂😂😂")).toBe(false);
+    expect(onlyEmoji("شكراً 😂")).toBe(false);
+    expect(onlyEmoji("12")).toBe(false);
+    expect(onlyEmoji("")).toBe(false);
+  });
+});
+
+describe("searching the chat list", () => {
+  const people = new Map([
+    [1, { id: 1, name: "أحمد علي", name_en: "Ahmed Ali" }],
+    [2, { id: 2, name: "سارة حسن", name_en: "Sara Hasan" }],
+    [3, { id: 3, name: "زينب كريم", name_en: "Zainab Karim" }],
+  ] as [number, User][]);
+  const team = { key: "t-1", kind: "team", title: "فريق الواجهات", title_en: "Front-end team", member_ids: [1, 2], unread: 0 } as Conversation;
+  const group = { key: "g-1", kind: "group", title: "لجنة التقييم", member_ids: [1, 3], unread: 0 } as Conversation;
+  const direct = { key: "d-1", kind: "direct", title: "", member_ids: [1, 2], unread: 0 } as Conversation;
+
+  it("finds a chat by its name in either language, a private chat by the other person, a group by its members", () => {
+    expect(chatMatches(team, "الواجهات", people, 1)).toBe(true);
+    expect(chatMatches(team, "front", people, 1)).toBe(true);
+    expect(chatMatches(group, "زينب", people, 1)).toBe(true);
+    expect(chatMatches(direct, "sara", people, 1)).toBe(true);
+    expect(chatMatches(direct, "احمد", people, 1)).toBe(false); // me, not the other person
+    expect(chatMatches(team, "زينب", people, 1)).toBe(false); // a team is found by its name only
+  });
+
+  it("treats Arabic letter forms as the same and an empty search as everything", () => {
+    expect(chatMatches(group, "لجنه", people, 1)).toBe(true);
+    expect(chatMatches(direct, "  ", people, 1)).toBe(true);
   });
 });

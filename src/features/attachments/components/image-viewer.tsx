@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, Download, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Download, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { copyImage } from "@/shared/lib/clipboard";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import { sizeText } from "../rules";
@@ -18,7 +19,8 @@ const btn =
 
 /**
  * Pictures open here, full screen on a dark backdrop, instead of downloading: the picture as large as fits (press it,
- * or the zoom button, to see it at its real size and move around), its name, size and caption, a download button, and
+ * or the zoom button, to see it at its real size and move around), its name, size and caption, a copy button (Ctrl+C
+ * too: then Ctrl+V pastes it in a chat message or another app), a download button, and
  * the previous / next picture of the same set (the arrows on the keyboard too, mirrored in Arabic). On the browser's own
  * <dialog>, so the keyboard stays inside and Escape closes it; the focus goes back to the picture that opened it.
  */
@@ -31,6 +33,20 @@ export function ImageViewer({ images, index, onIndex, onClose }: { images: Viewe
   const img = open ? images[index] : null;
   const zoom = !!img && zoomed === img.id;
   const toggleZoom = () => setZoomed(zoom || !img ? null : img.id);
+  // Which picture was just copied, and whether it worked: the button says so for a moment.
+  const [copied, setCopied] = useState<{ id: number; ok: boolean } | null>(null);
+  const copy = async () => {
+    if (!img) return;
+    const id = img.id;
+    try {
+      await copyImage(img.url);
+      setCopied({ id, ok: true });
+    } catch {
+      setCopied({ id, ok: false });
+    }
+    setTimeout(() => setCopied((c) => (c?.id === id ? null : c)), 2000);
+  };
+  const copyState = copied && img && copied.id === img.id ? copied : null;
 
   useEffect(() => {
     const d = ref.current;
@@ -47,6 +63,12 @@ export function ImageViewer({ images, index, onIndex, onClose }: { images: Viewe
   // "Next" is to the left in Arabic, like turning a page.
   const rtl = lang === "ar";
   const onKey = (e: React.KeyboardEvent) => {
+    // Ctrl+C (⌘C on a Mac) copies the picture, unless some text is selected (then that text is copied, as usual).
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && !window.getSelection()?.toString()) {
+      e.preventDefault();
+      copy();
+      return;
+    }
     if (e.key === "ArrowRight") go(rtl ? -1 : 1);
     else if (e.key === "ArrowLeft") go(rtl ? 1 : -1);
     else return;
@@ -88,6 +110,18 @@ export function ImageViewer({ images, index, onIndex, onClose }: { images: Viewe
             <button type="button" onClick={toggleZoom} aria-pressed={zoom} aria-label={zoom ? tr("بحجم الشاشة", "Fit to screen") : tr("كبّر", "Zoom in")} className={btn}>
               {zoom ? <ZoomOut size={19} aria-hidden="true" /> : <ZoomIn size={19} aria-hidden="true" />}
             </button>
+            <button
+              type="button"
+              onClick={copy}
+              aria-label={copyState ? (copyState.ok ? tr("نُسخت الصورة", "Picture copied") : tr("تعذّر نسخ الصورة", "Couldn't copy the picture")) : tr("انسخ الصورة", "Copy the picture")}
+              title={tr("انسخ الصورة (Ctrl+C)", "Copy the picture (Ctrl+C)")}
+              className={btn}
+            >
+              {copyState?.ok ? <Check size={19} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+            </button>
+            <p role="status" className="sr-only">
+              {copyState ? (copyState.ok ? tr("نُسخت الصورة، الصقها بـ Ctrl+V", "Picture copied, paste it with Ctrl+V") : tr("تعذّر نسخ الصورة", "Couldn't copy the picture")) : ""}
+            </p>
             <a href={img.url} download={img.name} aria-label={tr("نزّل الصورة", "Download the picture")} className={btn}>
               <Download size={19} aria-hidden="true" />
             </a>
