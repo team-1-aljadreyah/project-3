@@ -379,3 +379,34 @@ test("with many chats, the list is searched by name or member and filtered by ki
   await expect(rows.first()).toBeVisible();
   for (const href of await rows.evaluateAll((a) => a.map((x) => x.getAttribute("href")))) expect(href).toMatch(/\/chat\/t-\d+$/);
 });
+
+test("a GIF dropped anywhere on the chat (as Windows' Win + . panel does) is attached, and the browser doesn't open it", async ({ page }) => {
+  await signInAs(page, /سارة علي/);
+  await page.goto("/chat/p-1");
+  const pages = page.context().pages().length;
+  // Dropped on the messages, not on the box: where the mouse happens to be.
+  await page.getByRole("list", { name: "الرسائل" }).evaluate((list, b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bytes], "DespicableMeMinionsGIF.gif", { type: "image/gif" }));
+    for (const type of ["dragenter", "dragover", "drop"]) list.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, GIF.toString("base64"));
+  await expect(page.getByRole("button", { name: "أزل DespicableMeMinionsGIF.gif" })).toBeVisible();
+  expect(page.context().pages().length).toBe(pages);
+  await expect(page).toHaveURL(/\/chat\/p-1$/);
+
+  // A paste that brings the file with its own path as text is a file too.
+  await page.getByLabel("اكتب رسالة").evaluate((box, b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bytes], "MonkeyMetalGIF.gif", { type: "image/gif" }));
+    dt.setData("text/plain", String.raw`C:\Users\me\Downloads\InputApp\MonkeyMetalGIF.gif`);
+    box.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: dt }));
+  }, GIF.toString("base64"));
+  await expect(page.getByRole("button", { name: "أزل MonkeyMetalGIF.gif" })).toBeVisible();
+  await expect(page.getByLabel("اكتب رسالة")).toHaveValue("");
+  await page.getByRole("button", { name: "أرسل" }).click();
+  const messages = page.getByRole("list", { name: "الرسائل" });
+  await expect(messages.getByRole("button", { name: "اعرض الصورة DespicableMeMinionsGIF.gif" })).toBeVisible();
+  await expect(messages.getByRole("button", { name: "اعرض الصورة MonkeyMetalGIF.gif" })).toBeVisible();
+});

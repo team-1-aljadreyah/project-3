@@ -1,6 +1,6 @@
 // Naming what is pasted into a chat message.
 import { describe, expect, it } from "vitest";
-import { pastedName } from "@/shared/lib/clipboard";
+import { pastedName, pasteIsFiles } from "@/shared/lib/clipboard";
 
 describe("pasted files", () => {
   const at = new Date(2026, 10, 28, 14, 30, 5);
@@ -12,5 +12,21 @@ describe("pasted files", () => {
   it("a file copied in the file explorer keeps its own name", () => {
     expect(pastedName({ name: "خطة العمل.pdf", type: "application/pdf" }, at)).toBe("خطة العمل.pdf");
     expect(pastedName({ name: "logo.png", type: "image/png" }, at)).toBe("logo.png");
+  });
+});
+
+describe("a paste that is about its files", () => {
+  const gif = [{ name: "DespicableMeMinionsGIF.gif" }];
+  it("no text, or text that only names the files (Windows' GIF panel, the file explorer)", () => {
+    expect(pasteIsFiles("", gif)).toBe(true);
+    expect(pasteIsFiles(String.raw`C:\Users\me\Downloads\InputApp\DespicableMeMinionsGIF.gif`, gif)).toBe(true);
+    expect(pasteIsFiles("file:///C:/Users/me/Downloads/Despicable%20Me.gif", [{ name: "Despicable Me.gif" }])).toBe(true);
+    expect(pasteIsFiles('"DespicableMeMinionsGIF.gif"', gif)).toBe(true);
+    expect(pasteIsFiles("https://media.example.com/clap.gif", [{ name: "image.gif" }])).toBe(true);
+  });
+  it("real text stays text, and no files means text", () => {
+    expect(pasteIsFiles("الاجتماع غداً الساعة العاشرة", [{ name: "image.png" }])).toBe(false);
+    expect(pasteIsFiles("100% done", [{ name: "image.png" }])).toBe(false);
+    expect(pasteIsFiles("", [])).toBe(false);
   });
 });

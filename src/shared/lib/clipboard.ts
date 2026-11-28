@@ -19,6 +19,29 @@ export function pastedFiles(data: DataTransfer | null, now = new Date()): File[]
   return [...(data?.files ?? [])].map((f) => (pastedName(f, now) === f.name ? f : new File([f], pastedName(f, now), { type: f.type, lastModified: f.lastModified })));
 }
 
+/**
+ * Whether a paste is about its files rather than its text. Yes when there is no text, or when the text only names the
+ * files: Windows' emoji and GIF panel (Win + .) and the file explorer put the file's path or address next to it
+ * ("C:\Users\…\clap.gif", "file:///…/clap.gif"). Real text (a paragraph from Word, which also brings a picture of it)
+ * stays text.
+ */
+export function pasteIsFiles(plain: string, files: { name: string }[]): boolean {
+  if (!files.length) return false;
+  const lines = plain.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return true;
+  const names = files.map((f) => f.name.toLowerCase());
+  return lines.every((l) => {
+    let bare = l.replace(/^["']|["']$/g, "");
+    try {
+      bare = decodeURIComponent(bare);
+    } catch {
+      // A "%" that isn't an escape: compare the text as it is.
+    }
+    const last = bare.split(/[\\/]/).pop()!.toLowerCase();
+    return names.includes(last) || /^(file|https?):\/\/\S+$/i.test(l);
+  });
+}
+
 /** True when the key press or event happened in a place where text is typed (so a paste there is the browser's own). */
 export const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 
