@@ -2,6 +2,7 @@
 // Pure functions, tested in Node.
 import type { Role, User } from "@/shared/api/types";
 import { isCeo } from "@/shared/lib/access";
+import { matches } from "@/shared/lib/utils";
 import type { ChatKey, ChatKind, Conversation } from "./types";
 
 /** `groupName`: the most letters in a group's name. `groupOthers`: the fewest people in a group besides its maker. */
@@ -75,6 +76,61 @@ export function splitMentions(body: string, names: string[]): (string | { mentio
   }
   if (last < body.length) parts.push(body.slice(last));
   return parts;
+}
+
+/** A web address in a message: what was written, and where it opens (always http or https). */
+export interface MessageLink {
+  link: string;
+  href: string;
+}
+
+// "https://…", "http://…" or "www.…", up to a space, a quote or an angle bracket.
+const LINK = /\b(?:https?:\/\/|www\.)[^\s<>"'«»]+/gi;
+
+/**
+ * Splits text into plain text and web addresses, so the addresses can be pressed: "انظر https://a.com/x." →
+ * ["انظر ", {link: "https://a.com/x", href: "https://a.com/x"}, "."]. A full stop, comma or closing bracket at the end
+ * belongs to the sentence, not to the address (unless the address opened that bracket); "www.a.com" opens as
+ * "https://www.a.com". Only http and https are made into links, so nothing typed can run a script.
+ */
+export function splitLinks(text: string): (string | MessageLink)[] {
+  const parts: (string | MessageLink)[] = [];
+  let last = 0;
+  for (const m of text.matchAll(LINK)) {
+    let link = m[0];
+    while (/[.,;:!?؟،؛)\]}]$/.test(link)) {
+      const end = link.at(-1)!;
+      const open = { ")": "(", "]": "[", "}": "{" }[end];
+      if (open && link.split(open).length >= link.split(end).length) break; // "…/Go_(language)" keeps its bracket
+      link = link.slice(0, -1);
+    }
+    if (!/[a-z0-9]/i.test(link.replace(/^(https?:\/\/|www\.)/i, ""))) continue;
+    if (m.index! > last) parts.push(text.slice(last, m.index));
+    parts.push({ link, href: /^www\./i.test(link) ? `https://${link}` : link });
+    last = m.index! + link.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
+/** A message that is only one to three emoji (no text): it is shown larger, like in other chat apps. */
+export function onlyEmoji(body: string) {
+  const t = body.replace(/\s/g, "");
+  // Emoji parts only (skin tones and joiners included), with at least one picture: "12" or "#" alone are not emoji.
+  if (!/^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|\u{FE0F}|\u{200D})+$/u.test(t) || !/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(t)) return false;
+  return [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(t)].length <= 3;
+}
+
+/**
+ * Whether a chat matches what is typed in the chat list's search box: its name in Arabic or English (a private chat's
+ * name is the other person's), and for a group, the names of its members too. Arabic letter forms count as the same
+ * ("احمد" finds "أحمد"), like the other searches of the site.
+ */
+export function chatMatches(c: Conversation, q: string, people: Map<number, User>, me: number) {
+  if (!q.trim()) return true;
+  const names = (ids: number[]) => ids.flatMap((id) => [people.get(id)?.name, people.get(id)?.name_en]);
+  if (c.kind === "direct") return matches(q, ...names(c.member_ids.filter((id) => id !== me)));
+  return matches(q, c.title, c.title_en, ...(c.kind === "group" ? names(c.member_ids) : []));
 }
 
 /** The name of a chat in the chosen language. A private chat is named after the other person. */

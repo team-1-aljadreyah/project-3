@@ -1,12 +1,13 @@
 import { FileText, Reply } from "lucide-react";
 import { stableUrl } from "@/shared/lib/stable-url";
-import { useState } from "react";
+import { copyImage } from "@/shared/lib/clipboard";
+import { Fragment, useState } from "react";
 import { ImageViewer, isImage } from "@/features/attachments";
 import type { User } from "@/shared/api/types";
 import { useFmt } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, PersonName } from "@/shared/ui";
-import { splitMentions } from "../rules";
+import { onlyEmoji, splitLinks, splitMentions } from "../rules";
 import type { Message } from "../types";
 import { messageSummary } from "../voice";
 import { VoiceNote } from "./voice-note";
@@ -83,10 +84,22 @@ export function MessageItem({
           </button>
         )}
         {m.body && (
-          <p dir="auto" className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+          // A message of one to three emoji only is shown large, like in other chat apps.
+          <p dir="auto" className={cn("break-words whitespace-pre-wrap", onlyEmoji(m.body) ? "text-4xl leading-tight" : "text-sm leading-relaxed")}>
             {splitMentions(m.body, mentionNames).map((part, i) =>
               typeof part === "string" ? (
-                part
+                // Web addresses open in a new tab; the chat stays where it was.
+                <Fragment key={i}>
+                  {splitLinks(part).map((bit, j) =>
+                  typeof bit === "string" ? (
+                    bit
+                  ) : (
+                    <a key={`${i}-${j}`} href={bit.href} target="_blank" rel="noopener noreferrer nofollow" dir="ltr" className="font-medium break-all text-accent-ink underline decoration-accent/40 underline-offset-2 hover:decoration-accent">
+                      {bit.link}
+                    </a>
+                  ),
+                  )}
+                </Fragment>
               ) : (
                 <span key={i} className="rounded bg-accent-soft px-0.5 font-medium text-accent-ink">
                   @{part.mention}
@@ -114,6 +127,13 @@ export function MessageItem({
                 <button
                   type="button"
                   onClick={() => setViewing(i)}
+                  // Ctrl+C on a focused picture copies it, ready to paste with Ctrl+V.
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+                      e.preventDefault();
+                      copyImage(stableUrl(f.url)).catch(() => {});
+                    }
+                  }}
                   aria-label={tr(`اعرض الصورة ${f.name}`, `View the picture ${f.name}`)}
                   className="group block overflow-hidden rounded-xl border border-line bg-card-2 transition-colors hover:border-accent"
                 >
